@@ -1319,6 +1319,53 @@ app.get('/api/clubeadulto/scraping/video-details/status', (req, res) => {
 });
 
 // ========================================
+// PROXY M3U8 - Contornar CORS
+// ========================================
+
+app.get('/api/proxy/m3u8', async (req, res) => {
+    try {
+        const url = req.query.url;
+        
+        if (!url) {
+            return res.status(400).send('URL não fornecida');
+        }
+        
+        console.log('🔄 Proxy M3U8:', url);
+        
+        const https = require('https');
+        const http = require('http');
+        const urlModule = require('url');
+        
+        const parsedUrl = urlModule.parse(url);
+        const protocol = parsedUrl.protocol === 'https:' ? https : http;
+        
+        protocol.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://clubeadulto.net/',
+                'Origin': 'https://clubeadulto.net'
+            }
+        }, (proxyRes) => {
+            // Adicionar headers CORS
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'application/vnd.apple.mpegurl');
+            
+            // Fazer pipe da resposta
+            proxyRes.pipe(res);
+        }).on('error', (error) => {
+            console.error('❌ Erro no proxy:', error);
+            res.status(500).send('Erro ao buscar vídeo');
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro no proxy M3U8:', error);
+        res.status(500).send('Erro no servidor proxy');
+    }
+});
+
+// ========================================
 // ADMIN - Limpar Banco
 // ========================================
 

@@ -309,14 +309,25 @@
                         
                         if (Hls.isSupported()) {
                             console.log('✅ HLS.js suportado, inicializando...');
+                            
+                            // Usar proxy para contornar CORS
+                            const proxyUrl = `/api/proxy/m3u8?url=${encodeURIComponent(video.m3u8_url)}`;
+                            console.log('🔄 Usando proxy:', proxyUrl);
+                            
                             const hls = new Hls({
                                 debug: false,
                                 enableWorker: true,
                                 lowLatencyMode: true,
-                                backBufferLength: 90
+                                backBufferLength: 90,
+                                xhrSetup: function(xhr, url) {
+                                    // Adicionar headers para requisições de segmentos
+                                    if (!url.includes('/api/proxy/m3u8')) {
+                                        xhr.open('GET', `/api/proxy/m3u8?url=${encodeURIComponent(url)}`, true);
+                                    }
+                                }
                             });
                             
-                            hls.loadSource(video.m3u8_url);
+                            hls.loadSource(proxyUrl);
                             hls.attachMedia(videoElement);
                             
                             hls.on(Hls.Events.MANIFEST_PARSED, function() {
