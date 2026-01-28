@@ -42,7 +42,9 @@ async function scrapeModels(page = 1) {
         
         await browserPage.setViewport({ width: 1920, height: 1080 });
         
-        const url = page > 1 ? `${SCRAPE_URL}&page=${page}` : SCRAPE_URL;
+        const url = page === 1 
+            ? SCRAPE_URL 
+            : `https://pornx.tube/models/${page}/?by=model_viewed`;
         console.log(`📄 Acessando: ${url}`);
         
         await browserPage.goto(url, {
