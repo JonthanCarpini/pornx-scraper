@@ -1348,12 +1348,27 @@ app.get('/api/proxy/m3u8', async (req, res) => {
             return res.status(response.status).send(`Erro ao buscar vídeo: ${response.statusText}`);
         }
         
+        const contentType = response.headers.get('content-type') || '';
+        console.log('📦 Content-Type:', contentType);
+        
+        // Se for um segmento de vídeo (.ts), apenas repassar os bytes
+        if (contentType.includes('video') || contentType.includes('octet-stream') || url.endsWith('.ts')) {
+            console.log('📹 Repassando segmento de vídeo (.ts)');
+            const buffer = await response.arrayBuffer();
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Content-Type', contentType || 'video/mp2t');
+            res.send(Buffer.from(buffer));
+            return;
+        }
+        
+        // Caso contrário, processar como M3U8
         let content = await response.text();
         console.log('✅ M3U8 obtido, tamanho:', content.length);
         
         // Verificar se é realmente um M3U8 (texto)
         if (!content.includes('#EXTM3U')) {
             console.error('❌ Resposta não é um M3U8 válido');
+            console.error('Primeiros 200 caracteres:', content.substring(0, 200));
             return res.status(500).send('Resposta não é um M3U8 válido');
         }
         
