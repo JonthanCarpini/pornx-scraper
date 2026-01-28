@@ -70,44 +70,47 @@ async function scrapeModels(page = 1) {
         });
         
         console.log('⏳ Aguardando carregamento da página...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         const models = await browserPage.evaluate(() => {
             const results = [];
-            const links = document.querySelectorAll('a[href*="/actors/"]');
             
-            links.forEach(link => {
-                const headerElement = link.querySelector('header.entry-header span.actor-title');
-                const imgElement = link.querySelector('img');
+            const actorTitles = document.querySelectorAll('span.actor-title');
+            console.log(`DEBUG: Encontrados ${actorTitles.length} elementos com classe actor-title`);
+            
+            actorTitles.forEach(titleSpan => {
+                const name = titleSpan.textContent.trim();
                 
-                if (headerElement) {
-                    const profileUrl = link.getAttribute('href');
-                    const name = headerElement.textContent.trim();
-                    
-                    if (!name || !profileUrl || profileUrl === 'https://clubeadulto.net/actors/') {
-                        return;
-                    }
-                    
-                    const urlParts = profileUrl.split('/').filter(p => p);
-                    const slug = urlParts[urlParts.length - 1] || name.toLowerCase().replace(/\s+/g, '-');
-                    
-                    let coverUrl = null;
-                    if (imgElement) {
-                        coverUrl = imgElement.getAttribute('src') || 
-                                  imgElement.getAttribute('data-src') ||
-                                  imgElement.getAttribute('data-lazy-src') ||
-                                  imgElement.getAttribute('srcset')?.split(' ')[0];
-                    }
-                    
-                    if (name && profileUrl) {
-                        results.push({
-                            name,
-                            slug,
-                            profileUrl: profileUrl.startsWith('http') ? profileUrl : `https://clubeadulto.net${profileUrl}`,
-                            coverUrl: coverUrl && coverUrl.startsWith('http') ? coverUrl : (coverUrl ? `https://clubeadulto.net${coverUrl}` : null)
-                        });
-                    }
+                const linkElement = titleSpan.closest('a');
+                if (!linkElement) {
+                    console.log(`DEBUG: Nenhum link encontrado para ${name}`);
+                    return;
                 }
+                
+                const profileUrl = linkElement.getAttribute('href');
+                
+                if (!name || !profileUrl || profileUrl === 'https://clubeadulto.net/actors/' || !profileUrl.includes('/actors/')) {
+                    return;
+                }
+                
+                const urlParts = profileUrl.split('/').filter(p => p);
+                const slug = urlParts[urlParts.length - 1] || name.toLowerCase().replace(/[@\s]+/g, '-');
+                
+                const imgElement = linkElement.querySelector('img');
+                let coverUrl = null;
+                if (imgElement) {
+                    coverUrl = imgElement.getAttribute('src') || 
+                              imgElement.getAttribute('data-src') ||
+                              imgElement.getAttribute('data-lazy-src') ||
+                              imgElement.getAttribute('srcset')?.split(' ')[0];
+                }
+                
+                results.push({
+                    name,
+                    slug,
+                    profileUrl: profileUrl.startsWith('http') ? profileUrl : `https://clubeadulto.net${profileUrl}`,
+                    coverUrl: coverUrl && coverUrl.startsWith('http') ? coverUrl : (coverUrl ? `https://clubeadulto.net${coverUrl}` : null)
+                });
             });
             
             return results;
