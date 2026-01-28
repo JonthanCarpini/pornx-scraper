@@ -183,8 +183,31 @@ async function scrapeModels(page = 1) {
     }
 }
 
+async function testDatabaseConnection() {
+    try {
+        await pool.query('SELECT 1');
+        return true;
+    } catch (error) {
+        console.error('\n❌ ERRO: Não foi possível conectar ao banco de dados PostgreSQL');
+        console.error('Detalhes:', error.message);
+        console.error('\n📝 Para usar o banco de dados:');
+        console.error('1. Certifique-se de que o PostgreSQL está rodando');
+        console.error('2. Crie o arquivo .env baseado em .env.example');
+        console.error('3. Configure as credenciais corretas no .env');
+        console.error('4. Execute: npm run init-db\n');
+        console.error('💡 Alternativa: Use "npm run scrape:json" para salvar em arquivo JSON\n');
+        return false;
+    }
+}
+
 async function scrapeAllPages(maxPages = 5) {
     console.log(`\n🎯 Iniciando scraping de até ${maxPages} páginas...\n`);
+    
+    const dbConnected = await testDatabaseConnection();
+    if (!dbConnected) {
+        console.error('❌ Scraping cancelado. Configure o banco de dados ou use scrape:json\n');
+        process.exit(1);
+    }
     
     let totalModels = 0;
     let totalSaved = 0;

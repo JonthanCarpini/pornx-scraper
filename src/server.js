@@ -74,7 +74,7 @@ app.get('/api/models', async (req, res) => {
     }
 });
 
-app.post('/api/scrape/start', (req, res) => {
+app.post('/api/scrape/start', async (req, res) => {
     if (scrapingProcess) {
         return res.status(400).json({
             success: false,
@@ -83,6 +83,18 @@ app.post('/api/scrape/start', (req, res) => {
     }
     
     const { pages = 5, useDatabase = true } = req.body;
+    
+    if (useDatabase) {
+        try {
+            await pool.query('SELECT 1');
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                error: 'Banco de dados não está configurado ou não está acessível. Use scrape:json ou configure o PostgreSQL.',
+                details: error.message
+            });
+        }
+    }
     
     scrapingLogs = [];
     
