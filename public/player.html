@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player - NSFW247</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #999;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        
+        .back-btn:hover {
+            color: #ff6b6b;
+        }
+        
+        .video-player-container {
+            background: #1a1a1a;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        .video-player {
+            width: 100%;
+            max-height: 70vh;
+            background: #000;
+        }
+        
+        .video-info-section {
+            padding: 30px;
+        }
+        
+        .video-title {
+            font-size: 28px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .video-meta {
+            display: flex;
+            gap: 20px;
+            color: #999;
+            margin-bottom: 20px;
+        }
+        
+        .model-link {
+            color: #ff6b6b;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .model-link:hover {
+            color: #ee5a6f;
+        }
+        
+        .video-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #ee5a6f;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #2d2d2d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #3d3d3d;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .error h2 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+        
+        .error p {
+            color: #999;
+            margin-bottom: 20px;
+        }
+        
+        .no-source {
+            background: #2d2d2d;
+            padding: 60px 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+        
+        .no-source h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        .no-source p {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">🔥 NSFW247</div>
+            <div class="nav-links">
+                <a href="/home.html">Modelos</a>
+                <a href="/admin-scraper.html">⚙️ Admin</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <a href="#" class="back-btn" id="backBtn">← Voltar</a>
+        
+        <div id="content">
+            <div class="loading">Carregando vídeo...</div>
+        </div>
+    </div>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoId = urlParams.get('id');
+        
+        if (!videoId) {
+            window.location.href = '/home.html';
+        }
+        
+        async function loadVideo() {
+            try {
+                const response = await fetch(`/api/videos/${videoId}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                const video = result.data;
+                
+                document.title = `${video.title} - NSFW247`;
+                
+                document.getElementById('backBtn').href = `/model.html?id=${video.model_id}`;
+                
+                let playerHTML = '';
+                
+                if (video.video_source_url) {
+                    playerHTML = `
+                        <video 
+                            class="video-player" 
+                            controls 
+                            autoplay
+                            poster="${video.poster_url || video.thumbnail_url || ''}"
+                        >
+                            <source src="${video.video_source_url}" type="video/mp4">
+                            Seu navegador não suporta a reprodução de vídeo.
+                        </video>
+                    `;
+                } else {
+                    playerHTML = `
+                        <div class="no-source">
+                            <h3>⚠️ Vídeo não disponível</h3>
+                            <p>O source deste vídeo ainda não foi coletado.</p>
+                            <p>Execute o Passo 3 no painel admin para coletar os detalhes dos vídeos.</p>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="video-player-container">
+                        ${playerHTML}
+                        
+                        <div class="video-info-section">
+                            <h1 class="video-title">${video.title}</h1>
+                            
+                            <div class="video-meta">
+                                <span>Modelo: <a href="/model.html?id=${video.model_id}" class="model-link">${video.model_name}</a></span>
+                            </div>
+                            
+                            <div class="video-actions">
+                                <a href="${video.video_url}" target="_blank" class="btn btn-primary">
+                                    🔗 Ver no Site Original
+                                </a>
+                                ${video.video_source_url ? `
+                                    <a href="${video.video_source_url}" download class="btn btn-secondary">
+                                        ⬇️ Download
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Erro ao carregar vídeo:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <h2>Erro ao carregar vídeo</h2>
+                        <p>${error.message}</p>
+                        <a href="/home.html" class="btn btn-primary">Voltar para Home</a>
+                    </div>
+                `;
+            }
+        }
+        
+        loadVideo();
+    </script>
+</body>
+</html>

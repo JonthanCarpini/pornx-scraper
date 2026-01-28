@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Sistema de Scraping</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            background: #1e3c72;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav a:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+        }
+        
+        .steps-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .step-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .step-title {
+            flex: 1;
+        }
+        
+        .step-title h2 {
+            color: #1e3c72;
+            margin-bottom: 5px;
+        }
+        
+        .step-title p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .step-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #e0e0e0;
+            color: #666;
+        }
+        
+        .status-running {
+            background: #ffc107;
+            color: #000;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-completed {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status-error {
+            background: #f44336;
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .step-content {
+            margin-top: 20px;
+        }
+        
+        .step-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .step-info strong {
+            color: #1e3c72;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background: #1e3c72;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #2a5298;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.4);
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            background: #45a049;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .logs {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .logs.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .progress-bar.active {
+            display: block;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        
+        .auto-mode {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .auto-mode h2 {
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .auto-mode p {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
+        }
+        
+        .auto-mode .btn {
+            font-size: 18px;
+            padding: 15px 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Admin - Sistema de Scraping</h1>
+            <p class="subtitle">Gerencie o processo completo de coleta de dados</p>
+            <div class="nav">
+                <a href="/">🏠 Homepage</a>
+                <a href="/admin-scraper.html">⚙️ Admin Scraping</a>
+                <a href="/admin.html">🗑️ Limpar Banco</a>
+            </div>
+        </div>
+        
+        <div class="auto-mode">
+            <h2>🚀 Modo Automático</h2>
+            <p>Execute todos os 3 passos automaticamente em sequência</p>
+            <button class="btn btn-success" id="autoBtn" onclick="runAutoMode()">
+                ▶️ Executar Scraping Completo
+            </button>
+        </div>
+        
+        <div class="steps-container">
+            <!-- Passo 1: Modelos -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">
+                        <h2>Coletar Modelos</h2>
+                        <p>Extrai nomes, URLs de perfil e capas das modelos</p>
+                    </div>
+                    <span class="step-status status-pending" id="status1">Pendente</span>
+                </div>
+                <div class="step-content">
+                    <div class="step-info">
+                        <strong>Modelos no banco:</strong> <span id="modelsCount">0</span>
+                    </div>
+                    <button class="btn btn-primary" id="btn1" onclick="runStep1()">
+                        🚀 Iniciar Passo 1
+                    </button>
+                    <div class="progress-bar" id="progress1">
+                        <div class="progress-fill" id="progressFill1">0%</div>
+                    </div>
+                    <div class="logs" id="logs1"></div>
+                </div>
+            </div>
+            
+            <!-- Passo 2: Vídeos -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">
+                        <h2>Coletar Vídeos</h2>
+                        <p>Extrai lista de vídeos de cada modelo</p>
+                    </div>
+                    <span class="step-status status-pending" id="status2">Pendente</span>
+                </div>
+                <div class="step-content">
+                    <div class="step-info">
+                        <strong>Vídeos no banco:</strong> <span id="videosCount">0</span>
+                    </div>
+                    <button class="btn btn-primary" id="btn2" onclick="runStep2()">
+                        🎬 Iniciar Passo 2
+                    </button>
+                    <div class="progress-bar" id="progress2">
+                        <div class="progress-fill" id="progressFill2">0%</div>
+                    </div>
+                    <div class="logs" id="logs2"></div>
+                </div>
+            </div>
+            
+            <!-- Passo 3: Detalhes dos Vídeos -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">
+                        <h2>Coletar Detalhes dos Vídeos</h2>
+                        <p>Extrai poster e source de cada vídeo</p>
+                    </div>
+                    <span class="step-status status-pending" id="status3">Pendente</span>
+                </div>
+                <div class="step-content">
+                    <div class="step-info">
+                        <strong>Vídeos com detalhes:</strong> <span id="videosWithDetails">0</span>
+                    </div>
+                    <button class="btn btn-primary" id="btn3" onclick="runStep3()">
+                        📹 Iniciar Passo 3
+                    </button>
+                    <div class="progress-bar" id="progress3">
+                        <div class="progress-fill" id="progressFill3">0%</div>
+                    </div>
+                    <div class="logs" id="logs3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isAutoMode = false;
+        
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/scraping-stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('modelsCount').textContent = data.stats.total_models || 0;
+                    document.getElementById('videosCount').textContent = data.stats.total_videos || 0;
+                    document.getElementById('videosWithDetails').textContent = data.stats.videos_with_details || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+        
+        function addLog(step, message) {
+            const logsDiv = document.getElementById(`logs${step}`);
+            logsDiv.classList.add('active');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function updateStatus(step, status, text) {
+            const statusEl = document.getElementById(`status${step}`);
+            statusEl.className = `step-status status-${status}`;
+            statusEl.textContent = text;
+        }
+        
+        function updateProgress(step, current, total) {
+            const progressBar = document.getElementById(`progress${step}`);
+            const progressFill = document.getElementById(`progressFill${step}`);
+            progressBar.classList.add('active');
+            const percentage = Math.round((current / total) * 100);
+            progressFill.style.width = `${percentage}%`;
+            progressFill.textContent = `${percentage}% (${current}/${total})`;
+        }
+        
+        async function runStep1() {
+            const btn = document.getElementById('btn1');
+            btn.disabled = true;
+            updateStatus(1, 'running', 'Executando...');
+            addLog(1, '🚀 Iniciando coleta de modelos...');
+            
+            try {
+                const response = await fetch('/api/scraping/models', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(1, `✓ Scraping iniciado! Processando ${data.pagesCount} páginas...`);
+                    pollStep1Status();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog(1, `❌ Erro: ${error.message}`);
+                updateStatus(1, 'error', 'Erro');
+                btn.disabled = false;
+            }
+        }
+        
+        async function pollStep1Status() {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/scraping/models/status');
+                    const data = await response.json();
+                    
+                    if (data.success && data.status) {
+                        if (data.status.isRunning) {
+                            updateProgress(1, data.status.processed, data.status.total);
+                            if (data.status.lastResult) {
+                                addLog(1, `✓ Página ${data.status.processed}: ${data.status.lastResult.modelsSaved} modelos salvos`);
+                            }
+                        } else {
+                            clearInterval(interval);
+                            updateStatus(1, 'completed', 'Concluído');
+                            addLog(1, `✅ Concluído! Total: ${data.status.totalModels} modelos`);
+                            document.getElementById('btn1').disabled = false;
+                            loadStats();
+                            
+                            if (isAutoMode) {
+                                setTimeout(() => runStep2(), 2000);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function runStep2() {
+            const btn = document.getElementById('btn2');
+            btn.disabled = true;
+            updateStatus(2, 'running', 'Executando...');
+            addLog(2, '🎬 Iniciando coleta de vídeos...');
+            
+            try {
+                const response = await fetch('/api/videos/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'all' })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(2, `✓ Scraping iniciado! Processando ${data.modelsCount} modelos...`);
+                    pollStep2Status();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog(2, `❌ Erro: ${error.message}`);
+                updateStatus(2, 'error', 'Erro');
+                btn.disabled = false;
+            }
+        }
+        
+        async function pollStep2Status() {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/videos/scrape/status');
+                    const data = await response.json();
+                    
+                    if (data.success && data.status) {
+                        if (data.status.isRunning) {
+                            updateProgress(2, data.status.processed, data.status.total);
+                            if (data.status.lastResult) {
+                                addLog(2, `✓ ${data.status.lastResult.modelName}: ${data.status.lastResult.videosSaved} vídeos`);
+                            }
+                        } else {
+                            clearInterval(interval);
+                            updateStatus(2, 'completed', 'Concluído');
+                            addLog(2, `✅ Concluído! Total: ${data.status.totalVideos} vídeos`);
+                            document.getElementById('btn2').disabled = false;
+                            loadStats();
+                            
+                            if (isAutoMode) {
+                                setTimeout(() => runStep3(), 2000);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function runStep3() {
+            const btn = document.getElementById('btn3');
+            btn.disabled = true;
+            updateStatus(3, 'running', 'Executando...');
+            addLog(3, '📹 Iniciando coleta de detalhes...');
+            
+            try {
+                const response = await fetch('/api/scraping/video-details', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(3, `✓ Scraping iniciado! Processando ${data.videosCount} vídeos...`);
+                    pollStep3Status();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog(3, `❌ Erro: ${error.message}`);
+                updateStatus(3, 'error', 'Erro');
+                btn.disabled = false;
+            }
+        }
+        
+        async function pollStep3Status() {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/scraping/video-details/status');
+                    const data = await response.json();
+                    
+                    if (data.success && data.status) {
+                        if (data.status.isRunning) {
+                            updateProgress(3, data.status.processed, data.status.total);
+                            if (data.status.lastResult) {
+                                addLog(3, `✓ Vídeo ${data.status.processed}: ${data.status.lastResult.success ? 'OK' : 'Erro'}`);
+                            }
+                        } else {
+                            clearInterval(interval);
+                            updateStatus(3, 'completed', 'Concluído');
+                            addLog(3, `✅ Concluído! ${data.status.successCount} vídeos processados`);
+                            document.getElementById('btn3').disabled = false;
+                            loadStats();
+                            
+                            if (isAutoMode) {
+                                isAutoMode = false;
+                                document.getElementById('autoBtn').disabled = false;
+                                alert('✅ Scraping completo finalizado com sucesso!');
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function runAutoMode() {
+            if (confirm('Deseja executar o scraping completo (3 passos)? Isso pode levar vários minutos.')) {
+                isAutoMode = true;
+                document.getElementById('autoBtn').disabled = true;
+                runStep1();
+            }
+        }
+        
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>

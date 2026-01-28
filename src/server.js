@@ -385,6 +385,272 @@ app.get('/api/videos/scrape/status', (req, res) => {
     });
 });
 
+// Endpoint para buscar modelo por ID
+app.get('/api/models/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await pool.query(`
+            SELECT 
+                id,
+                name,
+                profile_url,
+                cover_url,
+                video_count,
+                created_at,
+                updated_at
+            FROM models
+            WHERE id = $1
+        `, [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Modelo não encontrada'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Endpoint para buscar vídeo por ID
+app.get('/api/videos/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await pool.query(`
+            SELECT 
+                v.id,
+                v.title,
+                v.video_url,
+                v.thumbnail_url,
+                v.poster_url,
+                v.video_source_url,
+                v.created_at,
+                m.name as model_name,
+                m.id as model_id
+            FROM videos v
+            JOIN models m ON v.model_id = m.id
+            WHERE v.id = $1
+        `, [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Vídeo não encontrado'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Estatísticas para admin scraper
+app.get('/api/admin/scraping-stats', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                COUNT(*) as total_models,
+                COALESCE(SUM(video_count), 0) as total_videos,
+                COUNT(CASE WHEN video_count > 0 THEN 1 END) as models_with_videos,
+                (SELECT COUNT(*) FROM videos WHERE poster_url IS NOT NULL AND video_source_url IS NOT NULL) as videos_with_details
+            FROM models
+        `);
+        
+        res.json({
+            success: true,
+            stats: result.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Scraping de modelos (Passo 1)
+let modelsScrapingStatus = {
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    lastResult: null,
+    totalModels: 0
+};
+
+app.post('/api/scraping/models', async (req, res) => {
+    try {
+        if (modelsScrapingStatus.isRunning) {
+            return res.status(400).json({
+                success: false,
+                error: 'Scraping de modelos já está em execução'
+            });
+        }
+        
+        const pages = 5; // Número de páginas para scraping
+        
+        modelsScrapingStatus = {
+            isRunning: true,
+            processed: 0,
+            total: pages,
+            lastResult: null,
+            totalModels: 0
+        };
+        
+        processModelsScrapingAsync(pages);
+        
+        res.json({
+            success: true,
+            message: 'Scraping de modelos iniciado',
+            pagesCount: pages
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+async function processModelsScrapingAsync(pages) {
+    const scraper = spawn('node', ['src/scraper.js', pages.toString()], {
+        cwd: path.join(__dirname, '..')
+    });
+    
+    let output = '';
+    
+    scraper.stdout.on('data', (data) => {
+        output += data.toString();
+        const pageMatch = output.match(/Página (\d+)\/(\d+)/);
+        if (pageMatch) {
+            modelsScrapingStatus.processed = parseInt(pageMatch[1]);
+        }
+        const modelsMatch = output.match(/(\d+) novas/);
+        if (modelsMatch) {
+            modelsScrapingStatus.lastResult = {
+                modelsSaved: parseInt(modelsMatch[1])
+            };
+        }
+    });
+    
+    scraper.on('close', () => {
+        const totalMatch = output.match(/Total de modelos salvas: (\d+)/);
+        modelsScrapingStatus.totalModels = totalMatch ? parseInt(totalMatch[1]) : 0;
+        modelsScrapingStatus.isRunning = false;
+    });
+}
+
+app.get('/api/scraping/models/status', (req, res) => {
+    res.json({
+        success: true,
+        status: modelsScrapingStatus
+    });
+});
+
+// Scraping de detalhes dos vídeos (Passo 3)
+let videoDetailsScrapingStatus = {
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    lastResult: null,
+    successCount: 0
+};
+
+app.post('/api/scraping/video-details', async (req, res) => {
+    try {
+        if (videoDetailsScrapingStatus.isRunning) {
+            return res.status(400).json({
+                success: false,
+                error: 'Scraping de detalhes já está em execução'
+            });
+        }
+        
+        const result = await pool.query(`
+            SELECT COUNT(*) FROM videos 
+            WHERE poster_url IS NULL OR video_source_url IS NULL
+        `);
+        const videosCount = parseInt(result.rows[0].count);
+        
+        if (videosCount === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Todos os vídeos já possuem detalhes coletados'
+            });
+        }
+        
+        videoDetailsScrapingStatus = {
+            isRunning: true,
+            processed: 0,
+            total: videosCount,
+            lastResult: null,
+            successCount: 0
+        };
+        
+        processVideoDetailsScrapingAsync();
+        
+        res.json({
+            success: true,
+            message: 'Scraping de detalhes iniciado',
+            videosCount
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+async function processVideoDetailsScrapingAsync() {
+    const scraper = spawn('node', ['src/video-details-scraper.js'], {
+        cwd: path.join(__dirname, '..')
+    });
+    
+    let output = '';
+    
+    scraper.stdout.on('data', (data) => {
+        output += data.toString();
+        const progressMatch = output.match(/\[(\d+)\/(\d+)\]/);
+        if (progressMatch) {
+            videoDetailsScrapingStatus.processed = parseInt(progressMatch[1]);
+        }
+        const successMatch = output.match(/Sucesso: (\d+)/);
+        if (successMatch) {
+            videoDetailsScrapingStatus.successCount = parseInt(successMatch[1]);
+        }
+    });
+    
+    scraper.on('close', () => {
+        videoDetailsScrapingStatus.isRunning = false;
+    });
+}
+
+app.get('/api/scraping/video-details/status', (req, res) => {
+    res.json({
+        success: true,
+        status: videoDetailsScrapingStatus
+    });
+});
+
 app.delete('/api/admin/clear-database', async (req, res) => {
     try {
         const result = await pool.query('DELETE FROM models');
@@ -407,8 +673,8 @@ app.delete('/api/admin/clear-database', async (req, res) => {
 
 const server = app.listen(PORT, () => {
     console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
-    console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard.html`);
-    console.log(`🔍 Visualizar dados: http://localhost:${PORT}/models.html\n`);
+    console.log(`🏠 Homepage: http://localhost:${PORT}/home.html`);
+    console.log(`⚙️  Admin Scraping: http://localhost:${PORT}/admin-scraper.html\n`);
 });
 
 server.on('error', (err) => {
@@ -416,8 +682,8 @@ server.on('error', (err) => {
         console.log(`\n⚠️  Porta ${PORT} já está em uso. Tentando porta ${FALLBACK_PORT}...\n`);
         app.listen(FALLBACK_PORT, () => {
             console.log(`\n🚀 Servidor rodando em http://localhost:${FALLBACK_PORT}`);
-            console.log(`📊 Dashboard: http://localhost:${FALLBACK_PORT}/dashboard.html`);
-            console.log(`🔍 Visualizar dados: http://localhost:${FALLBACK_PORT}/models.html\n`);
+            console.log(`🏠 Homepage: http://localhost:${FALLBACK_PORT}/home.html`);
+            console.log(`⚙️  Admin Scraping: http://localhost:${FALLBACK_PORT}/admin-scraper.html\n`);
         });
     } else {
         console.error('Erro ao iniciar servidor:', err);

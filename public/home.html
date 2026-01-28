@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSFW247 - Modelos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            color: #999;
+            margin-bottom: 30px;
+        }
+        
+        .search-bar {
+            margin-bottom: 30px;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            max-width: 500px;
+            padding: 15px 20px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-bar input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+        
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+        }
+        
+        .model-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            border-color: #ff6b6b;
+        }
+        
+        .model-cover {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            background: #2d2d2d;
+        }
+        
+        .model-info {
+            padding: 20px;
+        }
+        
+        .model-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        
+        .model-stats {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        
+        .empty h2 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+        
+        .empty p {
+            color: #999;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 40px;
+        }
+        
+        .pagination button {
+            padding: 12px 24px;
+            border: none;
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #333;
+        }
+        
+        .pagination button:hover:not(:disabled) {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .pagination .page-info {
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">🔥 NSFW247</div>
+            <div class="nav-links">
+                <a href="/home.html">Modelos</a>
+                <a href="/admin-scraper.html">⚙️ Admin</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1 class="page-title">Modelos</h1>
+        <p class="page-subtitle">Explore nossa coleção de modelos</p>
+        
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar modelo...">
+        </div>
+        
+        <div id="content">
+            <div class="loading">Carregando modelos...</div>
+        </div>
+        
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <script>
+        let currentPage = 1;
+        let currentSearch = '';
+        const limit = 24;
+        
+        const searchInput = document.getElementById('searchInput');
+        
+        let searchTimeout;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = searchInput.value;
+                currentPage = 1;
+                loadModels();
+            }, 500);
+        });
+        
+        async function loadModels() {
+            try {
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    limit: limit
+                });
+                
+                if (currentSearch) {
+                    params.append('search', currentSearch);
+                }
+                
+                const response = await fetch(`/api/models?${params}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                const { models, pagination } = result.data;
+                
+                const contentDiv = document.getElementById('content');
+                
+                if (models.length === 0) {
+                    contentDiv.innerHTML = `
+                        <div class="empty">
+                            <h2>Nenhuma modelo encontrada</h2>
+                            <p>Tente ajustar sua busca ou execute o scraping no painel admin</p>
+                        </div>
+                    `;
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+                
+                contentDiv.innerHTML = `
+                    <div class="models-grid">
+                        ${models.map(model => `
+                            <div class="model-card" onclick="openModel(${model.id})">
+                                <img src="${model.cover_url || 'https://via.placeholder.com/250x300?text=Sem+Foto'}" 
+                                     alt="${model.name}" 
+                                     class="model-cover"
+                                     onerror="this.src='https://via.placeholder.com/250x300?text=Sem+Foto'">
+                                <div class="model-info">
+                                    <div class="model-name">${model.name}</div>
+                                    <div class="model-stats">
+                                        ${model.video_count || 0} vídeos
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                renderPagination(pagination);
+                
+            } catch (error) {
+                console.error('Erro ao carregar modelos:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="empty">
+                        <h2>Erro ao carregar dados</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderPagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            
+            if (pagination.totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            
+            paginationDiv.innerHTML = `
+                <button onclick="changePage(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''}>
+                    ← Anterior
+                </button>
+                <div class="page-info">
+                    Página ${pagination.page} de ${pagination.totalPages}
+                </div>
+                <button onclick="changePage(${pagination.page + 1})" ${pagination.page === pagination.totalPages ? 'disabled' : ''}>
+                    Próxima →
+                </button>
+            `;
+        }
+        
+        function changePage(page) {
+            currentPage = page;
+            loadModels();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function openModel(modelId) {
+            window.location.href = `/model.html?id=${modelId}`;
+        }
+        
+        loadModels();
+    </script>
+</body>
+</html>
