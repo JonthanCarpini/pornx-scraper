@@ -35,6 +35,7 @@ app.get('/api/models', async (req, res) => {
                 name,
                 profile_url,
                 cover_url,
+                video_count,
                 created_at,
                 updated_at
             FROM models
@@ -343,8 +344,6 @@ app.post('/api/videos/scrape', async (req, res) => {
 });
 
 async function processVideoScraping(models) {
-    const { spawn } = await import('child_process');
-    
     for (const model of models) {
         videoScrapingStatus.currentModel = model.name;
         
@@ -359,7 +358,11 @@ async function processVideoScraping(models) {
                 output += data.toString();
             });
             
-            scraper.on('close', () => {
+            scraper.stderr.on('data', (data) => {
+                console.error('Erro no scraper:', data.toString());
+            });
+            
+            scraper.on('close', (code) => {
                 const videosMatch = output.match(/(\d+) novos/);
                 const videosSaved = videosMatch ? parseInt(videosMatch[1]) : 0;
                 
@@ -370,12 +373,21 @@ async function processVideoScraping(models) {
                 };
                 videoScrapingStatus.totalVideos += videosSaved;
                 
+                console.log(`[${videoScrapingStatus.processed}/${videoScrapingStatus.total}] ${model.name}: ${videosSaved} vídeos`);
+                
+                resolve();
+            });
+            
+            scraper.on('error', (error) => {
+                console.error('Erro ao executar scraper:', error);
+                videoScrapingStatus.processed++;
                 resolve();
             });
         });
     }
     
     videoScrapingStatus.isRunning = false;
+    console.log('✅ Scraping de vídeos concluído!');
 }
 
 app.get('/api/videos/scrape/status', (req, res) => {
@@ -628,18 +640,33 @@ async function processVideoDetailsScrapingAsync() {
     let output = '';
     
     scraper.stdout.on('data', (data) => {
-        output += data.toString();
-        const progressMatch = output.match(/\[(\d+)\/(\d+)\]/);
+        const chunk = data.toString();
+        output += chunk;
+        console.log(chunk);
+        
+        const progressMatch = chunk.match(/\[(\d+)\/(\d+)\]/);
         if (progressMatch) {
             videoDetailsScrapingStatus.processed = parseInt(progressMatch[1]);
+            videoDetailsScrapingStatus.total = parseInt(progressMatch[2]);
         }
+        
         const successMatch = output.match(/Sucesso: (\d+)/);
         if (successMatch) {
             videoDetailsScrapingStatus.successCount = parseInt(successMatch[1]);
         }
     });
     
-    scraper.on('close', () => {
+    scraper.stderr.on('data', (data) => {
+        console.error('Erro no scraper de detalhes:', data.toString());
+    });
+    
+    scraper.on('close', (code) => {
+        videoDetailsScrapingStatus.isRunning = false;
+        console.log('✅ Scraping de detalhes concluído!');
+    });
+    
+    scraper.on('error', (error) => {
+        console.error('Erro ao executar scraper de detalhes:', error);
         videoDetailsScrapingStatus.isRunning = false;
     });
 }
