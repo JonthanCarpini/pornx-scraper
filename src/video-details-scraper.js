@@ -62,29 +62,30 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
             let posterUrl = null;
             let videoSourceUrl = null;
             
-            // Tentar encontrar o elemento video
-            const videoElement = document.querySelector('video');
+            // Buscar o elemento video
+            const videoElement = document.querySelector('video, video.js-fluid-player');
             
             if (videoElement) {
-                // Pegar o poster
+                // Pegar o poster do atributo poster
                 posterUrl = videoElement.getAttribute('poster');
                 
-                // Pegar o source
+                // Pegar o source do elemento source dentro do video
                 const sourceElement = videoElement.querySelector('source');
                 if (sourceElement) {
                     videoSourceUrl = sourceElement.getAttribute('src');
                 } else {
-                    // Tentar pegar diretamente do atributo src do video
+                    // Fallback: tentar pegar do atributo src do video
                     videoSourceUrl = videoElement.getAttribute('src');
                 }
             }
             
-            // Se não encontrou, tentar outros seletores
-            if (!posterUrl) {
-                const posterImg = document.querySelector('video + img, .video-poster, [data-poster]');
-                if (posterImg) {
-                    posterUrl = posterImg.getAttribute('src') || posterImg.getAttribute('data-poster');
-                }
+            // Garantir URLs completas
+            if (posterUrl && !posterUrl.startsWith('http')) {
+                posterUrl = posterUrl.startsWith('/') ? `https://nsfwpics.co${posterUrl}` : `https://nsfwpics.co/${posterUrl}`;
+            }
+            
+            if (videoSourceUrl && !videoSourceUrl.startsWith('http')) {
+                videoSourceUrl = videoSourceUrl.startsWith('/') ? `https://nsfwclips.co${videoSourceUrl}` : `https://nsfwclips.co/${videoSourceUrl}`;
             }
             
             return {
