@@ -31,7 +31,7 @@ app.get('/api/models', async (req, res) => {
         let params = [limit, offset];
         
         if (search) {
-            whereClause = 'WHERE name ILIKE $3 OR description ILIKE $3 OR tags ILIKE $3';
+            whereClause = 'WHERE name ILIKE $3';
             params.push(`%${search}%`);
         }
         
