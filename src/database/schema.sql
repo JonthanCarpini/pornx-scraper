@@ -7,6 +7,18 @@ CREATE TABLE IF NOT EXISTS models (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS videos (
+    id SERIAL PRIMARY KEY,
+    model_id INTEGER NOT NULL REFERENCES models(id) ON DELETE CASCADE,
+    title VARCHAR(500) NOT NULL,
+    video_url TEXT NOT NULL UNIQUE,
+    thumbnail_url TEXT,
+    poster_url TEXT,
+    video_source_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_models_name ON models(name);
 CREATE INDEX IF NOT EXISTS idx_models_profile_url ON models(profile_url);
 

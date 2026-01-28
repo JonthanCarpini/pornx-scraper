@@ -214,6 +214,8 @@ app.get('/api/videos', async (req, res) => {
                 v.title,
                 v.video_url,
                 v.thumbnail_url,
+                v.poster_url,
+                v.video_source_url,
                 v.created_at,
                 m.name as model_name,
                 m.id as model_id
