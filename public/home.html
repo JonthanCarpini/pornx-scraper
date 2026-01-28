@@ -195,6 +195,19 @@
             cursor: not-allowed;
         }
         
+        .pagination button.active {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .pagination .page-dots {
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: #666;
+        }
+        
         .pagination .page-info {
             display: flex;
             align-items: center;
@@ -231,6 +244,33 @@
             background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
             color: white;
             border-color: #ff6b6b;
+        }
+        
+        .tab-btn:nth-child(2).active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-color: #4CAF50;
+        }
+        
+        #clubeadulto-content .page-title {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #clubeadulto-content .search-bar input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        #clubeadulto-content .pagination button:hover:not(:disabled) {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        #clubeadulto-content .pagination button.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
         }
         
         .tab-content {
@@ -384,17 +424,53 @@
                 return;
             }
             
-            paginationDiv.innerHTML = `
+            let pagesHTML = '';
+            const maxPages = 7;
+            let startPage = Math.max(1, pagination.page - 3);
+            let endPage = Math.min(pagination.totalPages, startPage + maxPages - 1);
+            
+            if (endPage - startPage < maxPages - 1) {
+                startPage = Math.max(1, endPage - maxPages + 1);
+            }
+            
+            pagesHTML += `
                 <button onclick="changePage(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''}>
                     ← Anterior
                 </button>
-                <div class="page-info">
-                    Página ${pagination.page} de ${pagination.totalPages}
-                </div>
+            `;
+            
+            if (startPage > 1) {
+                pagesHTML += `<button onclick="changePage(1)">1</button>`;
+                if (startPage > 2) {
+                    pagesHTML += `<span class="page-dots">...</span>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                pagesHTML += `
+                    <button 
+                        onclick="changePage(${i})" 
+                        class="${i === pagination.page ? 'active' : ''}"
+                    >
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            if (endPage < pagination.totalPages) {
+                if (endPage < pagination.totalPages - 1) {
+                    pagesHTML += `<span class="page-dots">...</span>`;
+                }
+                pagesHTML += `<button onclick="changePage(${pagination.totalPages})">${pagination.totalPages}</button>`;
+            }
+            
+            pagesHTML += `
                 <button onclick="changePage(${pagination.page + 1})" ${pagination.page === pagination.totalPages ? 'disabled' : ''}>
                     Próxima →
                 </button>
             `;
+            
+            paginationDiv.innerHTML = pagesHTML;
         }
         
         function changePage(page) {
@@ -502,17 +578,53 @@
                 return;
             }
             
-            paginationDiv.innerHTML = `
+            let pagesHTML = '';
+            const maxPages = 7;
+            let startPage = Math.max(1, pagination.page - 3);
+            let endPage = Math.min(pagination.totalPages, startPage + maxPages - 1);
+            
+            if (endPage - startPage < maxPages - 1) {
+                startPage = Math.max(1, endPage - maxPages + 1);
+            }
+            
+            pagesHTML += `
                 <button onclick="changePageCA(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''}>
                     ← Anterior
                 </button>
-                <div class="page-info">
-                    Página ${pagination.page} de ${pagination.totalPages}
-                </div>
+            `;
+            
+            if (startPage > 1) {
+                pagesHTML += `<button onclick="changePageCA(1)">1</button>`;
+                if (startPage > 2) {
+                    pagesHTML += `<span class="page-dots">...</span>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                pagesHTML += `
+                    <button 
+                        onclick="changePageCA(${i})" 
+                        class="${i === pagination.page ? 'active' : ''}"
+                    >
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            if (endPage < pagination.totalPages) {
+                if (endPage < pagination.totalPages - 1) {
+                    pagesHTML += `<span class="page-dots">...</span>`;
+                }
+                pagesHTML += `<button onclick="changePageCA(${pagination.totalPages})">${pagination.totalPages}</button>`;
+            }
+            
+            pagesHTML += `
                 <button onclick="changePageCA(${pagination.page + 1})" ${pagination.page === pagination.totalPages ? 'disabled' : ''}>
                     Próxima →
                 </button>
             `;
+            
+            paginationDiv.innerHTML = pagesHTML;
         }
         
         function changePageCA(page) {

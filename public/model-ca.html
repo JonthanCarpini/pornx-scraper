@@ -232,7 +232,7 @@
         
         async function loadModelInfo() {
             try {
-                const response = await fetch(`/api/models/${modelId}`);
+                const response = await fetch(`/api/clubeadulto/models/${modelId}`);
                 const result = await response.json();
                 
                 if (!result.success) {
@@ -261,7 +261,7 @@
         
         async function loadVideos() {
             try {
-                const response = await fetch(`/api/videos?model_id=${modelId}&limit=100`);
+                const response = await fetch(`/api/clubeadulto/videos?model_id=${modelId}&limit=100`);
                 const result = await response.json();
                 
                 if (!result.success) {
