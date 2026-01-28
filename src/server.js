@@ -852,31 +852,37 @@ app.get('/api/clubeadulto/videos', async (req, res) => {
         const modelId = req.query.model_id;
         const search = req.query.search;
         
+        // Construir WHERE clause e parâmetros
         let whereClause = '';
         let countParams = [];
-        let queryParams = [limit, offset];
-        let paramIndex = 3;
+        let queryParams = [];
         
         if (modelId) {
             whereClause = 'WHERE v.model_id = $1';
-            countParams.push(modelId);
-            queryParams.push(modelId);
-            paramIndex++;
+            countParams.push(parseInt(modelId));
+            queryParams.push(parseInt(modelId));
         }
         
         if (search) {
-            const searchParamIndex = modelId ? '$2' : '$1';
-            whereClause += (whereClause ? ' AND' : 'WHERE') + ` v.title ILIKE ${searchParamIndex}`;
+            const paramNum = modelId ? 2 : 1;
+            whereClause += (whereClause ? ' AND' : 'WHERE') + ` v.title ILIKE $${paramNum}`;
             countParams.push(`%${search}%`);
             queryParams.push(`%${search}%`);
         }
         
+        // Query de contagem
         const countResult = await pool.query(
             `SELECT COUNT(*) FROM clubeadulto_videos v ${whereClause}`,
             countParams
         );
         const totalVideos = parseInt(countResult.rows[0].count);
         
+        // Adicionar limit e offset no final
+        const limitParamNum = queryParams.length + 1;
+        const offsetParamNum = queryParams.length + 2;
+        queryParams.push(limit, offset);
+        
+        // Query principal
         const videosResult = await pool.query(`
             SELECT 
                 v.id,
@@ -893,7 +899,7 @@ app.get('/api/clubeadulto/videos', async (req, res) => {
             LEFT JOIN clubeadulto_models m ON v.model_id = m.id
             ${whereClause}
             ORDER BY v.created_at DESC
-            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+            LIMIT $${limitParamNum} OFFSET $${offsetParamNum}
         `, queryParams);
         
         res.json({
@@ -909,6 +915,7 @@ app.get('/api/clubeadulto/videos', async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Erro no endpoint /api/clubeadulto/videos:', error);
         res.status(500).json({
             success: false,
             error: error.message
