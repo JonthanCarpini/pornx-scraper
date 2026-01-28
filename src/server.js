@@ -1348,8 +1348,30 @@ app.get('/api/proxy/m3u8', async (req, res) => {
             return res.status(response.status).send(`Erro ao buscar vídeo: ${response.statusText}`);
         }
         
-        const content = await response.text();
+        let content = await response.text();
         console.log('✅ M3U8 obtido, tamanho:', content.length);
+        
+        // Reescrever URLs relativas para URLs absolutas proxiadas
+        const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+        console.log('📍 Base URL:', baseUrl);
+        
+        // Substituir URLs relativas por URLs proxiadas
+        content = content.split('\n').map(line => {
+            // Ignorar linhas de comentário e vazias
+            if (line.startsWith('#') || line.trim() === '') {
+                return line;
+            }
+            
+            // Se a linha é uma URL relativa (não começa com http)
+            if (!line.startsWith('http')) {
+                const absoluteUrl = baseUrl + line.trim();
+                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(absoluteUrl)}`;
+                console.log(`🔄 Reescrevendo: ${line.trim()} -> ${proxiedUrl}`);
+                return proxiedUrl;
+            }
+            
+            return line;
+        }).join('\n');
         
         // Adicionar headers CORS
         res.setHeader('Access-Control-Allow-Origin', '*');
