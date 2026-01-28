@@ -545,9 +545,9 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    document.getElementById('modelsCount').textContent = data.stats.total_models || 0;
-                    document.getElementById('videosCount').textContent = data.stats.total_videos || 0;
-                    document.getElementById('videosWithDetails').textContent = data.stats.videos_with_details || 0;
+                    document.getElementById('stat-models').textContent = data.stats.total_models || 0;
+                    document.getElementById('stat-videos').textContent = data.stats.total_videos || 0;
+                    document.getElementById('stat-details').textContent = data.stats.videos_with_details || 0;
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);

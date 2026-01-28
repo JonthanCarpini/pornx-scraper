@@ -112,7 +112,7 @@ async function scrapeModels(page = 1) {
                 
                 const profileUrl = linkElement.getAttribute('href');
                 
-                if (!name || !profileUrl || profileUrl === 'https://clubeadulto.net/actors/' || !profileUrl.includes('/actors/')) {
+                if (!name || !profileUrl || profileUrl === 'https://clubeadulto.net/actors/') {
                     return;
                 }
                 
