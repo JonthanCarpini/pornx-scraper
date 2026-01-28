@@ -1351,22 +1351,37 @@ app.get('/api/proxy/m3u8', async (req, res) => {
         let content = await response.text();
         console.log('✅ M3U8 obtido, tamanho:', content.length);
         
+        // Verificar se é realmente um M3U8 (texto)
+        if (!content.includes('#EXTM3U')) {
+            console.error('❌ Resposta não é um M3U8 válido');
+            return res.status(500).send('Resposta não é um M3U8 válido');
+        }
+        
         // Reescrever URLs relativas para URLs absolutas proxiadas
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         console.log('📍 Base URL:', baseUrl);
         
         // Substituir URLs relativas por URLs proxiadas
         content = content.split('\n').map(line => {
-            // Ignorar linhas de comentário e vazias
-            if (line.startsWith('#') || line.trim() === '') {
+            const trimmed = line.trim();
+            
+            // Preservar linhas de comentário (#) e vazias
+            if (trimmed.startsWith('#') || trimmed === '') {
                 return line;
             }
             
-            // Se a linha é uma URL relativa (não começa com http)
-            if (!line.startsWith('http')) {
-                const absoluteUrl = baseUrl + line.trim();
+            // Se a linha é uma URL relativa (não começa com http:// ou https://)
+            if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+                const absoluteUrl = baseUrl + trimmed;
                 const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(absoluteUrl)}`;
-                console.log(`🔄 Reescrevendo: ${line.trim()} -> ${proxiedUrl}`);
+                console.log(`🔄 Reescrevendo: ${trimmed} -> ${proxiedUrl}`);
+                return proxiedUrl;
+            }
+            
+            // URL absoluta - também precisa ser proxiada
+            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(trimmed)}`;
+                console.log(`🔄 Proxiando URL absoluta: ${trimmed}`);
                 return proxiedUrl;
             }
             
