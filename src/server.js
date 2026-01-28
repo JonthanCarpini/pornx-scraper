@@ -25,8 +25,17 @@ app.get('/api/models', async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const offset = (page - 1) * limit;
+        const search = req.query.search;
         
-        const countResult = await pool.query('SELECT COUNT(*) FROM models');
+        let whereClause = '';
+        let params = [limit, offset];
+        
+        if (search) {
+            whereClause = 'WHERE name ILIKE $3 OR description ILIKE $3 OR tags ILIKE $3';
+            params.push(`%${search}%`);
+        }
+        
+        const countResult = await pool.query(`SELECT COUNT(*) FROM models ${whereClause}`, search ? [params[2]] : []);
         const totalModels = parseInt(countResult.rows[0].count);
         
         const modelsResult = await pool.query(`
@@ -39,9 +48,10 @@ app.get('/api/models', async (req, res) => {
                 created_at,
                 updated_at
             FROM models
+            ${whereClause}
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
-        `, [limit, offset]);
+        `, params);
         
         const statsResult = await pool.query(`
             SELECT 
@@ -786,6 +796,154 @@ app.get('/api/clubeadulto/models', async (req, res) => {
                     totalPages: Math.ceil(totalModels / limit)
                 }
             }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Buscar modelo por ID - Clube Adulto
+app.get('/api/clubeadulto/models/:id', async (req, res) => {
+    try {
+        const modelId = req.params.id;
+        
+        const result = await pool.query(`
+            SELECT 
+                id,
+                name,
+                slug,
+                profile_url,
+                cover_url,
+                video_count,
+                created_at,
+                updated_at
+            FROM clubeadulto_models
+            WHERE id = $1
+        `, [modelId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Modelo não encontrada'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Listar vídeos por modelo - Clube Adulto
+app.get('/api/clubeadulto/videos', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        const modelId = req.query.model_id;
+        const search = req.query.search;
+        
+        let whereClause = '';
+        let params = [limit, offset];
+        let paramIndex = 3;
+        
+        if (modelId) {
+            whereClause = 'WHERE v.model_id = $3';
+            params.push(modelId);
+            paramIndex++;
+        }
+        
+        if (search) {
+            whereClause += (whereClause ? ' AND' : 'WHERE') + ` v.title ILIKE $${paramIndex}`;
+            params.push(`%${search}%`);
+        }
+        
+        const countResult = await pool.query(
+            `SELECT COUNT(*) FROM clubeadulto_videos v ${whereClause}`,
+            params.slice(2)
+        );
+        const totalVideos = parseInt(countResult.rows[0].count);
+        
+        const videosResult = await pool.query(`
+            SELECT 
+                v.id,
+                v.title,
+                v.video_url,
+                v.thumbnail_url,
+                v.poster_url,
+                v.m3u8_url,
+                v.duration,
+                v.created_at,
+                m.name as model_name,
+                m.id as model_id
+            FROM clubeadulto_videos v
+            LEFT JOIN clubeadulto_models m ON v.model_id = m.id
+            ${whereClause}
+            ORDER BY v.created_at DESC
+            LIMIT $1 OFFSET $2
+        `, params);
+        
+        res.json({
+            success: true,
+            data: {
+                videos: videosResult.rows,
+                pagination: {
+                    page,
+                    limit,
+                    total: totalVideos,
+                    totalPages: Math.ceil(totalVideos / limit)
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Buscar vídeo por ID - Clube Adulto
+app.get('/api/clubeadulto/videos/:id', async (req, res) => {
+    try {
+        const videoId = req.params.id;
+        
+        const result = await pool.query(`
+            SELECT 
+                v.id,
+                v.title,
+                v.video_url,
+                v.thumbnail_url,
+                v.poster_url,
+                v.m3u8_url,
+                v.duration,
+                v.created_at,
+                m.name as model_name,
+                m.id as model_id
+            FROM clubeadulto_videos v
+            LEFT JOIN clubeadulto_models m ON v.model_id = m.id
+            WHERE v.id = $1
+        `, [videoId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Vídeo não encontrado'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.rows[0]
         });
     } catch (error) {
         res.status(500).json({
