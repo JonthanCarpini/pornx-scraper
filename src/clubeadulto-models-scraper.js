@@ -74,24 +74,28 @@ async function scrapeModels(page = 1) {
         
         const models = await browserPage.evaluate(() => {
             const results = [];
-            const articles = document.querySelectorAll('article.thumb-block');
+            const links = document.querySelectorAll('a[href*="/actors/"]');
             
-            articles.forEach(article => {
-                const linkElement = article.querySelector('a[href*="/actors/"]');
-                const headerElement = article.querySelector('.entry-header .actor-title');
-                const imgElement = article.querySelector('img');
+            links.forEach(link => {
+                const headerElement = link.querySelector('header.entry-header span.actor-title');
+                const imgElement = link.querySelector('img');
                 
-                if (linkElement && headerElement) {
-                    const profileUrl = linkElement.getAttribute('href');
+                if (headerElement) {
+                    const profileUrl = link.getAttribute('href');
                     const name = headerElement.textContent.trim();
                     
-                    const urlParts = profileUrl.split('/');
-                    const slug = urlParts[urlParts.length - 2] || urlParts[urlParts.length - 1];
+                    if (!name || !profileUrl || profileUrl === 'https://clubeadulto.net/actors/') {
+                        return;
+                    }
+                    
+                    const urlParts = profileUrl.split('/').filter(p => p);
+                    const slug = urlParts[urlParts.length - 1] || name.toLowerCase().replace(/\s+/g, '-');
                     
                     let coverUrl = null;
                     if (imgElement) {
                         coverUrl = imgElement.getAttribute('src') || 
                                   imgElement.getAttribute('data-src') ||
+                                  imgElement.getAttribute('data-lazy-src') ||
                                   imgElement.getAttribute('srcset')?.split(' ')[0];
                     }
                     
