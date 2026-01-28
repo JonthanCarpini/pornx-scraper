@@ -9,6 +9,7 @@
     "server": "node src/server.js",
     "scrape": "node src/scraper.js",
     "scrape:json": "node src/scraper-json.js",
+    "create-db": "node src/database/create-db.js",
     "init-db": "node src/database/init.js",
     "query": "node src/utils/query-models.js"
   },
