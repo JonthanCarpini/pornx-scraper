@@ -224,7 +224,7 @@
         
         async function loadVideo() {
             try {
-                const response = await fetch(`/api/videos/${videoId}`);
+                const response = await fetch(`/api/clubeadulto/videos/${videoId}`);
                 const result = await response.json();
                 
                 if (!result.success) {
@@ -233,13 +233,13 @@
                 
                 const video = result.data;
                 
-                document.title = `${video.title} - NSFW247`;
+                document.title = `${video.title} - Clube Adulto`;
                 
-                document.getElementById('backBtn').href = `/model.html?id=${video.model_id}`;
+                document.getElementById('backBtn').href = `/model-ca.html?id=${video.model_id}`;
                 
                 let playerHTML = '';
                 
-                if (video.video_source_url) {
+                if (video.m3u8_url) {
                     playerHTML = `
                         <video 
                             class="video-player" 
@@ -247,8 +247,8 @@
                             autoplay
                             poster="${video.poster_url || video.thumbnail_url || ''}"
                         >
-                            <source src="${video.m3u8_url || video.video_source_url}" type="${video.m3u8_url ? 'application/x-mpegURL' : 'video/mp4'}">
-                            Seu navegador não suporta a reprodução de vídeo.
+                            <source src="${video.m3u8_url}" type="application/x-mpegURL">
+                            Seu navegador não suporta a reprodução de vídeo HLS.
                         </video>
                     `;
                 } else {
