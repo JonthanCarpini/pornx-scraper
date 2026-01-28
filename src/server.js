@@ -1332,36 +1332,37 @@ app.get('/api/proxy/m3u8', async (req, res) => {
         
         console.log('🔄 Proxy M3U8:', url);
         
-        const https = require('https');
-        const http = require('http');
-        const urlModule = require('url');
+        const fetch = (await import('node-fetch')).default;
         
-        const parsedUrl = urlModule.parse(url);
-        const protocol = parsedUrl.protocol === 'https:' ? https : http;
-        
-        protocol.get(url, {
+        const response = await fetch(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Referer': 'https://clubeadulto.net/',
-                'Origin': 'https://clubeadulto.net'
+                'Origin': 'https://clubeadulto.net',
+                'Accept': '*/*'
             }
-        }, (proxyRes) => {
-            // Adicionar headers CORS
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-            res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'application/vnd.apple.mpegurl');
-            
-            // Fazer pipe da resposta
-            proxyRes.pipe(res);
-        }).on('error', (error) => {
-            console.error('❌ Erro no proxy:', error);
-            res.status(500).send('Erro ao buscar vídeo');
         });
         
+        if (!response.ok) {
+            console.error(`❌ Erro ao buscar M3U8: ${response.status} ${response.statusText}`);
+            return res.status(response.status).send(`Erro ao buscar vídeo: ${response.statusText}`);
+        }
+        
+        const content = await response.text();
+        console.log('✅ M3U8 obtido, tamanho:', content.length);
+        
+        // Adicionar headers CORS
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+        res.setHeader('Cache-Control', 'no-cache');
+        
+        res.send(content);
+        
     } catch (error) {
-        console.error('❌ Erro no proxy M3U8:', error);
-        res.status(500).send('Erro no servidor proxy');
+        console.error('❌ Erro no proxy M3U8:', error.message);
+        res.status(500).send(`Erro no servidor proxy: ${error.message}`);
     }
 });
 
