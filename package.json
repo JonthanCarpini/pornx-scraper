@@ -21,6 +21,7 @@
     "migrate": "node src/database/migrate.js",
     "migrate:videos": "node src/database/migrate-videos.js",
     "migrate:video-details": "node src/database/migrate-video-details.js",
+    "migrate:stages": "node run-migration.js",
     "query": "node src/utils/query-models.js"
   },
   "keywords": [
