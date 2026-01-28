@@ -186,8 +186,10 @@ async function testDatabaseConnection() {
     }
 }
 
-async function scrapeAllPages(maxPages = 5) {
-    console.log(`\n🎯 Iniciando scraping de até ${maxPages} páginas...\n`);
+async function scrapeAllPages(pageFrom = 1, pageTo = 5) {
+    console.log(`\n🚀 Iniciando scraper de modelos...\n`);
+    console.log(`📄 Intervalo: Página ${pageFrom} até ${pageTo} (${pageTo - pageFrom + 1} páginas)`);
+    console.log(`⏱️  Delay entre requisições: ${SCRAPE_DELAY}ms\n`);
     
     const dbConnected = await testDatabaseConnection();
     if (!dbConnected) {
@@ -198,7 +200,7 @@ async function scrapeAllPages(maxPages = 5) {
     let totalModels = 0;
     let totalSaved = 0;
     
-    for (let page = 1; page <= maxPages; page++) {
+    for (let page = pageFrom; page <= pageTo; page++) {
         try {
             const result = await scrapeModels(page);
             totalModels += result.modelsFound;
@@ -209,7 +211,7 @@ async function scrapeAllPages(maxPages = 5) {
                 break;
             }
             
-            if (page < maxPages) {
+            if (page < pageTo) {
                 console.log(`\n⏳ Aguardando ${SCRAPE_DELAY}ms antes da próxima página...\n`);
                 await new Promise(resolve => setTimeout(resolve, SCRAPE_DELAY));
             }
@@ -217,55 +219,19 @@ async function scrapeAllPages(maxPages = 5) {
         } catch (error) {
             console.error(`\n❌ Erro na página ${page}:`, error.message);
             break;
-}
-
-async function scrapeAllPages(pageFrom = 1, pageTo = 5) {
-console.log(`\n🚀 Iniciando scraper de modelos...\n`);
-console.log(`📄 Intervalo: Página ${pageFrom} até ${pageTo} (${pageTo - pageFrom + 1} páginas)`);
-console.log(`⏱️  Delay entre requisições: ${SCRAPE_DELAY}ms\n`);
-
-const dbConnected = await testDatabaseConnection();
-if (!dbConnected) {
-    console.error('❌ Scraping cancelado. Configure o banco de dados ou use scrape:json\n');
-    process.exit(1);
-}
-    
-let totalModels = 0;
-let totalSaved = 0;
-    
-for (let page = pageFrom; page <= pageTo; page++) {
-    try {
-        const result = await scrapeModels(page);
-        totalModels += result.modelsFound;
-        totalSaved += result.modelsSaved;
-            
-        if (result.modelsFound === 0) {
-            console.log('\n⚠️  Nenhuma modelo encontrada. Finalizando scraping.');
-            break;
         }
-            
-        if (page < pageTo) {
-            console.log(`\n⏳ Aguardando ${SCRAPE_DELAY}ms antes da próxima página...\n`);
-            await new Promise(resolve => setTimeout(resolve, SCRAPE_DELAY));
-        }
-            
-    } catch (error) {
-        console.error(`\n❌ Erro na página ${page}:`, error.message);
-        break;
     }
-}
     
-console.log('\n' + '='.repeat(60));
-console.log('📊 RESUMO DO SCRAPING');
-console.log('='.repeat(60));
-console.log(`Total de modelos encontradas: ${totalModels}`);
-console.log(`Total de modelos salvas: ${totalSaved}`);
-console.log('='.repeat(60) + '\n');
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 RESUMO DO SCRAPING');
+    console.log('='.repeat(60));
+    console.log(`Total de modelos encontradas: ${totalModels}`);
+    console.log(`Total de modelos salvas: ${totalSaved}`);
+    console.log('='.repeat(60) + '\n');
     
-await pool.end();
+    await pool.end();
 }
 
 const pageFrom = parseInt(process.argv[2]) || 1;
 const pageTo = parseInt(process.argv[3]) || 5;
 scrapeAllPages(pageFrom, pageTo);
-scrapeAllPages(maxPages);
