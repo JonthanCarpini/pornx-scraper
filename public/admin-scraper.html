@@ -288,15 +288,35 @@
             <div class="step-card">
                 <div class="step-header">
                     <div class="step-number">1</div>
-                    <div class="step-title">
-                        <h2>Coletar Modelos</h2>
-                        <p>Extrai nomes, URLs de perfil e capas das modelos</p>
+                    <div>
+                        <h3>Coletar Modelos</h3>
+                        <p>Extrai informações básicas das modelos</p>
                     </div>
-                    <span class="step-status status-pending" id="status1">Pendente</span>
+                    <div class="step-status" id="status1">Pendente</div>
                 </div>
                 <div class="step-content">
                     <div class="step-info">
-                        <strong>Modelos no banco:</strong> <span id="modelsCount">0</span>
+                        <strong>Modelos no banco:</strong> <span id="stat-models">0</span>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1e3c72;">
+                            📄 Intervalo de Páginas:
+                        </label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div>
+                                <label style="font-size: 14px; color: #666;">Da página:</label>
+                                <input type="number" id="pageFrom" min="1" value="1" 
+                                    style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 14px; color: #666;">Até página:</label>
+                                <input type="number" id="pageTo" min="1" value="5" 
+                                    style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px;">
+                            </div>
+                            <div style="color: #666; font-size: 14px;">
+                                (Total: <span id="totalPages">5</span> páginas)
+                            </div>
+                        </div>
                     </div>
                     <button class="btn btn-primary" id="btn1" onclick="runStep1()">
                         🚀 Iniciar Passo 1
@@ -402,12 +422,29 @@
         
         async function runStep1() {
             const btn = document.getElementById('btn1');
+            const pageFrom = parseInt(document.getElementById('pageFrom').value);
+            const pageTo = parseInt(document.getElementById('pageTo').value);
+            
+            if (pageFrom < 1 || pageTo < 1) {
+                alert('As páginas devem ser maiores que 0');
+                return;
+            }
+            
+            if (pageFrom > pageTo) {
+                alert('A página inicial deve ser menor ou igual à página final');
+                return;
+            }
+            
             btn.disabled = true;
             updateStatus(1, 'running', 'Executando...');
-            addLog(1, '🚀 Iniciando coleta de modelos...');
+            addLog(1, `🚀 Iniciando coleta de modelos (páginas ${pageFrom} a ${pageTo})...`);
             
             try {
-                const response = await fetch('/api/scraping/models', { method: 'POST' });
+                const response = await fetch('/api/scraping/models', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pageFrom, pageTo })
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -422,6 +459,23 @@
                 btn.disabled = false;
             }
         }
+        
+        // Atualizar total de páginas quando os inputs mudarem
+        document.addEventListener('DOMContentLoaded', () => {
+            const pageFromInput = document.getElementById('pageFrom');
+            const pageToInput = document.getElementById('pageTo');
+            const totalPagesSpan = document.getElementById('totalPages');
+            
+            function updateTotalPages() {
+                const from = parseInt(pageFromInput.value) || 1;
+                const to = parseInt(pageToInput.value) || 1;
+                const total = Math.max(0, to - from + 1);
+                totalPagesSpan.textContent = total;
+            }
+            
+            pageFromInput.addEventListener('input', updateTotalPages);
+            pageToInput.addEventListener('input', updateTotalPages);
+        });
         
         async function pollStep1Status() {
             const interval = setInterval(async () => {

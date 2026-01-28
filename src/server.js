@@ -522,22 +522,32 @@ app.post('/api/scraping/models', async (req, res) => {
             });
         }
         
-        const pages = 5; // Número de páginas para scraping
+        const { pageFrom = 1, pageTo = 5 } = req.body;
+        const pagesCount = pageTo - pageFrom + 1;
+        
+        if (pageFrom < 1 || pageTo < 1 || pageFrom > pageTo) {
+            return res.status(400).json({
+                success: false,
+                error: 'Intervalo de páginas inválido'
+            });
+        }
         
         modelsScrapingStatus = {
             isRunning: true,
             processed: 0,
-            total: pages,
+            total: pagesCount,
             lastResult: null,
             totalModels: 0
         };
         
-        processModelsScrapingAsync(pages);
+        processModelsScrapingAsync(pageFrom, pageTo);
         
         res.json({
             success: true,
             message: 'Scraping de modelos iniciado',
-            pagesCount: pages
+            pagesCount: pagesCount,
+            pageFrom,
+            pageTo
         });
         
     } catch (error) {
@@ -548,8 +558,8 @@ app.post('/api/scraping/models', async (req, res) => {
     }
 });
 
-async function processModelsScrapingAsync(pages) {
-    const scraper = spawn('node', ['src/scraper.js', pages.toString()], {
+async function processModelsScrapingAsync(pageFrom, pageTo) {
+    const scraper = spawn('node', ['src/scraper.js', pageFrom.toString(), pageTo.toString()], {
         cwd: path.join(__dirname, '..')
     });
     
@@ -557,9 +567,12 @@ async function processModelsScrapingAsync(pages) {
     
     scraper.stdout.on('data', (data) => {
         output += data.toString();
+        console.log(data.toString());
+        
         const pageMatch = output.match(/Página (\d+)\/(\d+)/);
         if (pageMatch) {
-            modelsScrapingStatus.processed = parseInt(pageMatch[1]);
+            const currentPage = parseInt(pageMatch[1]);
+            modelsScrapingStatus.processed = currentPage - pageFrom + 1;
         }
         const modelsMatch = output.match(/(\d+) novas/);
         if (modelsMatch) {
@@ -569,9 +582,19 @@ async function processModelsScrapingAsync(pages) {
         }
     });
     
+    scraper.stderr.on('data', (data) => {
+        console.error('Erro no scraper:', data.toString());
+    });
+    
     scraper.on('close', () => {
         const totalMatch = output.match(/Total de modelos salvas: (\d+)/);
         modelsScrapingStatus.totalModels = totalMatch ? parseInt(totalMatch[1]) : 0;
+        modelsScrapingStatus.isRunning = false;
+        console.log('✅ Scraping de modelos concluído!');
+    });
+    
+    scraper.on('error', (error) => {
+        console.error('Erro ao executar scraper:', error);
         modelsScrapingStatus.isRunning = false;
     });
 }
