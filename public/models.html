@@ -253,16 +253,8 @@
                     <div class="label">Total de Modelos</div>
                 </div>
                 <div class="stat-item">
-                    <div class="value" id="totalVideos">0</div>
-                    <div class="label">Total de Vídeos</div>
-                </div>
-                <div class="stat-item">
-                    <div class="value" id="totalPhotos">0</div>
-                    <div class="label">Total de Fotos</div>
-                </div>
-                <div class="stat-item">
-                    <div class="value" id="avgVideos">0</div>
-                    <div class="label">Média de Vídeos</div>
+                    <div class="value" id="lastUpdate">-</div>
+                    <div class="label">Última Atualização</div>
                 </div>
             </div>
             
@@ -290,9 +282,8 @@
                 const { models, pagination, stats } = result.data;
                 
                 document.getElementById('totalModels').textContent = pagination.total;
-                document.getElementById('totalVideos').textContent = stats.total_videos || 0;
-                document.getElementById('totalPhotos').textContent = stats.total_photos || 0;
-                document.getElementById('avgVideos').textContent = parseFloat(stats.avg_videos || 0).toFixed(1);
+                document.getElementById('lastUpdate').textContent = models.length > 0 ? 
+                    new Date(models[0].created_at).toLocaleString('pt-BR') : '-';
                 
                 const contentDiv = document.getElementById('content');
                 
@@ -317,10 +308,6 @@
                                      onerror="this.src='https://via.placeholder.com/280x350?text=Sem+Imagem'">
                                 <div class="model-info">
                                     <div class="model-name" title="${model.name}">${model.name}</div>
-                                    <div class="model-stats">
-                                        <span>🎥 ${model.video_count} vídeos</span>
-                                        <span>📷 ${model.photo_count} fotos</span>
-                                    </div>
                                     <a href="${model.profile_url}" target="_blank" class="model-link">
                                         Ver Perfil
                                     </a>

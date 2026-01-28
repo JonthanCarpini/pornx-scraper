@@ -35,8 +35,6 @@ app.get('/api/models', async (req, res) => {
                 name,
                 profile_url,
                 cover_url,
-                video_count,
-                photo_count,
                 created_at,
                 updated_at
             FROM models
@@ -46,10 +44,7 @@ app.get('/api/models', async (req, res) => {
         
         const statsResult = await pool.query(`
             SELECT 
-                SUM(video_count) as total_videos,
-                SUM(photo_count) as total_photos,
-                AVG(video_count) as avg_videos,
-                AVG(photo_count) as avg_photos
+                COUNT(*) as total_models
             FROM models
         `);
         
@@ -154,10 +149,6 @@ app.get('/api/stats', async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 COUNT(*) as total_models,
-                SUM(video_count) as total_videos,
-                SUM(photo_count) as total_photos,
-                AVG(video_count) as avg_videos,
-                AVG(photo_count) as avg_photos,
                 MAX(created_at) as last_scrape
             FROM models
         `);

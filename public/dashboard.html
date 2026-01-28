@@ -226,14 +226,6 @@
                 <div class="stat-value" id="totalModels">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total de Vídeos</div>
-                <div class="stat-value" id="totalVideos">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total de Fotos</div>
-                <div class="stat-value" id="totalPhotos">-</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-label">Último Scraping</div>
                 <div class="stat-value" id="lastScrape" style="font-size: 16px;">-</div>
             </div>
@@ -273,8 +265,6 @@
                 if (data.success) {
                     const stats = data.stats;
                     document.getElementById('totalModels').textContent = stats.total_models || 0;
-                    document.getElementById('totalVideos').textContent = stats.total_videos || 0;
-                    document.getElementById('totalPhotos').textContent = stats.total_photos || 0;
                     
                     if (stats.last_scrape) {
                         const date = new Date(stats.last_scrape);
