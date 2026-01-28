@@ -12,6 +12,7 @@
     "scrape:json": "node src/scraper-json.js",
     "create-db": "node src/database/create-db.js",
     "init-db": "node src/database/init.js",
+    "migrate": "node src/database/migrate.js",
     "query": "node src/utils/query-models.js"
   },
   "keywords": [

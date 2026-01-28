@@ -3,8 +3,6 @@ CREATE TABLE IF NOT EXISTS models (
     name VARCHAR(255) NOT NULL,
     profile_url TEXT NOT NULL UNIQUE,
     cover_url TEXT,
-    video_count INTEGER DEFAULT 0,
-    photo_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

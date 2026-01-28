@@ -9,7 +9,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const SCRAPE_URL = process.env.SCRAPE_URL || 'https://pornx.tube/models/?by=model_viewed';
+const SCRAPE_URL = process.env.SCRAPE_URL || 'https://nsfw247.to/models';
 const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
 
 async function scrapeModels(page = 1) {
@@ -44,7 +44,7 @@ async function scrapeModels(page = 1) {
         
         const url = page === 1 
             ? SCRAPE_URL 
-            : `https://pornx.tube/models/${page}/?by=model_viewed`;
+            : `https://nsfw247.to/models?page=${page}`;
         console.log(`📄 Acessando: ${url}`);
         
         await browserPage.goto(url, {
@@ -56,10 +56,9 @@ async function scrapeModels(page = 1) {
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         const selectors = [
-            '.item.thumb.thumb--models',
-            '.thumbs__list .item.thumb',
-            'div.item.thumb',
-            '.item_thumb.thumb--models'
+            '.pt-cv-ifield',
+            'div.pt-cv-ifield',
+            '.pt-cv-content-item'
         ];
         
         let foundSelector = null;
@@ -89,48 +88,23 @@ async function scrapeModels(page = 1) {
             
             modelElements.forEach(element => {
                 const linkElement = element.querySelector('a[href*="/models/"]');
-                const titleAttr = linkElement?.getAttribute('title');
                 const profileUrl = linkElement?.getAttribute('href');
                 
-                const imgElement = element.querySelector('.img-holder img');
-                const coverUrl = imgElement?.getAttribute('data-src') || 
-                               imgElement?.getAttribute('src') || 
-                               imgElement?.getAttribute('data-webp');
+                const titleElement = element.querySelector('.pt-cv-title a, h5.pt-cv-title a');
+                const name = titleElement?.textContent?.trim();
                 
-                let videoCount = 0;
-                let photoCount = 0;
+                const imgElement = element.querySelector('img');
+                const coverUrl = imgElement?.getAttribute('src') || 
+                               imgElement?.getAttribute('data-src') || 
+                               imgElement?.getAttribute('data-large');
                 
-                const positionThumb = element.querySelector('.position_thumb');
-                if (positionThumb) {
-                    const text = positionThumb.textContent || '';
-                    const parts = text.split(/\s+/).filter(p => p.trim());
-                    
-                    for (let i = 0; i < parts.length; i++) {
-                        const num = parseInt(parts[i]);
-                        if (!isNaN(num)) {
-                            if (videoCount === 0) {
-                                videoCount = num;
-                            } else if (photoCount === 0) {
-                                photoCount = num;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                if (titleAttr && profileUrl) {
-                    let fullProfileUrl = profileUrl.startsWith('http') ? profileUrl : `https://pornx.tube${profileUrl}`;
-                    if (!fullProfileUrl.endsWith('/')) {
-                        fullProfileUrl += '/';
-                    }
-                    fullProfileUrl += 'videos/?by=post_date';
+                if (name && profileUrl) {
+                    const fullProfileUrl = profileUrl.startsWith('http') ? profileUrl : `https://nsfw247.to${profileUrl}`;
                     
                     results.push({
-                        name: titleAttr,
+                        name: name,
                         profileUrl: fullProfileUrl,
-                        coverUrl: coverUrl || null,
-                        videoCount,
-                        photoCount
+                        coverUrl: coverUrl || null
                     });
                 }
             });
