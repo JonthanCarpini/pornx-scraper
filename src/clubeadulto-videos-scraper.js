@@ -19,13 +19,16 @@ async function updateModelVideoCount(modelId, count) {
 
 async function saveVideo(videoData) {
     try {
+        // Verificar se já existe no banco
         const checkQuery = 'SELECT id FROM clubeadulto_videos WHERE video_url = $1';
         const checkResult = await pool.query(checkQuery, [videoData.videoUrl]);
         
         if (checkResult.rows.length > 0) {
+            console.log(`  ⏭️  Vídeo já existe (ID: ${checkResult.rows[0].id}): ${videoData.title}`);
             return { id: checkResult.rows[0].id, isNew: false };
         }
         
+        // Inserir novo vídeo
         const insertQuery = `
             INSERT INTO clubeadulto_videos (model_id, title, video_url, thumbnail_url, duration)
             VALUES ($1, $2, $3, $4, $5)
@@ -43,7 +46,13 @@ async function saveVideo(videoData) {
         const result = await pool.query(insertQuery, values);
         return { id: result.rows[0].id, isNew: true };
     } catch (error) {
-        console.error('Erro ao salvar vídeo:', videoData.title, error.message);
+        // Se for erro de UNIQUE constraint, o vídeo já existe
+        if (error.code === '23505') {
+            console.log(`  ⏭️  Vídeo duplicado (constraint): ${videoData.title}`);
+            const checkResult = await pool.query('SELECT id FROM clubeadulto_videos WHERE video_url = $1', [videoData.videoUrl]);
+            return { id: checkResult.rows[0].id, isNew: false };
+        }
+        console.error(`  ❌ Erro ao salvar vídeo "${videoData.title}":`, error.message);
         return { id: null, isNew: false };
     }
 }
