@@ -191,23 +191,29 @@ app.get('/api/videos', async (req, res) => {
         const modelId = req.query.model_id;
         const search = req.query.search;
         
-        let whereClause = '';
-        let params = [limit, offset];
-        let paramIndex = 3;
+        let whereConditions = [];
+        let countParams = [];
+        let queryParams = [];
         
         if (modelId) {
-            whereClause = 'WHERE v.model_id = $' + paramIndex;
-            params.push(modelId);
-            paramIndex++;
+            whereConditions.push(`v.model_id = $${countParams.length + 1}`);
+            countParams.push(modelId);
+            queryParams.push(modelId);
         }
         
         if (search) {
-            whereClause += (whereClause ? ' AND ' : 'WHERE ') + 'v.title ILIKE $' + paramIndex;
-            params.push(`%${search}%`);
+            whereConditions.push(`v.title ILIKE $${countParams.length + 1}`);
+            countParams.push(`%${search}%`);
+            queryParams.push(`%${search}%`);
         }
         
-        const countResult = await pool.query(`SELECT COUNT(*) FROM videos v ${whereClause}`, params.slice(2));
+        const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+        
+        const countResult = await pool.query(`SELECT COUNT(*) FROM videos v ${whereClause}`, countParams);
         const totalVideos = parseInt(countResult.rows[0].count);
+        
+        const finalQueryParams = [...queryParams, limit, offset];
+        const limitOffset = `LIMIT $${finalQueryParams.length - 1} OFFSET $${finalQueryParams.length}`;
         
         const videosResult = await pool.query(`
             SELECT 
@@ -224,8 +230,8 @@ app.get('/api/videos', async (req, res) => {
             JOIN models m ON v.model_id = m.id
             ${whereClause}
             ORDER BY v.created_at DESC
-            LIMIT $1 OFFSET $2
-        `, params);
+            ${limitOffset}
+        `, finalQueryParams);
         
         const statsResult = await pool.query(`
             SELECT 
