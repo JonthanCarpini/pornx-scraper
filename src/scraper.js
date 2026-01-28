@@ -8,30 +8,31 @@ const SCRAPE_URL = process.env.SCRAPE_URL || 'https://pornx.tube/models/?by=mode
 const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
 
 async function saveModel(modelData) {
-    const query = `
-        INSERT INTO models (name, profile_url, cover_url, video_count, photo_count)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (profile_url) 
-        DO UPDATE SET 
-            name = EXCLUDED.name,
-            cover_url = EXCLUDED.cover_url,
-            video_count = EXCLUDED.video_count,
-            photo_count = EXCLUDED.photo_count,
-            updated_at = CURRENT_TIMESTAMP
-        RETURNING id;
-    `;
-    
-    const values = [
-        modelData.name,
-        modelData.profileUrl,
-        modelData.coverUrl,
-        modelData.videoCount,
-        modelData.photoCount
-    ];
-    
     try {
-        const result = await pool.query(query, values);
-        return result.rows[0].id;
+        const checkQuery = 'SELECT id FROM models WHERE profile_url = $1';
+        const checkResult = await pool.query(checkQuery, [modelData.profileUrl]);
+        
+        if (checkResult.rows.length > 0) {
+            console.log(`⚠️  Modelo já existe: ${modelData.name}`);
+            return { id: checkResult.rows[0].id, isNew: false };
+        }
+        
+        const insertQuery = `
+            INSERT INTO models (name, profile_url, cover_url, video_count, photo_count)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id;
+        `;
+        
+        const values = [
+            modelData.name,
+            modelData.profileUrl,
+            modelData.coverUrl,
+            modelData.videoCount,
+            modelData.photoCount
+        ];
+        
+        const result = await pool.query(insertQuery, values);
+        return { id: result.rows[0].id, isNew: true };
     } catch (error) {
         console.error('Erro ao salvar modelo:', modelData.name, error.message);
         throw error;
@@ -140,9 +141,15 @@ async function scrapeModels(page = 1) {
                 }
                 
                 if (titleAttr && profileUrl) {
+                    let fullProfileUrl = profileUrl.startsWith('http') ? profileUrl : `https://pornx.tube${profileUrl}`;
+                    if (!fullProfileUrl.endsWith('/')) {
+                        fullProfileUrl += '/';
+                    }
+                    fullProfileUrl += 'videos/?by=post_date';
+                    
                     results.push({
                         name: titleAttr,
-                        profileUrl: profileUrl.startsWith('http') ? profileUrl : `https://pornx.tube${profileUrl}`,
+                        profileUrl: fullProfileUrl,
                         coverUrl: coverUrl || null,
                         videoCount,
                         photoCount
@@ -156,17 +163,22 @@ async function scrapeModels(page = 1) {
         console.log(`✓ Encontradas ${models.length} modelos na página ${page}`);
         
         let savedCount = 0;
+        let skippedCount = 0;
         for (const model of models) {
             try {
-                await saveModel(model);
-                savedCount++;
-                console.log(`  ✓ [${savedCount}/${models.length}] ${model.name} - ${model.videoCount} vídeos, ${model.photoCount} fotos`);
+                const result = await saveModel(model);
+                if (result.isNew) {
+                    savedCount++;
+                    console.log(`  ✓ [${savedCount}/${models.length}] ${model.name} - ${model.videoCount} vídeos, ${model.photoCount} fotos`);
+                } else {
+                    skippedCount++;
+                }
             } catch (error) {
                 console.error(`  ✗ Erro ao salvar ${model.name}:`, error.message);
             }
         }
         
-        console.log(`\n✅ Página ${page} concluída: ${savedCount}/${models.length} modelos salvas`);
+        console.log(`\n✅ Página ${page} concluída: ${savedCount} novas, ${skippedCount} duplicadas, ${models.length} total`);
         
         await browser.close();
         

@@ -119,9 +119,15 @@ async function scrapeModels(page = 1) {
                 }
                 
                 if (titleAttr && profileUrl) {
+                    let fullProfileUrl = profileUrl.startsWith('http') ? profileUrl : `https://pornx.tube${profileUrl}`;
+                    if (!fullProfileUrl.endsWith('/')) {
+                        fullProfileUrl += '/';
+                    }
+                    fullProfileUrl += 'videos/?by=post_date';
+                    
                     results.push({
                         name: titleAttr,
-                        profileUrl: profileUrl.startsWith('http') ? profileUrl : `https://pornx.tube${profileUrl}`,
+                        profileUrl: fullProfileUrl,
                         coverUrl: coverUrl || null,
                         videoCount,
                         photoCount
