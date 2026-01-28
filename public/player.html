@@ -288,11 +288,29 @@
                 
             } catch (error) {
                 console.error('Erro ao carregar vídeo:', error);
+                
+                let errorMessage = error.message;
+                let helpText = '';
+                
+                if (error.message.includes('não encontrado')) {
+                    helpText = `
+                        <p style="margin-top: 20px; color: #999;">
+                            <strong>Possíveis causas:</strong><br>
+                            • Este vídeo ainda não foi coletado pelo scraper<br>
+                            • Execute o scraping no <a href="/admin-scraper.html" style="color: #ff6b6b;">painel admin</a><br>
+                            • Volte para <a href="/home.html" style="color: #ff6b6b;">página inicial</a> e escolha outro vídeo
+                        </p>
+                    `;
+                }
+                
                 document.getElementById('content').innerHTML = `
-                    <div class="error">
-                        <h2>Erro ao carregar vídeo</h2>
-                        <p>${error.message}</p>
-                        <a href="/home.html" class="btn btn-primary">Voltar para Home</a>
+                    <div class="no-source">
+                        <h3>⚠️ Erro ao carregar vídeo</h3>
+                        <p style="color: #ff6b6b; font-size: 18px;">${errorMessage}</p>
+                        ${helpText}
+                        <div style="margin-top: 30px;">
+                            <a href="/home.html" class="btn btn-primary">← Voltar para Modelos</a>
+                        </div>
                     </div>
                 `;
             }
