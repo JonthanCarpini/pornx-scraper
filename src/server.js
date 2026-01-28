@@ -736,6 +736,368 @@ app.get('/api/scraping/video-details/status', (req, res) => {
     });
 });
 
+// ========================================
+// CLUBE ADULTO - APIs
+// ========================================
+
+// Estatísticas Clube Adulto
+app.get('/api/clubeadulto/stats', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                COUNT(*) as total_models,
+                COALESCE(SUM(video_count), 0) as total_videos,
+                (SELECT COUNT(*) FROM clubeadulto_videos WHERE poster_url IS NOT NULL AND m3u8_url IS NOT NULL) as videos_with_details
+            FROM clubeadulto_models
+        `);
+        
+        res.json({
+            success: true,
+            stats: result.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Scraping de modelos Clube Adulto (Passo 1)
+let clubeadultoModelsScrapingStatus = {
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    lastResult: null,
+    totalModels: 0
+};
+
+app.post('/api/clubeadulto/scraping/models', async (req, res) => {
+    try {
+        if (clubeadultoModelsScrapingStatus.isRunning) {
+            return res.status(400).json({
+                success: false,
+                error: 'Scraping de modelos do Clube Adulto já está em execução'
+            });
+        }
+        
+        const { pageFrom = 1, pageTo = 5 } = req.body;
+        const pagesCount = pageTo - pageFrom + 1;
+        
+        if (pageFrom < 1 || pageTo < 1 || pageFrom > pageTo) {
+            return res.status(400).json({
+                success: false,
+                error: 'Intervalo de páginas inválido'
+            });
+        }
+        
+        clubeadultoModelsScrapingStatus = {
+            isRunning: true,
+            processed: 0,
+            total: pagesCount,
+            lastResult: null,
+            totalModels: 0
+        };
+        
+        processClubAdultoModelsScrapingAsync(pageFrom, pageTo);
+        
+        res.json({
+            success: true,
+            message: 'Scraping de modelos iniciado',
+            pagesCount: pagesCount,
+            pageFrom,
+            pageTo
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+async function processClubAdultoModelsScrapingAsync(pageFrom, pageTo) {
+    const scraper = spawn('node', ['src/clubeadulto-models-scraper.js', pageFrom.toString(), pageTo.toString()], {
+        cwd: path.join(__dirname, '..')
+    });
+    
+    let output = '';
+    
+    scraper.stdout.on('data', (data) => {
+        output += data.toString();
+        console.log(data.toString());
+        
+        const pageMatch = output.match(/Página (\d+)\/(\d+)/);
+        if (pageMatch) {
+            const currentPage = parseInt(pageMatch[1]);
+            clubeadultoModelsScrapingStatus.processed = currentPage - pageFrom + 1;
+        }
+        const modelsMatch = output.match(/(\d+) novas/);
+        if (modelsMatch) {
+            clubeadultoModelsScrapingStatus.lastResult = {
+                modelsSaved: parseInt(modelsMatch[1])
+            };
+        }
+    });
+    
+    scraper.stderr.on('data', (data) => {
+        console.error('Erro no scraper CA:', data.toString());
+    });
+    
+    scraper.on('close', () => {
+        const totalMatch = output.match(/Total de modelos salvas: (\d+)/);
+        clubeadultoModelsScrapingStatus.totalModels = totalMatch ? parseInt(totalMatch[1]) : 0;
+        clubeadultoModelsScrapingStatus.isRunning = false;
+        console.log('✅ Scraping de modelos CA concluído!');
+    });
+    
+    scraper.on('error', (error) => {
+        console.error('Erro ao executar scraper CA:', error);
+        clubeadultoModelsScrapingStatus.isRunning = false;
+    });
+}
+
+app.get('/api/clubeadulto/scraping/models/status', (req, res) => {
+    res.json({
+        success: true,
+        status: clubeadultoModelsScrapingStatus
+    });
+});
+
+// Scraping de vídeos Clube Adulto (Passo 2)
+let clubeadultoVideosScrapingStatus = {
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    currentModel: '',
+    lastResult: null,
+    totalVideos: 0
+};
+
+app.post('/api/clubeadulto/scraping/videos', async (req, res) => {
+    try {
+        if (clubeadultoVideosScrapingStatus.isRunning) {
+            return res.status(400).json({
+                success: false,
+                error: 'Scraping de vídeos do Clube Adulto já está em execução'
+            });
+        }
+        
+        const result = await pool.query('SELECT COUNT(*) FROM clubeadulto_models');
+        const modelsCount = parseInt(result.rows[0].count);
+        
+        if (modelsCount === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Nenhuma modelo encontrada. Execute o Passo 1 primeiro.'
+            });
+        }
+        
+        clubeadultoVideosScrapingStatus = {
+            isRunning: true,
+            processed: 0,
+            total: modelsCount,
+            currentModel: '',
+            lastResult: null,
+            totalVideos: 0
+        };
+        
+        processClubAdultoVideosScrapingAsync();
+        
+        res.json({
+            success: true,
+            message: 'Scraping de vídeos iniciado',
+            modelsCount
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+async function processClubAdultoVideosScrapingAsync() {
+    const scraper = spawn('node', ['src/clubeadulto-videos-scraper.js'], {
+        cwd: path.join(__dirname, '..')
+    });
+    
+    let output = '';
+    
+    scraper.stdout.on('data', (data) => {
+        output += data.toString();
+        console.log(data.toString());
+        
+        const progressMatch = output.match(/\[(\d+)\/(\d+)\]/);
+        if (progressMatch) {
+            clubeadultoVideosScrapingStatus.processed = parseInt(progressMatch[1]);
+            clubeadultoVideosScrapingStatus.total = parseInt(progressMatch[2]);
+        }
+        
+        const modelMatch = output.match(/Processando: (.+)/);
+        if (modelMatch) {
+            clubeadultoVideosScrapingStatus.currentModel = modelMatch[1];
+        }
+        
+        const videosMatch = output.match(/(\d+) novos vídeos/);
+        if (videosMatch) {
+            clubeadultoVideosScrapingStatus.totalVideos += parseInt(videosMatch[1]);
+        }
+    });
+    
+    scraper.stderr.on('data', (data) => {
+        console.error('Erro no scraper CA vídeos:', data.toString());
+    });
+    
+    scraper.on('close', () => {
+        clubeadultoVideosScrapingStatus.isRunning = false;
+        console.log('✅ Scraping de vídeos CA concluído!');
+    });
+    
+    scraper.on('error', (error) => {
+        console.error('Erro ao executar scraper CA vídeos:', error);
+        clubeadultoVideosScrapingStatus.isRunning = false;
+    });
+}
+
+app.get('/api/clubeadulto/scraping/videos/status', (req, res) => {
+    res.json({
+        success: true,
+        status: clubeadultoVideosScrapingStatus
+    });
+});
+
+// Scraping de detalhes Clube Adulto (Passo 3)
+let clubeadultoDetailsScrapingStatus = {
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    lastResult: null,
+    successCount: 0
+};
+
+app.post('/api/clubeadulto/scraping/video-details', async (req, res) => {
+    try {
+        if (clubeadultoDetailsScrapingStatus.isRunning) {
+            return res.status(400).json({
+                success: false,
+                error: 'Scraping de detalhes do Clube Adulto já está em execução'
+            });
+        }
+        
+        const result = await pool.query(`
+            SELECT COUNT(*) FROM clubeadulto_videos 
+            WHERE poster_url IS NULL OR m3u8_url IS NULL
+        `);
+        const videosCount = parseInt(result.rows[0].count);
+        
+        if (videosCount === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Todos os vídeos já possuem detalhes coletados'
+            });
+        }
+        
+        clubeadultoDetailsScrapingStatus = {
+            isRunning: true,
+            processed: 0,
+            total: videosCount,
+            lastResult: null,
+            successCount: 0
+        };
+        
+        processClubAdultoDetailsScrapingAsync();
+        
+        res.json({
+            success: true,
+            message: 'Scraping de detalhes iniciado',
+            videosCount
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+async function processClubAdultoDetailsScrapingAsync() {
+    const scraper = spawn('node', ['src/clubeadulto-details-scraper.js'], {
+        cwd: path.join(__dirname, '..')
+    });
+    
+    let output = '';
+    let lastVideoTitle = '';
+    let lastPosterUrl = '';
+    let lastM3u8Url = '';
+    
+    scraper.stdout.on('data', (data) => {
+        const chunk = data.toString();
+        output += chunk;
+        console.log(chunk);
+        
+        const progressMatch = chunk.match(/\[(\d+)\/(\d+)\]/);
+        if (progressMatch) {
+            clubeadultoDetailsScrapingStatus.processed = parseInt(progressMatch[1]);
+            clubeadultoDetailsScrapingStatus.total = parseInt(progressMatch[2]);
+        }
+        
+        const titleMatch = chunk.match(/🎬 Scraping detalhes: (.+)/);
+        if (titleMatch) {
+            lastVideoTitle = titleMatch[1];
+        }
+        
+        const posterMatch = chunk.match(/✓ Poster URL: (.+)/);
+        if (posterMatch) {
+            lastPosterUrl = posterMatch[1];
+        }
+        
+        const m3u8Match = chunk.match(/✓ M3U8 URL: (.+)/);
+        if (m3u8Match) {
+            lastM3u8Url = m3u8Match[1];
+        }
+        
+        const savedMatch = chunk.match(/✅ Detalhes salvos no banco de dados/);
+        if (savedMatch && (lastPosterUrl || lastM3u8Url)) {
+            clubeadultoDetailsScrapingStatus.lastResult = {
+                success: true,
+                title: lastVideoTitle,
+                posterUrl: lastPosterUrl,
+                m3u8Url: lastM3u8Url
+            };
+            clubeadultoDetailsScrapingStatus.successCount++;
+        }
+    });
+    
+    scraper.stderr.on('data', (data) => {
+        console.error('Erro no scraper CA detalhes:', data.toString());
+    });
+    
+    scraper.on('close', () => {
+        clubeadultoDetailsScrapingStatus.isRunning = false;
+        console.log('✅ Scraping de detalhes CA concluído!');
+    });
+    
+    scraper.on('error', (error) => {
+        console.error('Erro ao executar scraper CA detalhes:', error);
+        clubeadultoDetailsScrapingStatus.isRunning = false;
+    });
+}
+
+app.get('/api/clubeadulto/scraping/video-details/status', (req, res) => {
+    res.json({
+        success: true,
+        status: clubeadultoDetailsScrapingStatus
+    });
+});
+
+// ========================================
+// ADMIN - Limpar Banco
+// ========================================
+
 app.delete('/api/admin/clear-database', async (req, res) => {
     try {
         const result = await pool.query('DELETE FROM models');

@@ -261,6 +261,48 @@
             font-size: 18px;
             padding: 15px 40px;
         }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 30px;
+            border: 2px solid #ddd;
+            background: white;
+            color: #666;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn:hover {
+            border-color: #1e3c72;
+            color: #1e3c72;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border-color: #1e3c72;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -275,15 +317,23 @@
             </div>
         </div>
         
-        <div class="auto-mode">
-            <h2>🚀 Modo Automático</h2>
-            <p>Execute todos os 3 passos automaticamente em sequência</p>
-            <button class="btn btn-success" id="autoBtn" onclick="runAutoMode()">
-                ▶️ Executar Scraping Completo
-            </button>
+        <!-- Abas de Sites -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('nsfw247')">🔥 NSFW247</button>
+            <button class="tab-btn" onclick="switchTab('clubeadulto')">🎬 Clube Adulto</button>
         </div>
         
-        <div class="steps-container">
+        <!-- Conteúdo NSFW247 -->
+        <div id="nsfw247-content" class="tab-content active">
+            <div class="auto-mode">
+                <h2>🚀 Modo Automático - NSFW247</h2>
+                <p>Execute todos os 3 passos sequencialmente</p>
+                <button class="btn btn-success" id="autoBtn" onclick="runAutoMode()">
+                    ▶️ Executar Scraping Completo
+                </button>
+            </div>
+            
+            <div class="steps-container">
             <!-- Passo 1: Modelos -->
             <div class="step-card">
                 <div class="step-header">
@@ -376,6 +426,114 @@
                 </div>
             </div>
         </div>
+        </div>
+        <!-- Fim NSFW247 Content -->
+        
+        <!-- Conteúdo Clube Adulto -->
+        <div id="clubeadulto-content" class="tab-content">
+            <div class="auto-mode" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h2>🚀 Modo Automático - Clube Adulto</h2>
+                <p>Execute todos os 3 passos sequencialmente</p>
+                <button class="btn btn-success" id="autoBtnCA" onclick="runAutoModeCA()">
+                    ▶️ Executar Scraping Completo
+                </button>
+            </div>
+            
+            <div class="steps-container">
+                <!-- Passo 1: Modelos CA -->
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div>
+                            <h3>Coletar Modelos</h3>
+                            <p>Extrai informações básicas das modelos do Clube Adulto</p>
+                        </div>
+                        <div class="step-status" id="statusCA1">Pendente</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-info">
+                            <strong>Modelos no banco:</strong> <span id="stat-ca-models">0</span>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1e3c72;">
+                                📄 Intervalo de Páginas:
+                            </label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div>
+                                    <label style="font-size: 14px; color: #666;">Da página:</label>
+                                    <input type="number" id="pageFromCA" min="1" value="1" 
+                                        style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 14px; color: #666;">Até página:</label>
+                                    <input type="number" id="pageToCA" min="1" value="5" 
+                                        style="width: 80px; padding: 8px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px;">
+                                </div>
+                                <div style="color: #666; font-size: 14px;">
+                                    (Total: <span id="totalPagesCA">5</span> páginas)
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="btnCA1" onclick="runStepCA1()">
+                            🚀 Iniciar Passo 1
+                        </button>
+                        <div class="progress-bar" id="progressCA1">
+                            <div class="progress-fill" id="progressFillCA1">0%</div>
+                        </div>
+                        <div class="logs" id="logsCA1"></div>
+                    </div>
+                </div>
+                
+                <!-- Passo 2: Vídeos CA -->
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div>
+                            <h3>Coletar Vídeos</h3>
+                            <p>Extrai lista de vídeos de cada modelo</p>
+                        </div>
+                        <div class="step-status" id="statusCA2">Pendente</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-info">
+                            <strong>Vídeos no banco:</strong> <span id="stat-ca-videos">0</span>
+                        </div>
+                        <button class="btn btn-primary" id="btnCA2" onclick="runStepCA2()">
+                            🎬 Iniciar Passo 2
+                        </button>
+                        <div class="progress-bar" id="progressCA2">
+                            <div class="progress-fill" id="progressFillCA2">0%</div>
+                        </div>
+                        <div class="logs" id="logsCA2"></div>
+                    </div>
+                </div>
+                
+                <!-- Passo 3: Detalhes CA -->
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div>
+                            <h3>Coletar Detalhes dos Vídeos</h3>
+                            <p>Extrai poster e URL M3U8 (HLS) de cada vídeo</p>
+                        </div>
+                        <div class="step-status" id="statusCA3">Pendente</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-info">
+                            <strong>Vídeos com detalhes:</strong> <span id="stat-ca-details">0</span>
+                        </div>
+                        <button class="btn btn-primary" id="btnCA3" onclick="runStepCA3()">
+                            📹 Iniciar Passo 3
+                        </button>
+                        <div class="progress-bar" id="progressCA3">
+                            <div class="progress-fill" id="progressFillCA3">0%</div>
+                        </div>
+                        <div class="logs" id="logsCA3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Fim Clube Adulto Content -->
     </div>
     
     <script>
@@ -644,6 +802,258 @@
         
         loadStats();
         setInterval(loadStats, 30000);
+        
+        // ========================================
+        // CLUBE ADULTO - Funções
+        // ========================================
+        
+        let isAutoModeCA = false;
+        
+        async function loadStatsCA() {
+            try {
+                const response = await fetch('/api/clubeadulto/stats');
+                const data = await response.json();
+                
+                if (data.success && data.stats) {
+                    document.getElementById('stat-ca-models').textContent = data.stats.total_models || 0;
+                    document.getElementById('stat-ca-videos').textContent = data.stats.total_videos || 0;
+                    document.getElementById('stat-ca-details').textContent = data.stats.videos_with_details || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas CA:', error);
+            }
+        }
+        
+        async function runStepCA1() {
+            const btn = document.getElementById('btnCA1');
+            const pageFrom = parseInt(document.getElementById('pageFromCA').value);
+            const pageTo = parseInt(document.getElementById('pageToCA').value);
+            
+            if (pageFrom < 1 || pageTo < 1) {
+                alert('As páginas devem ser maiores que 0');
+                return;
+            }
+            
+            if (pageFrom > pageTo) {
+                alert('A página inicial deve ser menor ou igual à página final');
+                return;
+            }
+            
+            btn.disabled = true;
+            updateStatus('CA1', 'running', 'Executando...');
+            addLog('CA1', `🚀 Iniciando coleta de modelos (páginas ${pageFrom} a ${pageTo})...`);
+            
+            try {
+                const response = await fetch('/api/clubeadulto/scraping/models', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pageFrom, pageTo })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('CA1', `✓ Scraping iniciado! Processando ${data.pagesCount} páginas...`);
+                    pollStepCA1Status();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog('CA1', `❌ Erro: ${error.message}`);
+                updateStatus('CA1', 'error', 'Erro');
+                btn.disabled = false;
+            }
+        }
+        
+        async function pollStepCA1Status() {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/clubeadulto/scraping/models/status');
+                    const data = await response.json();
+                    
+                    if (data.success && data.status) {
+                        if (data.status.isRunning) {
+                            updateProgress('CA1', data.status.processed, data.status.total);
+                            if (data.status.lastResult) {
+                                addLog('CA1', `✓ ${data.status.lastResult.modelsSaved} novas modelos salvas`);
+                            }
+                        } else {
+                            clearInterval(interval);
+                            updateStatus('CA1', 'completed', 'Concluído');
+                            addLog('CA1', `✅ Concluído! ${data.status.totalModels} modelos no total`);
+                            document.getElementById('btnCA1').disabled = false;
+                            loadStatsCA();
+                            
+                            if (isAutoModeCA) {
+                                setTimeout(() => runStepCA2(), 2000);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function runStepCA2() {
+            const btn = document.getElementById('btnCA2');
+            btn.disabled = true;
+            updateStatus('CA2', 'running', 'Executando...');
+            addLog('CA2', '🎬 Iniciando coleta de vídeos...');
+            
+            try {
+                const response = await fetch('/api/clubeadulto/scraping/videos', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('CA2', `✓ Scraping iniciado! Processando ${data.modelsCount} modelos...`);
+                    pollStepCA2Status();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog('CA2', `❌ Erro: ${error.message}`);
+                updateStatus('CA2', 'error', 'Erro');
+                btn.disabled = false;
+            }
+        }
+        
+        async function pollStepCA2Status() {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/clubeadulto/scraping/videos/status');
+                    const data = await response.json();
+                    
+                    if (data.success && data.status) {
+                        if (data.status.isRunning) {
+                            updateProgress('CA2', data.status.processed, data.status.total);
+                            if (data.status.currentModel) {
+                                addLog('CA2', `📹 Processando: ${data.status.currentModel}`);
+                            }
+                        } else {
+                            clearInterval(interval);
+                            updateStatus('CA2', 'completed', 'Concluído');
+                            addLog('CA2', `✅ Concluído! ${data.status.totalVideos} vídeos coletados`);
+                            document.getElementById('btnCA2').disabled = false;
+                            loadStatsCA();
+                            
+                            if (isAutoModeCA) {
+                                setTimeout(() => runStepCA3(), 2000);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function runStepCA3() {
+            const btn = document.getElementById('btnCA3');
+            btn.disabled = true;
+            updateStatus('CA3', 'running', 'Executando...');
+            addLog('CA3', '📹 Iniciando coleta de detalhes...');
+            
+            try {
+                const response = await fetch('/api/clubeadulto/scraping/video-details', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('CA3', `✓ Scraping iniciado! Processando ${data.videosCount} vídeos...`);
+                    pollStepCA3Status();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog('CA3', `❌ Erro: ${error.message}`);
+                updateStatus('CA3', 'error', 'Erro');
+                btn.disabled = false;
+            }
+        }
+        
+        async function pollStepCA3Status() {
+            let lastProcessed = 0;
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/clubeadulto/scraping/video-details/status');
+                    const data = await response.json();
+                    
+                    if (data.success && data.status) {
+                        if (data.status.isRunning) {
+                            updateProgress('CA3', data.status.processed, data.status.total);
+                            
+                            if (data.status.lastResult && data.status.processed > lastProcessed) {
+                                lastProcessed = data.status.processed;
+                                const result = data.status.lastResult;
+                                
+                                if (result.success) {
+                                    addLog('CA3', `✓ [${data.status.processed}/${data.status.total}] ${result.title || 'Vídeo'}`);
+                                    if (result.posterUrl) {
+                                        addLog('CA3', `  📷 Poster: ${result.posterUrl}`);
+                                    }
+                                    if (result.m3u8Url) {
+                                        addLog('CA3', `  🎬 M3U8: ${result.m3u8Url}`);
+                                    }
+                                } else {
+                                    addLog('CA3', `✗ [${data.status.processed}/${data.status.total}] Erro ao processar vídeo`);
+                                }
+                            }
+                        } else {
+                            clearInterval(interval);
+                            updateStatus('CA3', 'completed', 'Concluído');
+                            addLog('CA3', `✅ Concluído! ${data.status.successCount} vídeos processados com sucesso`);
+                            document.getElementById('btnCA3').disabled = false;
+                            loadStatsCA();
+                            
+                            if (isAutoModeCA) {
+                                isAutoModeCA = false;
+                                document.getElementById('autoBtnCA').disabled = false;
+                                alert('✅ Scraping completo do Clube Adulto finalizado com sucesso!');
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function runAutoModeCA() {
+            if (confirm('Deseja executar o scraping completo do Clube Adulto (3 passos)? Isso pode levar vários minutos.')) {
+                isAutoModeCA = true;
+                document.getElementById('autoBtnCA').disabled = true;
+                runStepCA1();
+            }
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'nsfw247') {
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                document.getElementById('nsfw247-content').classList.add('active');
+            } else if (tab === 'clubeadulto') {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                document.getElementById('clubeadulto-content').classList.add('active');
+                loadStatsCA();
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const pageFromInputCA = document.getElementById('pageFromCA');
+            const pageToInputCA = document.getElementById('pageToCA');
+            const totalPagesSpanCA = document.getElementById('totalPagesCA');
+            
+            function updateTotalPagesCA() {
+                const from = parseInt(pageFromInputCA.value) || 1;
+                const to = parseInt(pageToInputCA.value) || 1;
+                const total = Math.max(0, to - from + 1);
+                totalPagesSpanCA.textContent = total;
+            }
+            
+            pageFromInputCA.addEventListener('input', updateTotalPagesCA);
+            pageToInputCA.addEventListener('input', updateTotalPagesCA);
+        });
     </script>
 </body>
 </html>
