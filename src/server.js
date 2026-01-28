@@ -644,6 +644,9 @@ async function processVideoDetailsScrapingAsync() {
     });
     
     let output = '';
+    let lastVideoTitle = '';
+    let lastPosterUrl = '';
+    let lastSourceUrl = '';
     
     scraper.stdout.on('data', (data) => {
         const chunk = data.toString();
@@ -654,6 +657,32 @@ async function processVideoDetailsScrapingAsync() {
         if (progressMatch) {
             videoDetailsScrapingStatus.processed = parseInt(progressMatch[1]);
             videoDetailsScrapingStatus.total = parseInt(progressMatch[2]);
+        }
+        
+        const titleMatch = chunk.match(/🎬 Scraping detalhes: (.+)/);
+        if (titleMatch) {
+            lastVideoTitle = titleMatch[1];
+        }
+        
+        const posterMatch = chunk.match(/✓ Poster URL: (.+)/);
+        if (posterMatch) {
+            lastPosterUrl = posterMatch[1];
+        }
+        
+        const sourceMatch = chunk.match(/✓ Source URL: (.+)/);
+        if (sourceMatch) {
+            lastSourceUrl = sourceMatch[1];
+        }
+        
+        const savedMatch = chunk.match(/✅ Detalhes salvos no banco de dados/);
+        if (savedMatch && (lastPosterUrl || lastSourceUrl)) {
+            videoDetailsScrapingStatus.lastResult = {
+                success: true,
+                title: lastVideoTitle,
+                posterUrl: lastPosterUrl,
+                sourceUrl: lastSourceUrl
+            };
+            videoDetailsScrapingStatus.successCount++;
         }
         
         const successMatch = output.match(/Sucesso: (\d+)/);

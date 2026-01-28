@@ -534,6 +534,7 @@
         }
         
         async function pollStep3Status() {
+            let lastProcessed = 0;
             const interval = setInterval(async () => {
                 try {
                     const response = await fetch('/api/scraping/video-details/status');
@@ -542,13 +543,27 @@
                     if (data.success && data.status) {
                         if (data.status.isRunning) {
                             updateProgress(3, data.status.processed, data.status.total);
-                            if (data.status.lastResult) {
-                                addLog(3, `✓ Vídeo ${data.status.processed}: ${data.status.lastResult.success ? 'OK' : 'Erro'}`);
+                            
+                            if (data.status.lastResult && data.status.processed > lastProcessed) {
+                                lastProcessed = data.status.processed;
+                                const result = data.status.lastResult;
+                                
+                                if (result.success) {
+                                    addLog(3, `✓ [${data.status.processed}/${data.status.total}] ${result.title || 'Vídeo'}`);
+                                    if (result.posterUrl) {
+                                        addLog(3, `  📷 Poster: ${result.posterUrl}`);
+                                    }
+                                    if (result.sourceUrl) {
+                                        addLog(3, `  🎬 Source: ${result.sourceUrl}`);
+                                    }
+                                } else {
+                                    addLog(3, `✗ [${data.status.processed}/${data.status.total}] Erro ao processar vídeo`);
+                                }
                             }
                         } else {
                             clearInterval(interval);
                             updateStatus(3, 'completed', 'Concluído');
-                            addLog(3, `✅ Concluído! ${data.status.successCount} vídeos processados`);
+                            addLog(3, `✅ Concluído! ${data.status.successCount} vídeos processados com sucesso`);
                             document.getElementById('btn3').disabled = false;
                             loadStats();
                             

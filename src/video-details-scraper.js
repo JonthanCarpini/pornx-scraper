@@ -94,11 +94,26 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
             };
         });
         
-        console.log(`✓ Poster: ${videoDetails.posterUrl ? '✓' : '✗'}`);
-        console.log(`✓ Source: ${videoDetails.videoSourceUrl ? '✓' : '✗'}`);
+        if (videoDetails.posterUrl) {
+            console.log(`✓ Poster URL: ${videoDetails.posterUrl}`);
+        } else {
+            console.log('✗ Poster não encontrado');
+        }
+        
+        if (videoDetails.videoSourceUrl) {
+            console.log(`✓ Source URL: ${videoDetails.videoSourceUrl}`);
+        } else {
+            console.log('✗ Source não encontrado');
+        }
         
         // Atualizar no banco de dados
-        await updateVideoDetails(videoId, videoDetails.posterUrl, videoDetails.videoSourceUrl);
+        const updated = await updateVideoDetails(videoId, videoDetails.posterUrl, videoDetails.videoSourceUrl);
+        
+        if (updated) {
+            console.log('✅ Detalhes salvos no banco de dados');
+        } else {
+            console.log('❌ Erro ao salvar no banco de dados');
+        }
         
         await browser.close();
         
@@ -109,7 +124,7 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
         };
         
     } catch (error) {
-        console.error('❌ Erro durante o scraping:', error.message);
+        console.error(`❌ Erro ao fazer scraping: ${error.message}`);
         if (browser) {
             await browser.close();
         }
