@@ -20,7 +20,12 @@ async function scrapeModels(page = 1) {
         
         browser = await puppeteer.launch({
             headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-features=IsolateOrigins,site-per-process'
+            ]
         });
         
         const browserPage = await browser.newPage();
@@ -29,19 +34,56 @@ async function scrapeModels(page = 1) {
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         );
         
+        await browserPage.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => false,
+            });
+        });
+        
+        await browserPage.setViewport({ width: 1920, height: 1080 });
+        
         const url = page > 1 ? `${SCRAPE_URL}&page=${page}` : SCRAPE_URL;
         console.log(`📄 Acessando: ${url}`);
         
         await browserPage.goto(url, {
-            waitUntil: 'networkidle2',
-            timeout: 30000
+            waitUntil: 'domcontentloaded',
+            timeout: 60000
         });
         
-        await browserPage.waitForSelector('.item_thumb.thumb--models', { timeout: 10000 });
+        console.log('⏳ Aguardando carregamento da página...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        const models = await browserPage.evaluate(() => {
-            const modelElements = document.querySelectorAll('.item_thumb.thumb--models');
+        const selectors = [
+            '.item.thumb.thumb--models',
+            '.thumbs__list .item.thumb',
+            'div.item.thumb',
+            '.item_thumb.thumb--models'
+        ];
+        
+        let foundSelector = null;
+        for (const selector of selectors) {
+            try {
+                await browserPage.waitForSelector(selector, { timeout: 5000 });
+                foundSelector = selector;
+                console.log(`✓ Encontrado seletor: ${selector}`);
+                break;
+            } catch (e) {
+                console.log(`⚠️  Seletor não encontrado: ${selector}`);
+            }
+        }
+        
+        if (!foundSelector) {
+            const html = await browserPage.content();
+            fs.writeFileSync(path.join(__dirname, '..', 'debug-page.html'), html);
+            console.log('❌ Nenhum seletor encontrado. HTML salvo em debug-page.html');
+            throw new Error('Nenhum seletor de modelo encontrado na página');
+        }
+        
+        const models = await browserPage.evaluate((selector) => {
+            const modelElements = document.querySelectorAll(selector);
             const results = [];
+            
+            console.log('Total de elementos encontrados:', modelElements.length);
             
             modelElements.forEach(element => {
                 const linkElement = element.querySelector('a[href*="/models/"]');
@@ -53,20 +95,25 @@ async function scrapeModels(page = 1) {
                                imgElement?.getAttribute('src') || 
                                imgElement?.getAttribute('data-webp');
                 
-                const videoIcon = element.querySelector('.icon-camera-shape-10');
-                const photoIcon = element.querySelector('.icon-photo-shape-8');
-                
                 let videoCount = 0;
                 let photoCount = 0;
                 
-                if (videoIcon) {
-                    const videoText = videoIcon.parentElement?.nextSibling?.textContent?.trim();
-                    videoCount = parseInt(videoText) || 0;
-                }
-                
-                if (photoIcon) {
-                    const photoText = photoIcon.parentElement?.nextSibling?.textContent?.trim();
-                    photoCount = parseInt(photoText) || 0;
+                const positionThumb = element.querySelector('.position_thumb');
+                if (positionThumb) {
+                    const text = positionThumb.textContent || '';
+                    const parts = text.split(/\s+/).filter(p => p.trim());
+                    
+                    for (let i = 0; i < parts.length; i++) {
+                        const num = parseInt(parts[i]);
+                        if (!isNaN(num)) {
+                            if (videoCount === 0) {
+                                videoCount = num;
+                            } else if (photoCount === 0) {
+                                photoCount = num;
+                                break;
+                            }
+                        }
+                    }
                 }
                 
                 if (titleAttr && profileUrl) {
@@ -81,7 +128,7 @@ async function scrapeModels(page = 1) {
             });
             
             return results;
-        });
+        }, foundSelector);
         
         console.log(`✓ Encontradas ${models.length} modelos na página ${page}`);
         
