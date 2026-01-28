@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Player - NSFW247</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * {
             margin: 0;
@@ -285,10 +286,29 @@
                 
                 // Inicializar HLS.js se o vídeo for M3U8
                 if (video.m3u8_url) {
+                    console.log('🎬 INICIANDO REPRODUÇÃO HLS');
+                    console.log('📺 Source M3U8:', video.m3u8_url);
+                    console.log('🖼️ Poster:', video.poster_url);
+                    console.log('🔧 HLS.js disponível?', typeof Hls !== 'undefined');
+                    
                     setTimeout(() => {
                         const videoElement = document.getElementById('videoPlayer');
+                        console.log('📹 Elemento de vídeo encontrado?', !!videoElement);
+                        
+                        if (typeof Hls === 'undefined') {
+                            console.error('❌ HLS.js não carregou! Tentando fallback...');
+                            // Tentar carregar diretamente no vídeo
+                            if (videoElement) {
+                                videoElement.src = video.m3u8_url;
+                                videoElement.play().catch(e => {
+                                    console.error('❌ Erro ao reproduzir:', e);
+                                });
+                            }
+                            return;
+                        }
                         
                         if (Hls.isSupported()) {
+                            console.log('✅ HLS.js suportado, inicializando...');
                             const hls = new Hls({
                                 debug: false,
                                 enableWorker: true,
@@ -307,7 +327,13 @@
                             });
                             
                             hls.on(Hls.Events.ERROR, function(event, data) {
-                                console.error('❌ Erro HLS:', data);
+                                console.error('❌ ERRO HLS DETECTADO:');
+                                console.error('   Tipo:', data.type);
+                                console.error('   Detalhes:', data.details);
+                                console.error('   Fatal?', data.fatal);
+                                console.error('   URL:', data.url);
+                                console.error('   Resposta:', data.response);
+                                
                                 if (data.fatal) {
                                     switch(data.type) {
                                         case Hls.ErrorTypes.NETWORK_ERROR:
