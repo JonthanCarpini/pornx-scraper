@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PornX Scraper - Administração</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav a:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .warning-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .warning-box p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        
+        .danger-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .danger-box h3 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+        
+        .danger-box p {
+            color: #721c24;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+        
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .confirmation {
+            margin: 20px 0;
+        }
+        
+        .confirmation label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .confirmation input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Administração do Sistema</h1>
+            <p class="subtitle">Gerenciar dados do banco de dados</p>
+            <div class="nav">
+                <a href="/dashboard.html">Dashboard</a>
+                <a href="/models.html">Visualizar Dados</a>
+                <a href="/admin.html">Administração</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📊 Estatísticas do Banco</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="totalModels">-</div>
+                    <div class="stat-label">Total de Modelos</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalVideos">-</div>
+                    <div class="stat-label">Total de Vídeos</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalPhotos">-</div>
+                    <div class="stat-label">Total de Fotos</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🗑️ Limpar Banco de Dados</h2>
+            
+            <div class="danger-box">
+                <h3>⚠️ ATENÇÃO: Ação Irreversível!</h3>
+                <p>Esta ação irá <strong>deletar permanentemente</strong> todos os dados do banco de dados.</p>
+                <p>Não há como desfazer esta operação!</p>
+            </div>
+            
+            <div class="warning-box">
+                <h3>📋 O que será deletado:</h3>
+                <p>
+                    • Todos os registros de modelos<br>
+                    • Nomes, URLs, imagens de capa<br>
+                    • Contadores de vídeos e fotos<br>
+                    • Histórico completo de scraping
+                </p>
+            </div>
+            
+            <div class="confirmation">
+                <label>
+                    <input type="checkbox" id="confirmCheck">
+                    <span>Eu entendo que esta ação é irreversível e quero deletar todos os dados</span>
+                </label>
+            </div>
+            
+            <button class="btn btn-danger" id="deleteBtn" disabled onclick="deleteAllData()">
+                🗑️ Deletar Todos os Dados
+            </button>
+            
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+    
+    <script>
+        const confirmCheck = document.getElementById('confirmCheck');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const messageDiv = document.getElementById('message');
+        
+        confirmCheck.addEventListener('change', () => {
+            deleteBtn.disabled = !confirmCheck.checked;
+        });
+        
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('totalModels').textContent = stats.total_models || 0;
+                    document.getElementById('totalVideos').textContent = stats.total_videos || 0;
+                    document.getElementById('totalPhotos').textContent = stats.total_photos || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+        
+        async function deleteAllData() {
+            if (!confirmCheck.checked) {
+                return;
+            }
+            
+            const confirmed = confirm('ÚLTIMA CONFIRMAÇÃO: Tem certeza absoluta que deseja deletar TODOS os dados?\n\nEsta ação NÃO pode ser desfeita!');
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deletando...';
+            messageDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/admin/clear-database', {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = `✅ Sucesso! ${data.deletedCount} registros foram deletados.`;
+                    messageDiv.style.display = 'block';
+                    
+                    confirmCheck.checked = false;
+                    deleteBtn.textContent = '🗑️ Deletar Todos os Dados';
+                    
+                    setTimeout(() => {
+                        loadStats();
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Erro desconhecido');
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = `❌ Erro: ${error.message}`;
+                messageDiv.style.display = 'block';
+                
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑️ Deletar Todos os Dados';
+            }
+        }
+        
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>

@@ -191,6 +191,26 @@ app.delete('/api/models/:id', async (req, res) => {
     }
 });
 
+app.delete('/api/admin/clear-database', async (req, res) => {
+    try {
+        const result = await pool.query('DELETE FROM models');
+        
+        console.log(`\n🗑️  Banco de dados limpo: ${result.rowCount} registros deletados\n`);
+        
+        res.json({
+            success: true,
+            message: 'Banco de dados limpo com sucesso',
+            deletedCount: result.rowCount
+        });
+    } catch (error) {
+        console.error('Erro ao limpar banco de dados:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 const server = app.listen(PORT, () => {
     console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard.html`);
