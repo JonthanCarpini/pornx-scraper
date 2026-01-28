@@ -4,6 +4,12 @@ async function updateScrapingFlags() {
     try {
         console.log('🔄 Atualizando flags de scraping para modelos com vídeos existentes...\n');
         
+        // Resetar todas as flags primeiro
+        console.log('🔄 Resetando flags...');
+        await pool.query('UPDATE models SET videos_scraped = FALSE, videos_scraped_at = NULL');
+        await pool.query('UPDATE clubeadulto_models SET videos_scraped = FALSE, videos_scraped_at = NULL');
+        console.log('   ✅ Flags resetadas\n');
+        
         // Atualizar NSFW247 - marcar modelos que já têm vídeos
         console.log('📊 NSFW247:');
         const nsfw247Result = await pool.query(`
@@ -15,7 +21,6 @@ async function updateScrapingFlags() {
                 SELECT DISTINCT model_id 
                 FROM videos
             )
-            AND (videos_scraped IS NULL OR videos_scraped = FALSE)
             RETURNING id, name
         `);
         
@@ -38,7 +43,6 @@ async function updateScrapingFlags() {
                 SELECT DISTINCT model_id 
                 FROM clubeadulto_videos
             )
-            AND (videos_scraped IS NULL OR videos_scraped = FALSE)
             RETURNING id, name
         `);
         
