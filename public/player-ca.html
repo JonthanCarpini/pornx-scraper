@@ -242,14 +242,11 @@
                 if (video.m3u8_url) {
                     playerHTML = `
                         <video 
+                            id="videoPlayer"
                             class="video-player" 
                             controls 
-                            autoplay
                             poster="${video.poster_url || video.thumbnail_url || ''}"
-                        >
-                            <source src="${video.m3u8_url}" type="application/x-mpegURL">
-                            Seu navegador não suporta a reprodução de vídeo HLS.
-                        </video>
+                        ></video>
                     `;
                 } else {
                     playerHTML = `
@@ -285,6 +282,70 @@
                         </div>
                     </div>
                 `;
+                
+                // Inicializar HLS.js se o vídeo for M3U8
+                if (video.m3u8_url) {
+                    setTimeout(() => {
+                        const videoElement = document.getElementById('videoPlayer');
+                        
+                        if (Hls.isSupported()) {
+                            const hls = new Hls({
+                                debug: false,
+                                enableWorker: true,
+                                lowLatencyMode: true,
+                                backBufferLength: 90
+                            });
+                            
+                            hls.loadSource(video.m3u8_url);
+                            hls.attachMedia(videoElement);
+                            
+                            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                                console.log('✅ HLS manifest carregado, iniciando reprodução...');
+                                videoElement.play().catch(e => {
+                                    console.log('⚠️ Autoplay bloqueado, clique para reproduzir');
+                                });
+                            });
+                            
+                            hls.on(Hls.Events.ERROR, function(event, data) {
+                                console.error('❌ Erro HLS:', data);
+                                if (data.fatal) {
+                                    switch(data.type) {
+                                        case Hls.ErrorTypes.NETWORK_ERROR:
+                                            console.log('Erro de rede, tentando recuperar...');
+                                            hls.startLoad();
+                                            break;
+                                        case Hls.ErrorTypes.MEDIA_ERROR:
+                                            console.log('Erro de mídia, tentando recuperar...');
+                                            hls.recoverMediaError();
+                                            break;
+                                        default:
+                                            console.log('Erro fatal, não é possível recuperar');
+                                            hls.destroy();
+                                            break;
+                                    }
+                                }
+                            });
+                        } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                            // Safari nativo suporta HLS
+                            videoElement.src = video.m3u8_url;
+                            videoElement.addEventListener('loadedmetadata', function() {
+                                console.log('✅ HLS carregado (Safari nativo)');
+                                videoElement.play().catch(e => {
+                                    console.log('⚠️ Autoplay bloqueado, clique para reproduzir');
+                                });
+                            });
+                        } else {
+                            console.error('❌ HLS não suportado neste navegador');
+                            document.getElementById('content').innerHTML = `
+                                <div class="no-source">
+                                    <h3>⚠️ Navegador não suportado</h3>
+                                    <p>Seu navegador não suporta reprodução de vídeos HLS (M3U8).</p>
+                                    <p>Tente usar Chrome, Firefox ou Safari.</p>
+                                </div>
+                            `;
+                        }
+                    }, 100);
+                }
                 
             } catch (error) {
                 console.error('Erro ao carregar vídeo:', error);
