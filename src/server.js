@@ -853,23 +853,27 @@ app.get('/api/clubeadulto/videos', async (req, res) => {
         const search = req.query.search;
         
         let whereClause = '';
-        let params = [limit, offset];
+        let countParams = [];
+        let queryParams = [limit, offset];
         let paramIndex = 3;
         
         if (modelId) {
-            whereClause = 'WHERE v.model_id = $3';
-            params.push(modelId);
+            whereClause = 'WHERE v.model_id = $1';
+            countParams.push(modelId);
+            queryParams.push(modelId);
             paramIndex++;
         }
         
         if (search) {
-            whereClause += (whereClause ? ' AND' : 'WHERE') + ` v.title ILIKE $${paramIndex}`;
-            params.push(`%${search}%`);
+            const searchParamIndex = modelId ? '$2' : '$1';
+            whereClause += (whereClause ? ' AND' : 'WHERE') + ` v.title ILIKE ${searchParamIndex}`;
+            countParams.push(`%${search}%`);
+            queryParams.push(`%${search}%`);
         }
         
         const countResult = await pool.query(
             `SELECT COUNT(*) FROM clubeadulto_videos v ${whereClause}`,
-            params.slice(2)
+            countParams
         );
         const totalVideos = parseInt(countResult.rows[0].count);
         
@@ -889,8 +893,8 @@ app.get('/api/clubeadulto/videos', async (req, res) => {
             LEFT JOIN clubeadulto_models m ON v.model_id = m.id
             ${whereClause}
             ORDER BY v.created_at DESC
-            LIMIT $1 OFFSET $2
-        `, params);
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `, queryParams);
         
         res.json({
             success: true,
