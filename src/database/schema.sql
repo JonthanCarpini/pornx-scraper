@@ -20,3 +20,6 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_models_updated_at BEFORE UPDATE ON models
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_videos_updated_at BEFORE UPDATE ON videos
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

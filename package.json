@@ -10,9 +10,11 @@
     "dev": "nodemon src/server.js",
     "scrape": "node src/scraper.js",
     "scrape:json": "node src/scraper-json.js",
+    "scrape:videos": "node src/video-scraper.js",
     "create-db": "node src/database/create-db.js",
     "init-db": "node src/database/init.js",
     "migrate": "node src/database/migrate.js",
+    "migrate:videos": "node src/database/migrate-videos.js",
     "query": "node src/utils/query-models.js"
   },
   "keywords": [
