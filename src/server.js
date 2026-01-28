@@ -740,6 +740,61 @@ app.get('/api/scraping/video-details/status', (req, res) => {
 // CLUBE ADULTO - APIs
 // ========================================
 
+// Listar modelos Clube Adulto
+app.get('/api/clubeadulto/models', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        const search = req.query.search;
+        
+        let whereClause = '';
+        let params = [limit, offset];
+        
+        if (search) {
+            whereClause = 'WHERE name ILIKE $3';
+            params.push(`%${search}%`);
+        }
+        
+        const countResult = await pool.query(`SELECT COUNT(*) FROM clubeadulto_models ${whereClause}`, search ? [params[2]] : []);
+        const totalModels = parseInt(countResult.rows[0].count);
+        
+        const modelsResult = await pool.query(`
+            SELECT 
+                id,
+                name,
+                slug,
+                profile_url,
+                cover_url,
+                video_count,
+                created_at,
+                updated_at
+            FROM clubeadulto_models
+            ${whereClause}
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+        `, params);
+        
+        res.json({
+            success: true,
+            data: {
+                models: modelsResult.rows,
+                pagination: {
+                    page,
+                    limit,
+                    total: totalModels,
+                    totalPages: Math.ceil(totalModels / limit)
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // Estatísticas Clube Adulto
 app.get('/api/clubeadulto/stats', async (req, res) => {
     try {

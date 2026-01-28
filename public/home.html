@@ -201,12 +201,51 @@
             padding: 0 15px;
             color: #999;
         }
+        
+        .tabs {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tab-btn {
+            padding: 12px 30px;
+            border: 2px solid #333;
+            background: #1a1a1a;
+            color: #999;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn:hover {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+            border-color: #ff6b6b;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
-            <div class="logo">🔥 NSFW247</div>
+            <div class="logo">🔥 PornX</div>
             <div class="nav-links">
                 <a href="/home.html">Modelos</a>
                 <a href="/admin-scraper.html">⚙️ Admin</a>
@@ -214,19 +253,45 @@
         </div>
     </div>
     
-    <div class="container">
-        <h1 class="page-title">Modelos</h1>
-        <p class="page-subtitle">Explore nossa coleção de modelos</p>
-        
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar modelo...">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchSite('nsfw247')">🔥 NSFW247</button>
+        <button class="tab-btn" onclick="switchSite('clubeadulto')">🎬 Clube Adulto</button>
+    </div>
+    
+    <!-- NSFW247 Content -->
+    <div id="nsfw247-content" class="tab-content active">
+        <div class="container">
+            <h1 class="page-title">Modelos NSFW247</h1>
+            <p class="page-subtitle">Explore nossa coleção de modelos</p>
+            
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar modelo...">
+            </div>
+            
+            <div id="content">
+                <div class="loading">Carregando modelos...</div>
+            </div>
+            
+            <div class="pagination" id="pagination"></div>
         </div>
-        
-        <div id="content">
-            <div class="loading">Carregando modelos...</div>
+    </div>
+    
+    <!-- Clube Adulto Content -->
+    <div id="clubeadulto-content" class="tab-content">
+        <div class="container">
+            <h1 class="page-title">Modelos Clube Adulto</h1>
+            <p class="page-subtitle">Explore nossa coleção de atrizes brasileiras</p>
+            
+            <div class="search-bar">
+                <input type="text" id="searchInputCA" placeholder="🔍 Buscar modelo...">
+            </div>
+            
+            <div id="contentCA">
+                <div class="loading">Carregando modelos...</div>
+            </div>
+            
+            <div class="pagination" id="paginationCA"></div>
         </div>
-        
-        <div class="pagination" id="pagination"></div>
     </div>
     
     <script>
@@ -343,6 +408,136 @@
         }
         
         loadModels();
+        
+        // ========================================
+        // CLUBE ADULTO
+        // ========================================
+        
+        let currentPageCA = 1;
+        let currentSearchCA = '';
+        const limitCA = 24;
+        
+        const searchInputCA = document.getElementById('searchInputCA');
+        
+        let searchTimeoutCA;
+        searchInputCA.addEventListener('input', () => {
+            clearTimeout(searchTimeoutCA);
+            searchTimeoutCA = setTimeout(() => {
+                currentSearchCA = searchInputCA.value;
+                currentPageCA = 1;
+                loadModelsCA();
+            }, 500);
+        });
+        
+        async function loadModelsCA() {
+            try {
+                const params = new URLSearchParams({
+                    page: currentPageCA,
+                    limit: limitCA
+                });
+                
+                if (currentSearchCA) {
+                    params.append('search', currentSearchCA);
+                }
+                
+                const response = await fetch(`/api/clubeadulto/models?${params}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                const { models, pagination } = result.data;
+                
+                const contentDiv = document.getElementById('contentCA');
+                
+                if (models.length === 0) {
+                    contentDiv.innerHTML = `
+                        <div class="empty">
+                            <h2>Nenhuma modelo encontrada</h2>
+                            <p>Tente ajustar sua busca ou execute o scraping no painel admin</p>
+                        </div>
+                    `;
+                    document.getElementById('paginationCA').innerHTML = '';
+                    return;
+                }
+                
+                contentDiv.innerHTML = `
+                    <div class="models-grid">
+                        ${models.map(model => `
+                            <div class="model-card" onclick="openModelCA(${model.id})">
+                                <img src="${model.cover_url || 'https://via.placeholder.com/250x300?text=Sem+Foto'}" 
+                                     alt="${model.name}" 
+                                     class="model-cover"
+                                     onerror="this.src='https://via.placeholder.com/250x300?text=Sem+Foto'">
+                                <div class="model-info">
+                                    <div class="model-name">${model.name}</div>
+                                    <div class="model-stats">
+                                        ${model.video_count || 0} vídeos
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                renderPaginationCA(pagination);
+                
+            } catch (error) {
+                console.error('Erro ao carregar modelos CA:', error);
+                document.getElementById('contentCA').innerHTML = `
+                    <div class="empty">
+                        <h2>Erro ao carregar dados</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderPaginationCA(pagination) {
+            const paginationDiv = document.getElementById('paginationCA');
+            
+            if (pagination.totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            
+            paginationDiv.innerHTML = `
+                <button onclick="changePageCA(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''}>
+                    ← Anterior
+                </button>
+                <div class="page-info">
+                    Página ${pagination.page} de ${pagination.totalPages}
+                </div>
+                <button onclick="changePageCA(${pagination.page + 1})" ${pagination.page === pagination.totalPages ? 'disabled' : ''}>
+                    Próxima →
+                </button>
+            `;
+        }
+        
+        function changePageCA(page) {
+            currentPageCA = page;
+            loadModelsCA();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function openModelCA(modelId) {
+            window.location.href = `/model-ca.html?id=${modelId}`;
+        }
+        
+        function switchSite(site) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (site === 'nsfw247') {
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                document.getElementById('nsfw247-content').classList.add('active');
+            } else if (site === 'clubeadulto') {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                document.getElementById('clubeadulto-content').classList.add('active');
+                loadModelsCA();
+            }
+        }
     </script>
 </body>
 </html>
