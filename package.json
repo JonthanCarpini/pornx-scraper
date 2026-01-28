@@ -11,13 +11,18 @@
     "init-db": "node src/database/init.js",
     "query": "node src/utils/query-models.js"
   },
-  "keywords": ["scraper", "web-scraping"],
+  "keywords": [
+    "scraper",
+    "web-scraping"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.6",
     "dotenv": "^16.3.1",
+    "express": "^4.22.1",
     "pg": "^8.11.3",
     "puppeteer": "^21.5.0"
   }

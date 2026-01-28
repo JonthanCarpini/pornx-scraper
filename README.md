@@ -1,14 +1,14 @@
 # PornX Scraper
 
-Sistema de scraping para coletar dados de modelos do site pornx.tube.
+Sistema completo de scraping para coletar dados de modelos do site pornx.tube com interface web moderna.
 
-## Instalação
+## 🚀 Instalação
 
 ```bash
 npm install
 ```
 
-## Configuração
+## ⚙️ Configuração
 
 1. Copie o arquivo `.env.example` para `.env`
 2. Configure as credenciais do banco de dados PostgreSQL
@@ -18,15 +18,41 @@ npm install
 npm run init-db
 ```
 
-## Uso
+## 💻 Interface Web (Recomendado)
 
-Para executar o scraper:
+### Iniciar Servidor Web
+```bash
+npm run server
+```
 
+Acesse: **http://localhost:3000**
+
+### Funcionalidades da Interface:
+- ✅ **Dashboard**: Configure e execute scraping com interface visual
+- ✅ **Visualizar Dados**: Veja todas as modelos coletadas em grid visual
+- ✅ **Logs em Tempo Real**: Acompanhe o progresso do scraping
+- ✅ **Estatísticas**: Veja totais e médias automaticamente
+
+📖 **Documentação completa:** [README_WEB.md](README_WEB.md)
+
+## 🖥️ Linha de Comando
+
+### Scraping com Banco de Dados
 ```bash
 npm run scrape
 ```
 
-## Estrutura do Banco de Dados
+### Scraping para JSON (sem banco)
+```bash
+npm run scrape:json
+```
+
+### Consultar Dados
+```bash
+npm run query
+```
+
+## 📊 Estrutura do Banco de Dados
 
 A tabela `models` armazena:
 - `id`: ID único da modelo
@@ -37,3 +63,13 @@ A tabela `models` armazena:
 - `photo_count`: Quantidade de fotos
 - `created_at`: Data de criação do registro
 - `updated_at`: Data da última atualização
+
+## 📝 Scripts Disponíveis
+
+| Comando | Descrição |
+|---------|-----------|
+| `npm run server` | Inicia interface web |
+| `npm run scrape` | Scraping com PostgreSQL |
+| `npm run scrape:json` | Scraping para JSON |
+| `npm run init-db` | Cria tabelas no banco |
+| `npm run query` | Consulta dados do banco |
