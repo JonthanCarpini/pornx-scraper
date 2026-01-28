@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PornX Scraper - Scraping de Vídeos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav a:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status.idle {
+            background: #e0e0e0;
+            color: #666;
+        }
+        
+        .status.running {
+            background: #4caf50;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .logs {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .model-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .model-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .model-item.processing {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+        
+        .model-item.completed {
+            background: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+        
+        .model-item.error {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Scraping de Vídeos</h1>
+            <p class="subtitle">Colete vídeos das páginas de perfil das modelos</p>
+            <div class="nav">
+                <a href="/dashboard.html">Dashboard</a>
+                <a href="/models.html">Modelos</a>
+                <a href="/video-scraper.html">Scraping de Vídeos</a>
+                <a href="/videos.html">Ver Vídeos</a>
+                <a href="/admin.html">Administração</a>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalModels">-</div>
+                <div class="stat-label">Total de Modelos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalVideos">-</div>
+                <div class="stat-label">Total de Vídeos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="modelsWithVideos">-</div>
+                <div class="stat-label">Modelos com Vídeos</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Configurar Scraping <span class="status idle" id="statusBadge">Parado</span></h2>
+            
+            <div class="form-group">
+                <label for="scrapeMode">Modo de Scraping:</label>
+                <select id="scrapeMode">
+                    <option value="all">Todas as Modelos</option>
+                    <option value="single">Modelo Específica</option>
+                    <option value="pending">Apenas Modelos sem Vídeos</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="modelSelectGroup" style="display: none;">
+                <label for="modelSelect">Selecionar Modelo:</label>
+                <select id="modelSelect">
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary" id="startBtn" onclick="startScraping()">
+                🚀 Iniciar Scraping de Vídeos
+            </button>
+            
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            
+            <div id="modelList" style="display: none;">
+                <h3 style="margin-top: 20px;">Progresso:</h3>
+                <div class="model-list" id="modelListContent"></div>
+            </div>
+            
+            <div class="logs" id="logs">
+                <div class="log-entry">Aguardando início do scraping...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isRunning = false;
+        let currentModelIndex = 0;
+        let totalModelsToProcess = 0;
+        
+        const scrapeMode = document.getElementById('scrapeMode');
+        const modelSelectGroup = document.getElementById('modelSelectGroup');
+        const modelSelect = document.getElementById('modelSelect');
+        const startBtn = document.getElementById('startBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        const logs = document.getElementById('logs');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const modelList = document.getElementById('modelList');
+        const modelListContent = document.getElementById('modelListContent');
+        
+        scrapeMode.addEventListener('change', () => {
+            if (scrapeMode.value === 'single') {
+                modelSelectGroup.style.display = 'block';
+                loadModels();
+            } else {
+                modelSelectGroup.style.display = 'none';
+            }
+        });
+        
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/videos/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalModels').textContent = data.stats.total_models || 0;
+                    document.getElementById('totalVideos').textContent = data.stats.total_videos || 0;
+                    document.getElementById('modelsWithVideos').textContent = data.stats.models_with_videos || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+        
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/models?limit=1000');
+                const data = await response.json();
+                
+                if (data.success) {
+                    modelSelect.innerHTML = '<option value="">Selecione uma modelo</option>';
+                    data.data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = `${model.name} (${model.video_count || 0} vídeos)`;
+                        modelSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar modelos:', error);
+            }
+        }
+        
+        function addLog(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100);
+            progressFill.style.width = `${percentage}%`;
+            progressFill.textContent = `${percentage}% (${current}/${total})`;
+        }
+        
+        async function startScraping() {
+            if (isRunning) return;
+            
+            const mode = scrapeMode.value;
+            const modelId = mode === 'single' ? modelSelect.value : null;
+            
+            if (mode === 'single' && !modelId) {
+                alert('Por favor, selecione uma modelo');
+                return;
+            }
+            
+            isRunning = true;
+            startBtn.disabled = true;
+            statusBadge.className = 'status running';
+            statusBadge.textContent = 'Executando';
+            progressBar.style.display = 'block';
+            modelList.style.display = 'block';
+            logs.innerHTML = '';
+            
+            addLog('🚀 Iniciando scraping de vídeos...');
+            
+            try {
+                const response = await fetch('/api/videos/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ mode, modelId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`✓ Scraping iniciado! Processando ${data.modelsCount} modelo(s)...`);
+                    pollScrapingStatus();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+                resetUI();
+            }
+        }
+        
+        async function pollScrapingStatus() {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/videos/scrape/status');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const status = data.status;
+                        
+                        if (status.isRunning) {
+                            updateProgress(status.processed, status.total);
+                            
+                            if (status.currentModel) {
+                                addLog(`📊 [${status.processed}/${status.total}] ${status.currentModel}`);
+                            }
+                            
+                            if (status.lastResult) {
+                                const result = status.lastResult;
+                                addLog(`✓ ${result.modelName}: ${result.videosSaved} vídeos salvos`);
+                            }
+                        } else {
+                            clearInterval(interval);
+                            addLog('✅ Scraping concluído!');
+                            addLog(`📊 Total: ${status.totalVideos} vídeos coletados`);
+                            resetUI();
+                            loadStats();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                }
+            }, 2000);
+        }
+        
+        function resetUI() {
+            isRunning = false;
+            startBtn.disabled = false;
+            statusBadge.className = 'status idle';
+            statusBadge.textContent = 'Parado';
+        }
+        
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>

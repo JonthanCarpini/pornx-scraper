@@ -182,6 +182,207 @@ app.delete('/api/models/:id', async (req, res) => {
     }
 });
 
+app.get('/api/videos', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 24;
+        const offset = (page - 1) * limit;
+        const modelId = req.query.model_id;
+        const search = req.query.search;
+        
+        let whereClause = '';
+        let params = [limit, offset];
+        let paramIndex = 3;
+        
+        if (modelId) {
+            whereClause = 'WHERE v.model_id = $' + paramIndex;
+            params.push(modelId);
+            paramIndex++;
+        }
+        
+        if (search) {
+            whereClause += (whereClause ? ' AND ' : 'WHERE ') + 'v.title ILIKE $' + paramIndex;
+            params.push(`%${search}%`);
+        }
+        
+        const countResult = await pool.query(`SELECT COUNT(*) FROM videos v ${whereClause}`, params.slice(2));
+        const totalVideos = parseInt(countResult.rows[0].count);
+        
+        const videosResult = await pool.query(`
+            SELECT 
+                v.id,
+                v.title,
+                v.video_url,
+                v.thumbnail_url,
+                v.created_at,
+                m.name as model_name,
+                m.id as model_id
+            FROM videos v
+            JOIN models m ON v.model_id = m.id
+            ${whereClause}
+            ORDER BY v.created_at DESC
+            LIMIT $1 OFFSET $2
+        `, params);
+        
+        const statsResult = await pool.query(`
+            SELECT 
+                COUNT(DISTINCT v.id) as total_videos,
+                COUNT(DISTINCT v.model_id) as models_with_videos
+            FROM videos v
+        `);
+        
+        res.json({
+            success: true,
+            data: {
+                videos: videosResult.rows,
+                pagination: {
+                    page,
+                    limit,
+                    total: totalVideos,
+                    totalPages: Math.ceil(totalVideos / limit)
+                },
+                stats: statsResult.rows[0]
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+app.get('/api/videos/stats', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                COUNT(*) as total_models,
+                COALESCE(SUM(video_count), 0) as total_videos,
+                COUNT(CASE WHEN video_count > 0 THEN 1 END) as models_with_videos
+            FROM models
+        `);
+        
+        res.json({
+            success: true,
+            stats: result.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+let videoScrapingProcess = null;
+let videoScrapingStatus = {
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    currentModel: null,
+    lastResult: null,
+    totalVideos: 0
+};
+
+app.post('/api/videos/scrape', async (req, res) => {
+    try {
+        if (videoScrapingProcess) {
+            return res.status(400).json({
+                success: false,
+                error: 'Scraping já está em execução'
+            });
+        }
+        
+        const { mode, modelId } = req.body;
+        
+        let modelsQuery = 'SELECT id, name, profile_url FROM models';
+        let params = [];
+        
+        if (mode === 'single' && modelId) {
+            modelsQuery += ' WHERE id = $1';
+            params = [modelId];
+        } else if (mode === 'pending') {
+            modelsQuery += ' WHERE video_count = 0 OR video_count IS NULL';
+        }
+        
+        const modelsResult = await pool.query(modelsQuery, params);
+        const models = modelsResult.rows;
+        
+        if (models.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Nenhuma modelo encontrada para processar'
+            });
+        }
+        
+        videoScrapingStatus = {
+            isRunning: true,
+            processed: 0,
+            total: models.length,
+            currentModel: null,
+            lastResult: null,
+            totalVideos: 0
+        };
+        
+        processVideoScraping(models);
+        
+        res.json({
+            success: true,
+            message: 'Scraping de vídeos iniciado',
+            modelsCount: models.length
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+async function processVideoScraping(models) {
+    const { spawn } = await import('child_process');
+    
+    for (const model of models) {
+        videoScrapingStatus.currentModel = model.name;
+        
+        await new Promise((resolve) => {
+            const scraper = spawn('node', ['src/video-scraper.js', model.id], {
+                cwd: path.join(__dirname, '..')
+            });
+            
+            let output = '';
+            
+            scraper.stdout.on('data', (data) => {
+                output += data.toString();
+            });
+            
+            scraper.on('close', () => {
+                const videosMatch = output.match(/(\d+) novos/);
+                const videosSaved = videosMatch ? parseInt(videosMatch[1]) : 0;
+                
+                videoScrapingStatus.processed++;
+                videoScrapingStatus.lastResult = {
+                    modelName: model.name,
+                    videosSaved
+                };
+                videoScrapingStatus.totalVideos += videosSaved;
+                
+                resolve();
+            });
+        });
+    }
+    
+    videoScrapingStatus.isRunning = false;
+}
+
+app.get('/api/videos/scrape/status', (req, res) => {
+    res.json({
+        success: true,
+        status: videoScrapingStatus
+    });
+});
+
 app.delete('/api/admin/clear-database', async (req, res) => {
     try {
         const result = await pool.query('DELETE FROM models');
