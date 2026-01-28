@@ -119,13 +119,10 @@ async function scrapeModelVideos(modelId, modelName, profileUrl) {
             const results = [];
             
             videoElements.forEach(element => {
-                // Buscar link do vídeo
-                const linkElement = element.querySelector('a[href*="/category/"], h3 a');
-                const videoUrl = linkElement?.getAttribute('href');
-                
-                // Buscar título
+                // Buscar título e link do vídeo (no h3 a)
                 const titleElement = element.querySelector('h3 a');
                 const title = titleElement?.textContent?.trim();
+                const videoUrl = titleElement?.getAttribute('href');
                 
                 // Buscar thumbnail
                 const imgElement = element.querySelector('img');
