@@ -75,31 +75,40 @@ async function scrapeModels(page = 1) {
         await browserPage.screenshot({ path: `debug-page-${page}.png` });
         console.log(`📸 Screenshot salvo: debug-page-${page}.png`);
         
+        const debugInfo = await browserPage.evaluate(() => {
+            const debug = {
+                totalSpans: document.querySelectorAll('span').length,
+                totalLinks: document.querySelectorAll('a').length,
+                totalHeaders: document.querySelectorAll('header').length,
+                actorTitlesCount: document.querySelectorAll('span.actor-title').length,
+                spanClasses: [],
+                pageTitle: document.title,
+                bodyClasses: document.body.className
+            };
+            
+            const allSpans = document.querySelectorAll('span');
+            debug.spanClasses = Array.from(allSpans).slice(0, 20).map(s => s.className).filter(c => c);
+            
+            return debug;
+        });
+        
+        console.log('\n📊 DEBUG INFO:');
+        console.log(`   Título da página: ${debugInfo.pageTitle}`);
+        console.log(`   Total de spans: ${debugInfo.totalSpans}`);
+        console.log(`   Total de links: ${debugInfo.totalLinks}`);
+        console.log(`   Total de headers: ${debugInfo.totalHeaders}`);
+        console.log(`   Elementos com classe 'actor-title': ${debugInfo.actorTitlesCount}`);
+        console.log(`   Classes de spans: ${debugInfo.spanClasses.slice(0, 10).join(', ')}\n`);
+        
         const models = await browserPage.evaluate(() => {
             const results = [];
-            
-            console.log('DEBUG: Verificando estrutura da página...');
-            console.log('DEBUG: Total de spans:', document.querySelectorAll('span').length);
-            console.log('DEBUG: Total de links:', document.querySelectorAll('a').length);
-            console.log('DEBUG: Total de headers:', document.querySelectorAll('header').length);
-            
             const actorTitles = document.querySelectorAll('span.actor-title');
-            console.log(`DEBUG: Encontrados ${actorTitles.length} elementos com classe actor-title`);
-            
-            if (actorTitles.length === 0) {
-                const allSpans = document.querySelectorAll('span');
-                console.log('DEBUG: Classes de spans encontrados:', 
-                    Array.from(allSpans).slice(0, 10).map(s => s.className).join(', '));
-            }
             
             actorTitles.forEach(titleSpan => {
                 const name = titleSpan.textContent.trim();
-                
                 const linkElement = titleSpan.closest('a');
-                if (!linkElement) {
-                    console.log(`DEBUG: Nenhum link encontrado para ${name}`);
-                    return;
-                }
+                
+                if (!linkElement) return;
                 
                 const profileUrl = linkElement.getAttribute('href');
                 
