@@ -65,18 +65,32 @@ async function scrapeModels(page = 1) {
         console.log(`🔗 URL: ${url}\n`);
         
         await browserPage.goto(url, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: 'networkidle2',
             timeout: 60000
         });
         
         console.log('⏳ Aguardando carregamento da página...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        await browserPage.screenshot({ path: `debug-page-${page}.png` });
+        console.log(`📸 Screenshot salvo: debug-page-${page}.png`);
         
         const models = await browserPage.evaluate(() => {
             const results = [];
             
+            console.log('DEBUG: Verificando estrutura da página...');
+            console.log('DEBUG: Total de spans:', document.querySelectorAll('span').length);
+            console.log('DEBUG: Total de links:', document.querySelectorAll('a').length);
+            console.log('DEBUG: Total de headers:', document.querySelectorAll('header').length);
+            
             const actorTitles = document.querySelectorAll('span.actor-title');
             console.log(`DEBUG: Encontrados ${actorTitles.length} elementos com classe actor-title`);
+            
+            if (actorTitles.length === 0) {
+                const allSpans = document.querySelectorAll('span');
+                console.log('DEBUG: Classes de spans encontrados:', 
+                    Array.from(allSpans).slice(0, 10).map(s => s.className).join(', '));
+            }
             
             actorTitles.forEach(titleSpan => {
                 const name = titleSpan.textContent.trim();
