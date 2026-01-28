@@ -56,10 +56,29 @@ async function updateModelVideoCount(modelId, count) {
     }
 }
 
-async function scrapeModelVideos(modelId, modelName, profileUrl) {
+async function scrapeModelVideos(modelId, modelName, profileUrl, forceRescrape = false) {
     let browser;
     
     try {
+        // Verificar se já foi feito scraping dos vídeos
+        if (!forceRescrape) {
+            const checkResult = await pool.query(
+                'SELECT videos_scraped, videos_scraped_at FROM models WHERE id = $1',
+                [modelId]
+            );
+            
+            if (checkResult.rows.length > 0 && checkResult.rows[0].videos_scraped) {
+                const scrapedAt = checkResult.rows[0].videos_scraped_at;
+                console.log(`\n⏭️  Pulando ${modelName} - vídeos já coletados em ${scrapedAt}`);
+                return {
+                    success: true,
+                    skipped: true,
+                    videosFound: 0,
+                    videosSaved: 0
+                };
+            }
+        }
+        
         console.log(`\n🚀 Iniciando scraping de vídeos: ${modelName}`);
         console.log(`📄 URL: ${profileUrl}`);
         
@@ -181,12 +200,19 @@ async function scrapeModelVideos(modelId, modelName, profileUrl) {
         // Atualizar contagem de vídeos na tabela models
         await updateModelVideoCount(modelId, videos.length);
         
+        // Marcar etapa de vídeos como concluída
+        await pool.query(
+            'UPDATE models SET videos_scraped = TRUE, videos_scraped_at = CURRENT_TIMESTAMP WHERE id = $1',
+            [modelId]
+        );
+        
         console.log(`\n✅ Scraping concluído: ${savedCount} novos, ${skippedCount} duplicados, ${videos.length} total`);
         
         await browser.close();
         
         return {
             success: true,
+            skipped: false,
             videosFound: videos.length,
             videosSaved: savedCount
         };
@@ -213,6 +239,7 @@ async function scrapeAllModelsVideos() {
         let totalVideos = 0;
         let totalSaved = 0;
         let processedModels = 0;
+        let skippedModels = 0;
         
         for (const model of models) {
             try {
@@ -221,8 +248,12 @@ async function scrapeAllModelsVideos() {
                 
                 const result = await scrapeModelVideos(model.id, model.name, model.profile_url);
                 
-                totalVideos += result.videosFound;
-                totalSaved += result.videosSaved;
+                if (result.skipped) {
+                    skippedModels++;
+                } else {
+                    totalVideos += result.videosFound;
+                    totalSaved += result.videosSaved;
+                }
                 
                 // Delay entre requisições
                 if (processedModels < models.length) {
@@ -239,6 +270,7 @@ async function scrapeAllModelsVideos() {
         console.log('📊 RESUMO DO SCRAPING DE VÍDEOS');
         console.log('============================================================');
         console.log(`Modelos processadas: ${processedModels}/${models.length}`);
+        console.log(`Modelos puladas (já coletadas): ${skippedModels}`);
         console.log(`Total de vídeos encontrados: ${totalVideos}`);
         console.log(`Total de vídeos salvos: ${totalSaved}`);
         console.log('============================================================\n');
