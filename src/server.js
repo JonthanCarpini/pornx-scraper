@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const FALLBACK_PORT = 3001;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -178,8 +179,22 @@ app.delete('/api/models/:id', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard.html`);
     console.log(`🔍 Visualizar dados: http://localhost:${PORT}/models.html\n`);
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log(`\n⚠️  Porta ${PORT} já está em uso. Tentando porta ${FALLBACK_PORT}...\n`);
+        app.listen(FALLBACK_PORT, () => {
+            console.log(`\n🚀 Servidor rodando em http://localhost:${FALLBACK_PORT}`);
+            console.log(`📊 Dashboard: http://localhost:${FALLBACK_PORT}/dashboard.html`);
+            console.log(`🔍 Visualizar dados: http://localhost:${FALLBACK_PORT}/models.html\n`);
+        });
+    } else {
+        console.error('Erro ao iniciar servidor:', err);
+        process.exit(1);
+    }
 });

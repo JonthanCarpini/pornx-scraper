@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
+    "server": "node src/server.js",
     "scrape": "node src/scraper.js",
     "scrape:json": "node src/scraper-json.js",
     "init-db": "node src/database/init.js",
