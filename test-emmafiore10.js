@@ -100,8 +100,8 @@ async function testEmmaFiore10() {
                 
                 // Verificar se já existe
                 const existingVideo = await pool.query(
-                    'SELECT id FROM xxxfollow_videos WHERE video_id = $1',
-                    [media.id.toString()]
+                    'SELECT id FROM xxxfollow_videos WHERE xxxfollow_media_id = $1',
+                    [media.id]
                 );
                 
                 if (existingVideo.rows.length > 0) {
@@ -112,17 +112,23 @@ async function testEmmaFiore10() {
                 // Inserir no banco
                 await pool.query(
                     `INSERT INTO xxxfollow_videos (
-                        model_id, video_id, title, url, source, poster,
-                        duration, views, likes, comments, created_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                        model_id, xxxfollow_post_id, xxxfollow_media_id, 
+                        title, video_url, poster_url, thumbnail_url,
+                        duration, width, height, has_audio,
+                        view_count, like_count, comment_count, posted_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
                     [
                         modelId,
-                        media.id.toString(),
+                        post.id,
+                        media.id,
                         post.text || 'Sem título',
-                        `https://www.xxxfollow.com/${username}/post/${post.slug}`,
                         sourceUrl,
                         posterUrl,
+                        posterUrl, // thumbnail_url = poster_url
                         media.duration_in_second,
+                        media.width,
+                        media.height,
+                        media.has_audio,
                         item.view_count || 0,
                         item.like_count || 0,
                         item.comment_count || 0,
