@@ -111,9 +111,9 @@ async function fetchVideosFromAPI(modelId, username) {
                 break;
             }
             
-            // Processar apenas vídeos públicos com source disponível
+            // Processar apenas vídeos públicos
             let videoCount = 0;
-            let filteredReasons = { notVideo: 0, noSource: 0, locked: 0 };
+            let filteredReasons = { notVideo: 0, noBlurUrl: 0, locked: 0 };
             
             for (const item of data) {
                 const post = item.post;
@@ -131,25 +131,21 @@ async function fetchVideosFromAPI(modelId, username) {
                     continue;
                 }
                 
-                // Buscar melhor source disponível (prioridade: UHD > FHD > SD > URL)
-                const videoUrl = media.uhd_url || media.fhd_url || media.sd_url || media.url;
+                // Construir URLs a partir do blur_url
+                const blurUrl = media.blur_url;
                 
-                // Debug: log primeiro vídeo de cada página
-                if (videoCount === 0 && page === 1) {
-                    console.log(`  🔍 DEBUG primeiro vídeo:`);
-                    console.log(`     - access: ${post.access}`);
-                    console.log(`     - uhd_url: ${media.uhd_url ? 'EXISTS' : 'NULL'}`);
-                    console.log(`     - fhd_url: ${media.fhd_url ? 'EXISTS' : 'NULL'}`);
-                    console.log(`     - sd_url: ${media.sd_url ? 'EXISTS' : 'NULL'}`);
-                    console.log(`     - url: ${media.url ? 'EXISTS' : 'NULL'}`);
-                    console.log(`     - videoUrl final: ${videoUrl ? 'EXISTS' : 'NULL'}`);
-                }
-                
-                // Verificar se tem source válido (não pode ser null/undefined)
-                if (!videoUrl) {
-                    filteredReasons.noSource++;
+                if (!blurUrl) {
+                    filteredReasons.noBlurUrl++;
                     continue;
                 }
+                
+                // Extrair o padrão base da URL
+                // De: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/779727_blur.jpg
+                // Para: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/779727
+                const baseUrl = blurUrl.replace(/_blur\.(jpg|webp)$/, '');
+                
+                const posterUrl = `${baseUrl}_small.jpg`;
+                const videoUrl = `${baseUrl}.mp4`;
                 
                 videoCount++;
                 
@@ -160,9 +156,9 @@ async function fetchVideosFromAPI(modelId, username) {
                     title: post.text || 'Sem título',
                     description: post.text || '',
                     videoUrl: videoUrl,
-                    sdUrl: media.sd_url,
-                    thumbnailUrl: media.thumb_webp_url || media.thumb_url,
-                    posterUrl: media.start_webp_url || media.start_url,
+                    sdUrl: null,
+                    thumbnailUrl: posterUrl,
+                    posterUrl: posterUrl,
                     duration: media.duration_in_second || 0,
                     width: media.width || 0,
                     height: media.height || 0,
@@ -174,7 +170,7 @@ async function fetchVideosFromAPI(modelId, username) {
                 });
             }
             
-            console.log(`  📊 Página ${page}: ${videoCount} vídeos aceitos | Filtrados: ${filteredReasons.notVideo} não-vídeo, ${filteredReasons.noSource} sem source, ${filteredReasons.locked} bloqueados`);
+            console.log(`  📊 Página ${page}: ${videoCount} vídeos aceitos | Filtrados: ${filteredReasons.notVideo} não-vídeo, ${filteredReasons.noBlurUrl} sem blur_url, ${filteredReasons.locked} bloqueados`);
             
             // Se retornou menos que o limite, não há mais páginas
             if (data.length < limit) {
