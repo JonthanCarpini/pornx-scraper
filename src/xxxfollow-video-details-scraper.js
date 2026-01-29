@@ -26,15 +26,27 @@ async function getVideosWithoutSource() {
     }
 }
 
-async function updateVideoSource(videoId, sourceUrl) {
+async function updateVideoSource(videoId, sourceUrl, posterUrl = null) {
     try {
-        const query = `
-            UPDATE xxxfollow_videos
-            SET video_url = $1
-            WHERE id = $2
-        `;
+        let query, params;
         
-        await pool.query(query, [sourceUrl, videoId]);
+        if (posterUrl) {
+            query = `
+                UPDATE xxxfollow_videos
+                SET video_url = $1, poster_url = $2, thumbnail_url = $2
+                WHERE id = $3
+            `;
+            params = [sourceUrl, posterUrl, videoId];
+        } else {
+            query = `
+                UPDATE xxxfollow_videos
+                SET video_url = $1
+                WHERE id = $2
+            `;
+            params = [sourceUrl, videoId];
+        }
+        
+        await pool.query(query, params);
         return true;
     } catch (error) {
         console.error(`❌ Erro ao atualizar vídeo ${videoId}:`, error.message);
@@ -42,7 +54,7 @@ async function updateVideoSource(videoId, sourceUrl) {
     }
 }
 
-async function extractVideoSource(page, videoUrl) {
+async function extractVideoDetails(page, videoUrl) {
     try {
         await page.goto(videoUrl, {
             waitUntil: 'networkidle2',
@@ -51,26 +63,35 @@ async function extractVideoSource(page, videoUrl) {
         
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Extrair source do vídeo
-        const videoSource = await page.evaluate(() => {
+        // Extrair source do vídeo e poster
+        const videoDetails = await page.evaluate(() => {
+            let videoSource = null;
+            let posterUrl = null;
+            
+            // Extrair source do vídeo
             const videoElement = document.querySelector('.index-module__video--pbzTA');
             if (videoElement) {
-                return videoElement.getAttribute('src');
+                videoSource = videoElement.getAttribute('src');
+            } else {
+                const videoTag = document.querySelector('video[src]');
+                if (videoTag) {
+                    videoSource = videoTag.getAttribute('src');
+                }
             }
             
-            // Tentar outros seletores
-            const videoTag = document.querySelector('video[src]');
-            if (videoTag) {
-                return videoTag.getAttribute('src');
+            // Extrair poster (_start.webp)
+            const posterElement = document.querySelector('img.index-module__videoPoster--AiD_2');
+            if (posterElement) {
+                posterUrl = posterElement.getAttribute('src');
             }
             
-            return null;
+            return { videoSource, posterUrl };
         });
         
-        return videoSource;
+        return videoDetails;
     } catch (error) {
-        console.error(`❌ Erro ao extrair source:`, error.message);
-        return null;
+        console.error(`❌ Erro ao extrair detalhes:`, error.message);
+        return { videoSource: null, posterUrl: null };
     }
 }
 
@@ -113,13 +134,16 @@ async function scrapeVideoDetails() {
             console.log(`  🔗 URL: ${video.video_url}`);
             
             try {
-                const sourceUrl = await extractVideoSource(page, video.video_url);
+                const details = await extractVideoDetails(page, video.video_url);
                 
-                if (sourceUrl) {
-                    const updated = await updateVideoSource(video.id, sourceUrl);
+                if (details.videoSource) {
+                    const updated = await updateVideoSource(video.id, details.videoSource, details.posterUrl);
                     if (updated) {
                         successCount++;
-                        console.log(`  ✓ Source atualizado: ${sourceUrl.substring(0, 60)}...`);
+                        console.log(`  ✓ Source: ${details.videoSource.substring(0, 50)}...`);
+                        if (details.posterUrl) {
+                            console.log(`  ✓ Poster: ${details.posterUrl.substring(0, 50)}...`);
+                        }
                     } else {
                         errorCount++;
                         console.log(`  ❌ Erro ao atualizar no banco`);
