@@ -61,28 +61,49 @@ async function extractVideoDetails(page, videoUrl) {
             timeout: 30000
         });
         
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Aguardar o elemento de vídeo aparecer
+        try {
+            await page.waitForSelector('video', { timeout: 10000 });
+        } catch (e) {
+            console.log('  ⚠️  Timeout aguardando vídeo');
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Extrair source do vídeo e poster
         const videoDetails = await page.evaluate(() => {
             let videoSource = null;
             let posterUrl = null;
             
-            // Extrair source do vídeo
-            const videoElement = document.querySelector('.index-module__video--pbzTA');
-            if (videoElement) {
-                videoSource = videoElement.getAttribute('src');
-            } else {
-                const videoTag = document.querySelector('video[src]');
-                if (videoTag) {
-                    videoSource = videoTag.getAttribute('src');
+            // Tentar múltiplos seletores para o vídeo
+            const videoSelectors = [
+                'video.index-module__video--pbzTA',
+                'video[src]',
+                '#svp_player_a',
+                'video'
+            ];
+            
+            for (const selector of videoSelectors) {
+                const videoElement = document.querySelector(selector);
+                if (videoElement && videoElement.src) {
+                    videoSource = videoElement.src;
+                    break;
                 }
             }
             
-            // Extrair poster (_start.webp)
-            const posterElement = document.querySelector('img.index-module__videoPoster--AiD_2');
-            if (posterElement) {
-                posterUrl = posterElement.getAttribute('src');
+            // Extrair poster (_start.webp) - tentar múltiplos seletores
+            const posterSelectors = [
+                'img.index-module__videoPoster--AiD_2',
+                'img[alt="video poster"]',
+                '.index-module__resizerPoster--SGlrk img'
+            ];
+            
+            for (const selector of posterSelectors) {
+                const posterElement = document.querySelector(selector);
+                if (posterElement && posterElement.src) {
+                    posterUrl = posterElement.src;
+                    break;
+                }
             }
             
             return { videoSource, posterUrl };
