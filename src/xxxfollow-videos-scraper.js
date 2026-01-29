@@ -81,75 +81,102 @@ async function scrapeModelVideos(modelId, username) {
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
         await page.goto(`${BASE_URL}/${username}`, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: 'networkidle2',
             timeout: 60000
         });
         
-        console.log('⏳ Aguardando carregamento...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log('⏳ Aguardando carregamento completo...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // Extrair JSON do __NEXT_DATA__
-        const pageData = await page.evaluate(() => {
-            const scriptTag = document.getElementById('__NEXT_DATA__');
-            if (!scriptTag) return null;
+        // Extrair vídeos públicos do HTML (ignorar privados com cadeado)
+        const videos = await page.evaluate(() => {
+            const videoItems = document.querySelectorAll('.index-module__item--DUfg0');
+            const foundVideos = [];
             
-            try {
-                return JSON.parse(scriptTag.textContent);
-            } catch (e) {
-                return null;
-            }
+            videoItems.forEach(item => {
+                // Verificar se é vídeo privado (tem botão subscribeFeed ou ícone de cadeado)
+                const isPrivate = item.querySelector('.subscribeFeed') || 
+                                 item.querySelector('svg.mt-0') ||
+                                 item.textContent.includes('Subscribers only');
+                
+                if (isPrivate) return; // Ignorar vídeos privados
+                
+                // Buscar link do vídeo público
+                const link = item.querySelector('a[href*="/' + window.location.pathname.split('/')[1] + '/"]');
+                if (!link) return;
+                
+                const href = link.getAttribute('href');
+                const img = link.querySelector('img');
+                
+                if (!img || !href) return;
+                
+                const thumbnailUrl = img.getAttribute('src');
+                const title = img.getAttribute('alt') || '';
+                
+                // Extrair duração se disponível
+                const durationSpan = item.querySelector('.index-module__publicInfo--a5ciZ span');
+                const duration = durationSpan ? durationSpan.textContent.trim() : '00:00';
+                
+                // Extrair views se disponível
+                const viewSpan = item.querySelector('span[aria-label="view"]');
+                const views = viewSpan ? parseInt(viewSpan.nextElementSibling?.textContent || '0') : 0;
+                
+                foundVideos.push({
+                    videoUrl: href,
+                    thumbnailUrl: thumbnailUrl,
+                    title: title,
+                    duration: duration,
+                    views: views
+                });
+            });
+            
+            return foundVideos;
         });
         
-        if (!pageData || !pageData.props || !pageData.props.pageProps) {
-            console.log('⚠️  Nenhum dado encontrado');
-            await browser.close();
-            return { success: false, videosFound: 0, videosSaved: 0 };
-        }
-        
-        const props = pageData.props.pageProps;
-        const postsKey = `user-${username}-posts`;
-        const posts = props[postsKey] || [];
-        
-        console.log(`📊 Posts encontrados: ${posts.length}`);
+        console.log(`📊 Vídeos públicos encontrados: ${videos.length}`);
         
         let savedCount = 0;
         let skippedCount = 0;
         
-        for (const postData of posts) {
-            const post = postData.post;
-            
-            if (!post.media || post.media.length === 0) continue;
-            
-            for (const media of post.media) {
-                if (media.type !== 'video') continue;
+        for (const video of videos) {
+            try {
+                // Converter duração MM:SS para segundos
+                const [mins, secs] = video.duration.split(':').map(n => parseInt(n) || 0);
+                const durationSeconds = (mins * 60) + secs;
+                
+                // Extrair ID do post da URL
+                const postIdMatch = video.videoUrl.match(/\/(\d+)-/);
+                const postId = postIdMatch ? parseInt(postIdMatch[1]) : Math.floor(Math.random() * 1000000000);
                 
                 const videoData = {
                     modelId: modelId,
-                    postId: post.id,
-                    mediaId: media.id,
-                    title: post.text ? post.text.substring(0, 255) : null,
-                    description: post.text,
-                    videoUrl: media.url,
-                    sdUrl: media.sd_url || null,
-                    thumbnailUrl: media.thumb_url || media.thumb_webp_url || null,
-                    posterUrl: media.start_url || media.start_webp_url || null,
-                    duration: media.duration_in_second || 0,
-                    width: media.width || 0,
-                    height: media.height || 0,
-                    likeCount: postData.like_count || 0,
-                    viewCount: postData.view_count || 0,
-                    commentCount: postData.comment_count || 0,
-                    hasAudio: media.has_audio !== false,
-                    postedAt: post.created_at
+                    postId: postId,
+                    mediaId: postId, // Usar mesmo ID
+                    title: video.title || null,
+                    description: video.title || null,
+                    videoUrl: `${BASE_URL}${video.videoUrl}`,
+                    sdUrl: null,
+                    thumbnailUrl: video.thumbnailUrl,
+                    posterUrl: video.thumbnailUrl,
+                    duration: durationSeconds,
+                    width: 0,
+                    height: 0,
+                    likeCount: 0,
+                    viewCount: video.views,
+                    commentCount: 0,
+                    hasAudio: true,
+                    postedAt: new Date().toISOString()
                 };
                 
                 const result = await saveVideo(videoData);
                 if (result.isNew) {
                     savedCount++;
-                    console.log(`  ✓ Vídeo salvo (ID: ${media.id})`);
+                    console.log(`  ✓ Vídeo salvo: ${video.title.substring(0, 50)}...`);
                 } else {
                     skippedCount++;
                 }
+            } catch (error) {
+                console.error(`  ❌ Erro ao processar vídeo:`, error.message);
             }
         }
         
@@ -159,13 +186,13 @@ async function scrapeModelVideos(modelId, username) {
             [modelId]
         );
         
-        console.log(`\n✅ Scraping concluído: ${savedCount} novos, ${skippedCount} duplicados, ${posts.length} posts`);
+        console.log(`\n✅ Scraping concluído: ${savedCount} novos, ${skippedCount} duplicados`);
         
         await browser.close();
         
         return {
             success: true,
-            videosFound: posts.length,
+            videosFound: videos.length,
             videosSaved: savedCount
         };
         
