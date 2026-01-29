@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XXXFollow - Modelos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2em;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .model-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .model-avatar {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .model-info {
+            padding: 20px;
+        }
+
+        .model-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .model-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .badge-success {
+            background: #38ef7d;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #fee140;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.5em;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 15px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 Modelos XXXFollow</h1>
+            <a href="/xxxfollow-admin.html" class="back-btn">← Voltar</a>
+        </div>
+
+        <div id="loading" class="loading">Carregando modelos...</div>
+        <div id="models-grid" class="models-grid"></div>
+        <div id="empty" class="empty" style="display: none;">
+            <h2>Nenhuma modelo encontrada</h2>
+            <p>Execute o scraper de modelos primeiro</p>
+        </div>
+    </div>
+
+    <script>
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/xxxfollow/models');
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.models && data.models.length > 0) {
+                    renderModels(data.models);
+                } else {
+                    document.getElementById('empty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar modelos:', error);
+                document.getElementById('loading').textContent = 'Erro ao carregar modelos';
+            }
+        }
+
+        function renderModels(models) {
+            const grid = document.getElementById('models-grid');
+            grid.innerHTML = '';
+
+            models.forEach(model => {
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                card.onclick = () => window.location.href = `/xxxfollow-videos.html?model=${model.id}`;
+                
+                card.innerHTML = `
+                    <img src="${model.avatar_url || '/placeholder.jpg'}" 
+                         alt="${model.display_name}" 
+                         class="model-avatar"
+                         onerror="this.src='/placeholder.jpg'">
+                    <div class="model-info">
+                        <div class="model-name">${model.display_name || model.username}</div>
+                        <div class="model-stats">
+                            <div class="stat">
+                                <span>👁️</span>
+                                <span>${formatNumber(model.view_count || 0)}</span>
+                            </div>
+                            <div class="stat">
+                                <span>❤️</span>
+                                <span>${formatNumber(model.like_count || 0)}</span>
+                            </div>
+                            <div class="stat">
+                                <span>📹</span>
+                                <span>${model.post_count || 0}</span>
+                            </div>
+                        </div>
+                        ${model.videos_scraped 
+                            ? '<span class="badge badge-success">✓ Vídeos Coletados</span>'
+                            : '<span class="badge badge-warning">⏳ Pendente</span>'
+                        }
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        window.addEventListener('load', loadModels);
+    </script>
+</body>
+</html>

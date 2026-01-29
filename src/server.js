@@ -1419,6 +1419,142 @@ app.get('/api/proxy/m3u8', async (req, res) => {
 });
 
 // ========================================
+// XXXFOLLOW - Endpoints
+// ========================================
+
+app.get('/api/xxxfollow/stats', async (req, res) => {
+    try {
+        const totalModels = await pool.query('SELECT COUNT(*) FROM xxxfollow_models');
+        const totalVideos = await pool.query('SELECT COUNT(*) FROM xxxfollow_videos');
+        const pendingModels = await pool.query('SELECT COUNT(*) FROM xxxfollow_models WHERE videos_scraped IS NULL OR videos_scraped = false');
+        const videosToday = await pool.query("SELECT COUNT(*) FROM xxxfollow_videos WHERE DATE(created_at) = CURRENT_DATE");
+        
+        res.json({
+            totalModels: parseInt(totalModels.rows[0].count),
+            totalVideos: parseInt(totalVideos.rows[0].count),
+            pendingModels: parseInt(pendingModels.rows[0].count),
+            videosToday: parseInt(videosToday.rows[0].count)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/xxxfollow/models', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT * FROM xxxfollow_models 
+            ORDER BY created_at DESC 
+            LIMIT 100
+        `);
+        res.json({ models: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/xxxfollow/videos', async (req, res) => {
+    try {
+        const modelId = req.query.model;
+        let query = 'SELECT * FROM xxxfollow_videos';
+        let params = [];
+        
+        if (modelId) {
+            query += ' WHERE model_id = $1';
+            params.push(modelId);
+        }
+        
+        query += ' ORDER BY posted_at DESC LIMIT 100';
+        
+        const result = await pool.query(query, params);
+        res.json({ videos: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/xxxfollow/scrape-models', async (req, res) => {
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/xxxfollow-models-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        let output = '';
+        let stats = { total: 0, saved: 0, duplicates: 0 };
+        
+        scraper.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            output += data.toString();
+        });
+        
+        scraper.on('close', (code) => {
+            const totalMatch = output.match(/Modelos encontradas: (\d+)/);
+            const savedMatch = output.match(/Novas modelos salvas: (\d+)/);
+            const dupMatch = output.match(/Modelos duplicadas: (\d+)/);
+            
+            if (totalMatch) stats.total = parseInt(totalMatch[1]);
+            if (savedMatch) stats.saved = parseInt(savedMatch[1]);
+            if (dupMatch) stats.duplicates = parseInt(dupMatch[1]);
+        });
+        
+        await new Promise(resolve => scraper.on('close', resolve));
+        
+        res.json({
+            success: true,
+            total: stats.total,
+            saved: stats.saved,
+            duplicates: stats.duplicates
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.post('/api/xxxfollow/scrape-videos', async (req, res) => {
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/xxxfollow-videos-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        let output = '';
+        let stats = { processed: 0, totalVideos: 0 };
+        
+        scraper.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            output += data.toString();
+        });
+        
+        scraper.on('close', (code) => {
+            const processedMatch = output.match(/Modelos processadas: (\d+)/);
+            const videosMatch = output.match(/Total de vídeos salvos: (\d+)/);
+            
+            if (processedMatch) stats.processed = parseInt(processedMatch[1]);
+            if (videosMatch) stats.totalVideos = parseInt(videosMatch[1]);
+        });
+        
+        await new Promise(resolve => scraper.on('close', resolve));
+        
+        res.json({
+            success: true,
+            processed: stats.processed,
+            totalVideos: stats.totalVideos
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ========================================
 // ADMIN - Limpar Banco
 // ========================================
 
