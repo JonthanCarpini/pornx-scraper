@@ -1442,12 +1442,28 @@ app.get('/api/xxxfollow/stats', async (req, res) => {
 
 app.get('/api/xxxfollow/models', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (page - 1) * limit;
+        
+        const countResult = await pool.query('SELECT COUNT(*) FROM xxxfollow_models');
+        const totalModels = parseInt(countResult.rows[0].count);
+        
         const result = await pool.query(`
             SELECT * FROM xxxfollow_models 
             ORDER BY created_at DESC 
-            LIMIT 100
-        `);
-        res.json({ models: result.rows });
+            LIMIT $1 OFFSET $2
+        `, [limit, offset]);
+        
+        res.json({ 
+            models: result.rows,
+            pagination: {
+                page,
+                limit,
+                total: totalModels,
+                totalPages: Math.ceil(totalModels / limit)
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -1456,18 +1472,39 @@ app.get('/api/xxxfollow/models', async (req, res) => {
 app.get('/api/xxxfollow/videos', async (req, res) => {
     try {
         const modelId = req.query.model;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (page - 1) * limit;
+        
+        let countQuery = 'SELECT COUNT(*) FROM xxxfollow_videos';
         let query = 'SELECT * FROM xxxfollow_videos';
         let params = [];
+        let countParams = [];
         
         if (modelId) {
+            countQuery += ' WHERE model_id = $1';
             query += ' WHERE model_id = $1';
             params.push(modelId);
+            countParams.push(modelId);
         }
         
-        query += ' ORDER BY posted_at DESC LIMIT 100';
+        const countResult = await pool.query(countQuery, countParams);
+        const totalVideos = parseInt(countResult.rows[0].count);
+        
+        query += ' ORDER BY posted_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+        params.push(limit, offset);
         
         const result = await pool.query(query, params);
-        res.json({ videos: result.rows });
+        
+        res.json({ 
+            videos: result.rows,
+            pagination: {
+                page,
+                limit,
+                total: totalVideos,
+                totalPages: Math.ceil(totalVideos / limit)
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

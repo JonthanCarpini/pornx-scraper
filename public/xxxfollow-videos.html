@@ -200,12 +200,14 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const modelId = urlParams.get('model');
+        let currentPage = 1;
+        let totalPages = 1;
 
-        async function loadVideos() {
+        async function loadVideos(page = 1) {
             try {
                 const url = modelId 
-                    ? `/api/xxxfollow/videos?model=${modelId}`
-                    : '/api/xxxfollow/videos';
+                    ? `/api/xxxfollow/videos?model=${modelId}&page=${page}&limit=100`
+                    : `/api/xxxfollow/videos?page=${page}&limit=100`;
                     
                 const response = await fetch(url);
                 const data = await response.json();
@@ -213,7 +215,10 @@
                 document.getElementById('loading').style.display = 'none';
                 
                 if (data.videos && data.videos.length > 0) {
+                    currentPage = data.pagination.page;
+                    totalPages = data.pagination.totalPages;
                     renderVideos(data.videos);
+                    updatePagination(data.pagination);
                 } else {
                     document.getElementById('empty').style.display = 'block';
                 }
@@ -221,6 +226,44 @@
                 console.error('Erro ao carregar vídeos:', error);
                 document.getElementById('loading').textContent = 'Erro ao carregar vídeos';
             }
+        }
+
+        function updatePagination(pagination) {
+            let paginationDiv = document.getElementById('pagination');
+            if (!paginationDiv) {
+                paginationDiv = document.createElement('div');
+                paginationDiv.id = 'pagination';
+                paginationDiv.style.cssText = 'text-align: center; margin-top: 30px;';
+                paginationDiv.innerHTML = `
+                    <button onclick="changePage(currentPage - 1)" id="prev-btn" style="padding: 10px 20px; margin: 0 5px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">← Anterior</button>
+                    <span id="page-info" style="margin: 0 20px; color: white; font-weight: bold; font-size: 1.1em;"></span>
+                    <button onclick="changePage(currentPage + 1)" id="next-btn" style="padding: 10px 20px; margin: 0 5px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Próxima →</button>
+                `;
+                document.querySelector('.container').appendChild(paginationDiv);
+            }
+
+            const pageInfo = document.getElementById('page-info');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (pagination.totalPages > 1) {
+                paginationDiv.style.display = 'block';
+                pageInfo.textContent = `Página ${pagination.page} de ${pagination.totalPages} (${pagination.total} vídeos)`;
+                prevBtn.disabled = pagination.page === 1;
+                nextBtn.disabled = pagination.page === pagination.totalPages;
+                prevBtn.style.opacity = pagination.page === 1 ? '0.5' : '1';
+                nextBtn.style.opacity = pagination.page === pagination.totalPages ? '0.5' : '1';
+            } else {
+                paginationDiv.style.display = 'none';
+            }
+        }
+
+        function changePage(page) {
+            if (page < 1 || page > totalPages) return;
+            window.scrollTo(0, 0);
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('videos-grid').innerHTML = '';
+            loadVideos(page);
         }
 
         function renderVideos(videos) {
