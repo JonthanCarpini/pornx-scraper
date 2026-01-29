@@ -279,6 +279,10 @@
                     <span>🎬</span>
                     <span>Scrape Vídeos</span>
                 </button>
+                <button class="btn btn-success" onclick="scrapeVideoDetails()">
+                    <span>🎥</span>
+                    <span>Scrape Detalhes</span>
+                </button>
                 <button class="btn btn-info" onclick="loadStats()">
                     <span>📊</span>
                     <span>Atualizar Stats</span>
@@ -458,6 +462,62 @@
                     } else if (data.type === 'done') {
                         updateProgress(100, 'Concluído!');
                         addLog('✅ Scraping de vídeos concluído!', 'success');
+                        eventSource.close();
+                        isRunning = false;
+                        setTimeout(() => loadStats(), 1000);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    addLog('❌ Erro na conexão: ' + error, 'error');
+                    eventSource.close();
+                    isRunning = false;
+                };
+                
+            } catch (error) {
+                addLog('❌ Erro: ' + error.message, 'error');
+                isRunning = false;
+            }
+        }
+
+        async function scrapeVideoDetails() {
+            if (isRunning) {
+                addLog('Já existe um scraping em andamento!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            clearLogs();
+            addLog('🚀 Iniciando scraping de detalhes dos vídeos...', 'info');
+            updateProgress(10, 'Conectando...');
+
+            try {
+                const eventSource = new EventSource('/api/xxxfollow/scrape-video-details-stream');
+                let progress = 10;
+                
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
+                        }
+                        
+                        if (message.includes('Source atualizado')) {
+                            progress = Math.min(progress + 2, 90);
+                            updateProgress(progress, 'Extraindo sources...');
+                        }
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        updateProgress(100, 'Concluído!');
+                        addLog('✅ Scraping de detalhes concluído!', 'success');
                         eventSource.close();
                         isRunning = false;
                         setTimeout(() => loadStats(), 1000);

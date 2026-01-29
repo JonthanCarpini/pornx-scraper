@@ -149,38 +149,13 @@ async function scrapeModelVideos(modelId, username) {
                 const postIdMatch = video.videoUrl.match(/\/(\d+)-/);
                 const postId = postIdMatch ? parseInt(postIdMatch[1]) : Math.floor(Math.random() * 1000000000);
                 
-                // Acessar página do vídeo para extrair source MP4
-                console.log(`  🔗 Acessando vídeo: ${video.title.substring(0, 40)}...`);
-                const videoPageUrl = `${BASE_URL}${video.videoUrl}`;
-                
-                await page.goto(videoPageUrl, {
-                    waitUntil: 'networkidle2',
-                    timeout: 30000
-                });
-                
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // Extrair source do vídeo
-                const videoSource = await page.evaluate(() => {
-                    const videoElement = document.querySelector('.index-module__video--pbzTA');
-                    if (videoElement) {
-                        return videoElement.getAttribute('src');
-                    }
-                    return null;
-                });
-                
-                if (!videoSource) {
-                    console.log(`  ⚠️  Source não encontrado para: ${video.title.substring(0, 40)}...`);
-                    continue;
-                }
-                
                 const videoData = {
                     modelId: modelId,
                     postId: postId,
                     mediaId: postId,
                     title: video.title || null,
                     description: video.title || null,
-                    videoUrl: videoSource,
+                    videoUrl: `${BASE_URL}${video.videoUrl}`, // URL da página do vídeo
                     sdUrl: null,
                     thumbnailUrl: video.thumbnailUrl,
                     posterUrl: video.thumbnailUrl,
@@ -201,14 +176,6 @@ async function scrapeModelVideos(modelId, username) {
                 } else {
                     skippedCount++;
                 }
-                
-                // Voltar para a página do perfil
-                await page.goto(`${BASE_URL}/${username}`, {
-                    waitUntil: 'networkidle2',
-                    timeout: 30000
-                });
-                
-                await new Promise(resolve => setTimeout(resolve, 1000));
                 
             } catch (error) {
                 console.error(`  ❌ Erro ao processar vídeo:`, error.message);

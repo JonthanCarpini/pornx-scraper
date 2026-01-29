@@ -1555,6 +1555,47 @@ app.get('/api/xxxfollow/scrape-videos-stream', async (req, res) => {
     }
 });
 
+app.get('/api/xxxfollow/scrape-video-details-stream', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/xxxfollow-video-details-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
 // ========================================
 // ADMIN - Limpar Banco
 // ========================================
