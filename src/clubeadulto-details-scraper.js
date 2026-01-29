@@ -62,7 +62,33 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
             let m3u8Url = null;
             let debugInfo = [];
             
-            // Tentar múltiplos seletores para o vídeo
+            // Primeiro verificar se há iframe embed do clubeadulto
+            const embedIframe = document.querySelector('iframe[src*="videos.clubeadulto.net/embed"]');
+            if (embedIframe) {
+                const embedSrc = embedIframe.getAttribute('src');
+                debugInfo.push(`Iframe embed encontrado: ${embedSrc}`);
+                
+                // Extrair ID do embed (ex: https://videos.clubeadulto.net/embed/1818 -> 1818)
+                const embedIdMatch = embedSrc.match(/\/embed\/(\d+)/);
+                if (embedIdMatch) {
+                    const embedId = embedIdMatch[1];
+                    debugInfo.push(`ID do embed extraído: ${embedId}`);
+                    
+                    // Construir URLs baseadas no ID
+                    // Calcular pasta (ID / 1000 * 1000)
+                    const folder = Math.floor(parseInt(embedId) / 1000) * 1000;
+                    
+                    m3u8Url = `https://cdn4.foxvideo.club/${folder}/${embedId}/${embedId}.mp4`;
+                    posterUrl = `https://videos.clubeadulto.net/contents/videos_screenshots/${folder}/${embedId}/preview.jpg`;
+                    
+                    debugInfo.push(`MP4 construído: ${m3u8Url}`);
+                    debugInfo.push(`Poster construído: ${posterUrl}`);
+                    
+                    return { posterUrl, m3u8Url, debugInfo };
+                }
+            }
+            
+            // Se não encontrou embed, tentar múltiplos seletores para o vídeo
             const videoSelectors = [
                 'video#player',
                 'video.js-fluid-player',
