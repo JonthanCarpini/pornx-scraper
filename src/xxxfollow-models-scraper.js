@@ -195,9 +195,38 @@ async function scrapeAllModels() {
         });
         
         const page = await browser.newPage();
-        await scrapeModelsFromPage(page, scrapeUrl);
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
+        // Buscar modelos da página
+        const models = await scrapeModelsFromPage(page, scrapeUrl);
+        
+        // Salvar modelos no banco
+        let savedCount = 0;
+        let duplicateCount = 0;
+        
+        for (const modelData of models) {
+            try {
+                const result = await saveModel(modelData);
+                if (result.isNew) {
+                    savedCount++;
+                } else {
+                    duplicateCount++;
+                }
+            } catch (error) {
+                console.error(`❌ Erro ao processar ${modelData.username}:`, error.message);
+            }
+        }
+        
+        await page.close();
         await browser.close();
+        
+        console.log('\n============================================================');
+        console.log('📊 RESUMO DO SCRAPING - XXXFOLLOW');
+        console.log('============================================================');
+        console.log(`Modelos encontradas: ${models.length}`);
+        console.log(`Novas modelos salvas: ${savedCount}`);
+        console.log(`Modelos duplicadas: ${duplicateCount}`);
+        console.log('============================================================\n');
         
         console.log('✅ Scraping de modelos XXXFollow concluído!\n');
         process.exit(0);
