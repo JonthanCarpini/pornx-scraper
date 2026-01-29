@@ -118,6 +118,17 @@ async function fetchVideosFromAPI(modelId, username) {
                 // Buscar melhor source disponível (prioridade: UHD > FHD > SD > URL)
                 const videoUrl = media.uhd_url || media.fhd_url || media.sd_url || media.url;
                 
+                // Debug: log primeiro vídeo de cada página
+                if (videoCount === 0 && page === 1) {
+                    console.log(`  🔍 DEBUG primeiro vídeo:`);
+                    console.log(`     - access: ${post.access}`);
+                    console.log(`     - uhd_url: ${media.uhd_url ? 'EXISTS' : 'NULL'}`);
+                    console.log(`     - fhd_url: ${media.fhd_url ? 'EXISTS' : 'NULL'}`);
+                    console.log(`     - sd_url: ${media.sd_url ? 'EXISTS' : 'NULL'}`);
+                    console.log(`     - url: ${media.url ? 'EXISTS' : 'NULL'}`);
+                    console.log(`     - videoUrl final: ${videoUrl ? 'EXISTS' : 'NULL'}`);
+                }
+                
                 // Verificar se tem source válido (não pode ser null/undefined)
                 if (!videoUrl) {
                     filteredReasons.noSource++;
