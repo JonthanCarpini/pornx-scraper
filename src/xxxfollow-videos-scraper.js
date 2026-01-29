@@ -102,7 +102,7 @@ async function scrapeModelVideos(modelId, username) {
                 if (isPrivate) return; // Ignorar vídeos privados
                 
                 // Buscar link do vídeo público
-                const link = item.querySelector('a[href*="/' + window.location.pathname.split('/')[1] + '/"]');
+                const link = item.querySelector('a.index-module__itemHolder--MPzxF');
                 if (!link) return;
                 
                 const href = link.getAttribute('href');
@@ -113,13 +113,14 @@ async function scrapeModelVideos(modelId, username) {
                 const thumbnailUrl = img.getAttribute('src');
                 const title = img.getAttribute('alt') || '';
                 
-                // Extrair duração se disponível
-                const durationSpan = item.querySelector('.index-module__publicInfo--a5ciZ span');
+                // Extrair duração (segundo span com aria-label="view")
+                const durationSpan = item.querySelector('.index-module__start--RYOXV');
                 const duration = durationSpan ? durationSpan.textContent.trim() : '00:00';
                 
-                // Extrair views se disponível
-                const viewSpan = item.querySelector('span[aria-label="view"]');
-                const views = viewSpan ? parseInt(viewSpan.nextElementSibling?.textContent || '0') : 0;
+                // Extrair views (primeiro span com aria-label="view")
+                const viewSpan = item.querySelector('.index-module__end--y2ADg');
+                const viewText = viewSpan ? viewSpan.textContent.trim() : '0';
+                const views = viewText.replace(/[^0-9.]/g, '');
                 
                 foundVideos.push({
                     videoUrl: href,
@@ -148,13 +149,38 @@ async function scrapeModelVideos(modelId, username) {
                 const postIdMatch = video.videoUrl.match(/\/(\d+)-/);
                 const postId = postIdMatch ? parseInt(postIdMatch[1]) : Math.floor(Math.random() * 1000000000);
                 
+                // Acessar página do vídeo para extrair source MP4
+                console.log(`  🔗 Acessando vídeo: ${video.title.substring(0, 40)}...`);
+                const videoPageUrl = `${BASE_URL}${video.videoUrl}`;
+                
+                await page.goto(videoPageUrl, {
+                    waitUntil: 'networkidle2',
+                    timeout: 30000
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Extrair source do vídeo
+                const videoSource = await page.evaluate(() => {
+                    const videoElement = document.querySelector('.index-module__video--pbzTA');
+                    if (videoElement) {
+                        return videoElement.getAttribute('src');
+                    }
+                    return null;
+                });
+                
+                if (!videoSource) {
+                    console.log(`  ⚠️  Source não encontrado para: ${video.title.substring(0, 40)}...`);
+                    continue;
+                }
+                
                 const videoData = {
                     modelId: modelId,
                     postId: postId,
-                    mediaId: postId, // Usar mesmo ID
+                    mediaId: postId,
                     title: video.title || null,
                     description: video.title || null,
-                    videoUrl: `${BASE_URL}${video.videoUrl}`,
+                    videoUrl: videoSource,
                     sdUrl: null,
                     thumbnailUrl: video.thumbnailUrl,
                     posterUrl: video.thumbnailUrl,
@@ -162,7 +188,7 @@ async function scrapeModelVideos(modelId, username) {
                     width: 0,
                     height: 0,
                     likeCount: 0,
-                    viewCount: video.views,
+                    viewCount: parseFloat(video.views) || 0,
                     commentCount: 0,
                     hasAudio: true,
                     postedAt: new Date().toISOString()
@@ -175,6 +201,15 @@ async function scrapeModelVideos(modelId, username) {
                 } else {
                     skippedCount++;
                 }
+                
+                // Voltar para a página do perfil
+                await page.goto(`${BASE_URL}/${username}`, {
+                    waitUntil: 'networkidle2',
+                    timeout: 30000
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
             } catch (error) {
                 console.error(`  ❌ Erro ao processar vídeo:`, error.message);
             }
