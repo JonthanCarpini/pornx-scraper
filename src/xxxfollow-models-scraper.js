@@ -61,72 +61,66 @@ async function scrapeModelsFromPage(page, pageUrl) {
         console.log(`\n🔗 Acessando: ${pageUrl}`);
         
         await page.goto(pageUrl, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: 'networkidle2',
             timeout: 60000
         });
         
-        console.log('⏳ Aguardando carregamento...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        console.log('⏳ Aguardando carregamento completo...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // Extrair JSON do __NEXT_DATA__
-        const pageData = await page.evaluate(() => {
-            const scriptTag = document.getElementById('__NEXT_DATA__');
-            if (!scriptTag) return null;
+        // Extrair modelos diretamente do HTML
+        const models = await page.evaluate(() => {
+            const modelCards = document.querySelectorAll('a[href^="/"]');
+            const foundModels = [];
+            const seen = new Set();
             
-            try {
-                return JSON.parse(scriptTag.textContent);
-            } catch (e) {
-                return null;
-            }
+            modelCards.forEach(card => {
+                const href = card.getAttribute('href');
+                if (!href || href === '/' || href.startsWith('/tag') || href.startsWith('/support')) return;
+                
+                const username = href.replace('/', '');
+                if (seen.has(username)) return;
+                seen.add(username);
+                
+                // Buscar imagem do avatar
+                const img = card.querySelector('img[alt]');
+                if (!img) return;
+                
+                const avatarUrl = img.getAttribute('src');
+                const displayName = img.getAttribute('alt');
+                
+                if (avatarUrl && displayName && username) {
+                    foundModels.push({
+                        username: username,
+                        displayName: displayName,
+                        avatarUrl: avatarUrl,
+                        profileUrl: href
+                    });
+                }
+            });
+            
+            return foundModels;
         });
         
-        if (!pageData || !pageData.props || !pageData.props.pageProps) {
-            console.log('⚠️  Nenhum dado encontrado na página');
-            return [];
-        }
+        console.log(`📊 Modelos encontradas no HTML: ${models.length}`);
         
-        const models = [];
-        const props = pageData.props.pageProps;
+        // Converter para formato do banco
+        const formattedModels = models.map(model => ({
+            xxxfollowId: Math.floor(Math.random() * 100000000), // ID temporário
+            username: model.username,
+            displayName: model.displayName,
+            avatarUrl: model.avatarUrl,
+            coverUrl: null,
+            coverVideoUrl: null,
+            gender: 'f',
+            bio: null,
+            followerCount: 0,
+            likeCount: 0,
+            viewCount: 0,
+            postCount: 0
+        }));
         
-        // Buscar modelos em diferentes seções da página creators
-        const listCreators = props['list-creators'] || {};
-        const allModels = [];
-        
-        // Coletar modelos de todas as categorias (tags, popular, new, contest)
-        if (listCreators.popular) allModels.push(...listCreators.popular);
-        if (listCreators.new) allModels.push(...listCreators.new);
-        if (listCreators.contest) allModels.push(...listCreators.contest);
-        if (listCreators.tags) {
-            listCreators.tags.forEach(tag => {
-                if (tag.users) allModels.push(...tag.users);
-            });
-        }
-        
-        // Remover duplicatas usando um Set baseado no ID
-        const uniqueModels = new Map();
-        for (const model of allModels) {
-            if (model.type === 'model' && !uniqueModels.has(model.id)) {
-                uniqueModels.set(model.id, {
-                    xxxfollowId: model.id,
-                    username: model.username,
-                    displayName: model.display_name,
-                    avatarUrl: model.public_avatar_url,
-                    coverUrl: model.public_cover_picture_url || null,
-                    coverVideoUrl: model.public_cover_video_url || null,
-                    gender: model.gender,
-                    bio: null,
-                    followerCount: 0,
-                    likeCount: 0,
-                    viewCount: 0,
-                    postCount: 0
-                });
-            }
-        }
-        
-        models.push(...uniqueModels.values());
-        
-        console.log(`📊 Modelos encontradas: ${models.length}`);
-        return models;
+        return formattedModels;
         
     } catch (error) {
         console.error('❌ Erro ao fazer scraping da página:', error.message);
@@ -141,7 +135,7 @@ async function scrapeCreatorsPage(browser) {
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
-        const models = await scrapeModelsFromPage(page, `${BASE_URL}/creators`);
+        const models = await scrapeModelsFromPage(page, `${BASE_URL}/most-popular/all`);
         
         let savedCount = 0;
         let duplicateCount = 0;
