@@ -3,64 +3,7 @@ import pool from './database/db.js';
 
 dotenv.config();
 
-const BASE_API_URL = 'https://www.xxxfollow.com/api/v1/post/tag';
 const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
-
-// Lista de tags para fazer scraping
-const TAGS = [
-    'onlyfansfree',
-    'teen-18',
-    'fastfap',
-    'tiktok18',
-    'gonewild',
-    'pussy',
-    'nsfw',
-    'latina',
-    'realgirls',
-    'masturbation',
-    'cumsluts',
-    '18',
-    'porn',
-    'asiansgonewild',
-    'wetpussy',
-    'onlyfans',
-    'bustypetite',
-    'schoolgirl',
-    'tiktokxxx',
-    'couplesex',
-    'publicsex',
-    'analsex',
-    'bisexual',
-    'hardcoresex',
-    'sexoenpublico',
-    'lesbiansex',
-    'sexopublico',
-    'sexo',
-    'sexoanal',
-    'brazilian',
-    'bra',
-    'brasileira',
-    'argentina',
-    'mexicana',
-    'jovencita18',
-    'virgin',
-    'ffm',
-    'ebony',
-    'gwcouples',
-    '18years',
-    'adolescente18',
-    '18yearsold',
-    'titok18',
-    'teeen',
-    '18yo',
-    'party',
-    'swingers',
-    'venezolana',
-    'indian',
-    'videoscaseros',
-    'flaca',
-    'colegiala'
-];
 
 async function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -185,23 +128,27 @@ async function saveVideo(modelId, postData, mediaData, statsData) {
     }
 }
 
-async function scrapeTag(tag, maxPages = 10) {
-    console.log(`\n🏷️  Scraping tag: ${tag}`);
+async function scrapeCustomUrl(apiUrl, maxPages = 10) {
+    console.log(`\n🔗 Scraping URL customizada: ${apiUrl}`);
     
     let page = 1;
     let totalModels = 0;
     let totalVideos = 0;
     let newModels = 0;
     let newVideos = 0;
-    let startTime = Math.floor(Date.now() / 1000);
+    
+    // Extrair tag da URL para logs
+    const tagMatch = apiUrl.match(/\/tag\/([^?]+)/);
+    const tagName = tagMatch ? tagMatch[1] : 'custom';
     
     while (page <= maxPages) {
         try {
-            const url = `${BASE_API_URL}/${tag}?genders=cf&period=all&limit=24&page=${page}&start_time=${startTime}`;
+            // Substituir o parâmetro page na URL
+            const urlWithPage = apiUrl.replace(/page=\d+/, `page=${page}`);
             
             console.log(`  📄 Página ${page}...`);
             
-            const response = await fetch(url, {
+            const response = await fetch(urlWithPage, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
@@ -294,55 +241,43 @@ async function scrapeTag(tag, maxPages = 10) {
         }
     }
     
+    console.log(`  📊 Tag "${tagName}": ${newModels} novos modelos, ${newVideos} novos vídeos\n`);
+    
     return { totalModels, totalVideos, newModels, newVideos };
 }
 
-async function scrapeAllTags() {
-    console.log('\n🚀 Iniciando scraping de tags do XXXFollow...\n');
-    console.log(`📋 Total de tags: ${TAGS.length}\n`);
+async function main() {
+    const customUrl = process.argv[2];
     
-    let globalStats = {
-        totalModels: 0,
-        totalVideos: 0,
-        newModels: 0,
-        newVideos: 0
-    };
-    
-    for (const tag of TAGS) {
-        try {
-            const stats = await scrapeTag(tag, 5); // 5 páginas por tag
-            
-            globalStats.totalModels += stats.totalModels;
-            globalStats.totalVideos += stats.totalVideos;
-            globalStats.newModels += stats.newModels;
-            globalStats.newVideos += stats.newVideos;
-            
-            console.log(`  📊 Tag "${tag}": ${stats.newModels} novos modelos, ${stats.newVideos} novos vídeos\n`);
-            
-            await delay(SCRAPE_DELAY);
-            
-        } catch (error) {
-            console.error(`❌ Erro ao processar tag "${tag}":`, error.message);
-        }
+    if (!customUrl) {
+        console.log('\n❌ Erro: URL não fornecida!');
+        console.log('\n📖 Uso:');
+        console.log('  node src/xxxfollow-custom-tag-scraper.js "URL_DA_API"\n');
+        console.log('📝 Exemplo:');
+        console.log('  node src/xxxfollow-custom-tag-scraper.js "https://www.xxxfollow.com/api/v1/post/tag/18years?genders=cf&period=featured&limit=24&page=1&start_time=1769729850"\n');
+        process.exit(1);
     }
     
-    console.log('\n============================================================');
-    console.log('📊 RESUMO FINAL - SCRAPING DE TAGS');
-    console.log('============================================================');
-    console.log(`Tags processadas: ${TAGS.length}`);
-    console.log(`Modelos processados: ${globalStats.totalModels}`);
-    console.log(`Novos modelos: ${globalStats.newModels}`);
-    console.log(`Vídeos processados: ${globalStats.totalVideos}`);
-    console.log(`Novos vídeos: ${globalStats.newVideos}`);
-    console.log('============================================================\n');
+    console.log('\n🚀 Iniciando scraping de URL customizada...\n');
     
-    console.log('✅ Scraping de tags concluído!\n');
-}
-
-// Executar scraping
-scrapeAllTags()
-    .then(() => process.exit(0))
-    .catch(error => {
+    try {
+        const stats = await scrapeCustomUrl(customUrl, 10);
+        
+        console.log('\n============================================================');
+        console.log('📊 RESUMO FINAL');
+        console.log('============================================================');
+        console.log(`Modelos processados: ${stats.totalModels}`);
+        console.log(`Novos modelos: ${stats.newModels}`);
+        console.log(`Vídeos processados: ${stats.totalVideos}`);
+        console.log(`Novos vídeos: ${stats.newVideos}`);
+        console.log('============================================================\n');
+        
+        console.log('✅ Scraping concluído!\n');
+        process.exit(0);
+    } catch (error) {
         console.error('❌ Erro fatal:', error);
         process.exit(1);
-    });
+    }
+}
+
+main();

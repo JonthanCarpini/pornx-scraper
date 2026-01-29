@@ -31,7 +31,8 @@
     "xxxfollow:models": "node src/xxxfollow-models-scraper.js",
     "xxxfollow:videos": "node src/xxxfollow-videos-scraper.js",
     "xxxfollow:video-details": "node src/xxxfollow-video-details-scraper.js",
-    "xxxfollow:tags": "node src/xxxfollow-tag-scraper.js"
+    "xxxfollow:tags": "node src/xxxfollow-tag-scraper.js",
+    "xxxfollow:custom": "node src/xxxfollow-custom-tag-scraper.js"
   },
   "keywords": [
     "scraper",

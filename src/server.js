@@ -1681,6 +1681,54 @@ app.get('/api/xxxfollow/scrape-tags-stream', async (req, res) => {
     }
 });
 
+app.get('/api/xxxfollow/scrape-custom-url-stream', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        const customUrl = req.query.url;
+        
+        if (!customUrl) {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: 'URL não fornecida' })}\n\n`);
+            res.end();
+            return;
+        }
+        
+        const scraper = spawn('node', ['src/xxxfollow-custom-tag-scraper.js', customUrl], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
 // ========================================
 // ADMIN - Limpar Banco
 // ========================================

@@ -318,6 +318,21 @@
                 </select>
             </div>
             
+            <div style="margin-bottom: 20px;">
+                <label for="custom-url" style="display: block; margin-bottom: 10px; font-weight: bold; color: #f093fb;">
+                    🔗 URL Customizada da API (opcional):
+                </label>
+                <input 
+                    type="text" 
+                    id="custom-url" 
+                    placeholder="https://www.xxxfollow.com/api/v1/post/tag/18years?genders=cf&period=featured&limit=24&page=1&start_time=..."
+                    style="width: 100%; padding: 12px; border: 2px solid #f093fb; border-radius: 8px; font-size: 0.9em; background: white;"
+                />
+                <small style="color: #888; display: block; margin-top: 5px;">
+                    💡 Cole uma URL da API do XXXFollow para fazer scraping de tags específicas
+                </small>
+            </div>
+            
             <div class="button-group">
                 <button class="btn btn-primary" onclick="scrapeModels()" id="btn-models">
                     <span>👥</span>
@@ -575,8 +590,70 @@
             isRunning = true;
             toggleButtons(true);
             clearLogs();
+            
+            // Verificar se há URL customizada
+            const customUrl = document.getElementById('custom-url').value.trim();
+            
+            if (customUrl) {
+                addLog('🚀 Iniciando scraping de URL customizada...', 'info');
+                addLog(`🔗 URL: ${customUrl}`, 'info');
+                updateProgress(10, 'Conectando...');
+                
+                try {
+                    const encodedUrl = encodeURIComponent(customUrl);
+                    currentEventSource = new EventSource(`/api/xxxfollow/scrape-custom-url-stream?url=${encodedUrl}`);
+                    let progress = 10;
+                    
+                    currentEventSource.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'log') {
+                            const message = data.message;
+                            
+                            if (message.includes('✓') || message.includes('✅')) {
+                                addLog(message, 'success');
+                            } else if (message.includes('❌') || message.includes('Erro')) {
+                                addLog(message, 'error');
+                            } else {
+                                addLog(message, 'info');
+                            }
+                            
+                            if (message.includes('Vídeo salvo')) {
+                                progress = Math.min(progress + 2, 90);
+                                updateProgress(progress, 'Processando...');
+                            }
+                        } else if (data.type === 'error') {
+                            addLog('❌ ' + data.message, 'error');
+                        } else if (data.type === 'done') {
+                            updateProgress(100, 'Concluído!');
+                            addLog('✅ Scraping de URL customizada concluído!', 'success');
+                            currentEventSource.close();
+                            currentEventSource = null;
+                            isRunning = false;
+                            toggleButtons(false);
+                            setTimeout(() => loadStats(), 1000);
+                        }
+                    };
+                    
+                    currentEventSource.onerror = (error) => {
+                        addLog('❌ Erro na conexão: ' + error, 'error');
+                        currentEventSource.close();
+                        currentEventSource = null;
+                        isRunning = false;
+                        toggleButtons(false);
+                    };
+                    
+                } catch (error) {
+                    addLog('❌ Erro: ' + error.message, 'error');
+                    isRunning = false;
+                    toggleButtons(false);
+                }
+                return;
+            }
+            
+            // Scraping normal de todas as tags
             addLog('🚀 Iniciando scraping de tags via API...', 'info');
-            addLog('🏷️  Processando 40 tags com modelos e vídeos...', 'info');
+            addLog('🏷️  Processando 53 tags com modelos e vídeos...', 'info');
             updateProgress(10, 'Conectando...');
 
             try {
