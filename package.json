@@ -25,7 +25,10 @@
     "update:flags": "node update-scraping-flags.js",
     "backup:db": "node backup-database.js",
     "restore:db": "node restore-database.js",
-    "query": "node src/utils/query-models.js"
+    "query": "node src/utils/query-models.js",
+    "xxxfollow:create-tables": "node src/database/create-xxxfollow-tables.js",
+    "xxxfollow:models": "node src/xxxfollow-models-scraper.js",
+    "xxxfollow:videos": "node src/xxxfollow-videos-scraper.js"
   },
   "keywords": [
     "scraper",
