@@ -1473,7 +1473,11 @@ app.get('/api/xxxfollow/videos', async (req, res) => {
     }
 });
 
-app.post('/api/xxxfollow/scrape-models', async (req, res) => {
+app.get('/api/xxxfollow/scrape-models-stream', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
     try {
         const { spawn } = await import('child_process');
         
@@ -1481,41 +1485,40 @@ app.post('/api/xxxfollow/scrape-models', async (req, res) => {
             cwd: path.join(__dirname, '..')
         });
         
-        let output = '';
-        let stats = { total: 0, saved: 0, duplicates: 0 };
-        
         scraper.stdout.on('data', (data) => {
-            output += data.toString();
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
         });
         
         scraper.stderr.on('data', (data) => {
-            output += data.toString();
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
         });
         
         scraper.on('close', (code) => {
-            const totalMatch = output.match(/Modelos encontradas: (\d+)/);
-            const savedMatch = output.match(/Novas modelos salvas: (\d+)/);
-            const dupMatch = output.match(/Modelos duplicadas: (\d+)/);
-            
-            if (totalMatch) stats.total = parseInt(totalMatch[1]);
-            if (savedMatch) stats.saved = parseInt(savedMatch[1]);
-            if (dupMatch) stats.duplicates = parseInt(dupMatch[1]);
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
         });
         
-        await new Promise(resolve => scraper.on('close', resolve));
-        
-        res.json({
-            success: true,
-            total: stats.total,
-            saved: stats.saved,
-            duplicates: stats.duplicates
-        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
     }
 });
 
-app.post('/api/xxxfollow/scrape-videos', async (req, res) => {
+app.get('/api/xxxfollow/scrape-videos-stream', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
     try {
         const { spawn } = await import('child_process');
         
@@ -1523,34 +1526,32 @@ app.post('/api/xxxfollow/scrape-videos', async (req, res) => {
             cwd: path.join(__dirname, '..')
         });
         
-        let output = '';
-        let stats = { processed: 0, totalVideos: 0 };
-        
         scraper.stdout.on('data', (data) => {
-            output += data.toString();
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
         });
         
         scraper.stderr.on('data', (data) => {
-            output += data.toString();
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
         });
         
         scraper.on('close', (code) => {
-            const processedMatch = output.match(/Modelos processadas: (\d+)/);
-            const videosMatch = output.match(/Total de vídeos salvos: (\d+)/);
-            
-            if (processedMatch) stats.processed = parseInt(processedMatch[1]);
-            if (videosMatch) stats.totalVideos = parseInt(videosMatch[1]);
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
         });
         
-        await new Promise(resolve => scraper.on('close', resolve));
-        
-        res.json({
-            success: true,
-            processed: stats.processed,
-            totalVideos: stats.totalVideos
-        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
     }
 });
 

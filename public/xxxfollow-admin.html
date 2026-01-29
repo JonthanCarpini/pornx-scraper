@@ -360,30 +360,55 @@
 
             isRunning = true;
             clearLogs();
-            addLog('Iniciando scraping de modelos do XXXFollow...', 'info');
-            updateProgress(10, 'Iniciando...');
+            addLog('🚀 Iniciando scraping de modelos do XXXFollow...', 'info');
+            updateProgress(10, 'Conectando...');
 
             try {
-                const response = await fetch('/api/xxxfollow/scrape-models', {
-                    method: 'POST'
-                });
-
-                const data = await response.json();
+                const eventSource = new EventSource('/api/xxxfollow/scrape-models-stream');
+                let progress = 10;
                 
-                if (data.success) {
-                    updateProgress(100, 'Concluído!');
-                    addLog(`✅ Scraping concluído!`, 'success');
-                    addLog(`📊 Modelos encontradas: ${data.total}`, 'success');
-                    addLog(`✨ Novas modelos: ${data.saved}`, 'success');
-                    addLog(`⏭️  Duplicadas: ${data.duplicates}`, 'info');
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
                     
-                    setTimeout(() => loadStats(), 1000);
-                } else {
-                    addLog('❌ Erro no scraping: ' + data.message, 'error');
-                }
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        
+                        // Detectar tipo de log e adicionar com cor apropriada
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
+                        }
+                        
+                        // Atualizar progresso baseado em palavras-chave
+                        if (message.includes('Acessando')) {
+                            progress = Math.min(progress + 10, 50);
+                            updateProgress(progress, 'Coletando dados...');
+                        } else if (message.includes('salva')) {
+                            progress = Math.min(progress + 5, 90);
+                            updateProgress(progress, 'Salvando modelos...');
+                        }
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        updateProgress(100, 'Concluído!');
+                        addLog('✅ Scraping de modelos concluído!', 'success');
+                        eventSource.close();
+                        isRunning = false;
+                        setTimeout(() => loadStats(), 1000);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    addLog('❌ Erro na conexão: ' + error, 'error');
+                    eventSource.close();
+                    isRunning = false;
+                };
+                
             } catch (error) {
                 addLog('❌ Erro: ' + error.message, 'error');
-            } finally {
                 isRunning = false;
             }
         }
@@ -396,29 +421,57 @@
 
             isRunning = true;
             clearLogs();
-            addLog('Iniciando scraping de vídeos do XXXFollow...', 'info');
-            updateProgress(10, 'Iniciando...');
+            addLog('🚀 Iniciando scraping de vídeos do XXXFollow...', 'info');
+            updateProgress(10, 'Conectando...');
 
             try {
-                const response = await fetch('/api/xxxfollow/scrape-videos', {
-                    method: 'POST'
-                });
-
-                const data = await response.json();
+                const eventSource = new EventSource('/api/xxxfollow/scrape-videos-stream');
+                let progress = 10;
                 
-                if (data.success) {
-                    updateProgress(100, 'Concluído!');
-                    addLog(`✅ Scraping concluído!`, 'success');
-                    addLog(`📊 Modelos processadas: ${data.processed}`, 'success');
-                    addLog(`🎬 Vídeos salvos: ${data.totalVideos}`, 'success');
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
                     
-                    setTimeout(() => loadStats(), 1000);
-                } else {
-                    addLog('❌ Erro no scraping: ' + data.message, 'error');
-                }
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        
+                        // Detectar tipo de log e adicionar com cor apropriada
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
+                        }
+                        
+                        // Atualizar progresso baseado em palavras-chave
+                        if (message.includes('Scraping vídeos')) {
+                            progress = Math.min(progress + 10, 50);
+                            updateProgress(progress, 'Processando modelo...');
+                        } else if (message.includes('Vídeo salvo')) {
+                            progress = Math.min(progress + 2, 90);
+                            updateProgress(progress, 'Salvando vídeos...');
+                        } else if (message.includes('concluído')) {
+                            progress = Math.min(progress + 5, 95);
+                        }
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        updateProgress(100, 'Concluído!');
+                        addLog('✅ Scraping de vídeos concluído!', 'success');
+                        eventSource.close();
+                        isRunning = false;
+                        setTimeout(() => loadStats(), 1000);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    addLog('❌ Erro na conexão: ' + error, 'error');
+                    eventSource.close();
+                    isRunning = false;
+                };
+                
             } catch (error) {
                 addLog('❌ Erro: ' + error.message, 'error');
-            } finally {
                 isRunning = false;
             }
         }
