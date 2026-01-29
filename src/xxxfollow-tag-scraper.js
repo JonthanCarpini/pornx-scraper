@@ -190,30 +190,48 @@ async function scrapeTag(tag, maxPages = 10) {
             console.log(`  📦 ${data.list.length} posts encontrados`);
             
             for (const item of data.list) {
-                const post = item.post;
-                const user = post.user;
-                
-                // Processar apenas vídeos públicos
-                if (post.access !== 'free') continue;
-                if (!post.media || post.media.length === 0) continue;
-                
-                // Criar/buscar modelo
-                const modelResult = await findOrCreateModel(user);
-                if (modelResult.isNew) {
-                    newModels++;
-                }
-                totalModels++;
-                
-                // Processar cada vídeo do post
-                for (const media of post.media) {
-                    if (media.type !== 'video') continue;
+                try {
+                    const post = item.post;
                     
-                    const videoResult = await saveVideo(modelResult.id, post, media, item);
-                    if (videoResult.isNew) {
-                        newVideos++;
-                        console.log(`    ✓ Vídeo salvo: ${post.text?.substring(0, 50) || 'Sem título'}`);
+                    // Validar estrutura do post
+                    if (!post) {
+                        console.log(`    ⚠️  Post inválido - pulando`);
+                        continue;
                     }
-                    totalVideos++;
+                    
+                    const user = post.user;
+                    
+                    // Validar se tem usuário
+                    if (!user || !user.id) {
+                        console.log(`    ⚠️  Post sem usuário - pulando`);
+                        continue;
+                    }
+                    
+                    // Processar apenas vídeos públicos
+                    if (post.access !== 'free') continue;
+                    if (!post.media || post.media.length === 0) continue;
+                    
+                    // Criar/buscar modelo
+                    const modelResult = await findOrCreateModel(user);
+                    if (modelResult.isNew) {
+                        newModels++;
+                    }
+                    totalModels++;
+                    
+                    // Processar cada vídeo do post
+                    for (const media of post.media) {
+                        if (media.type !== 'video') continue;
+                        
+                        const videoResult = await saveVideo(modelResult.id, post, media, item);
+                        if (videoResult.isNew) {
+                            newVideos++;
+                            console.log(`    ✓ Vídeo salvo: ${post.text?.substring(0, 50) || 'Sem título'}`);
+                        }
+                        totalVideos++;
+                    }
+                } catch (itemError) {
+                    console.error(`    ❌ Erro ao processar item:`, itemError.message);
+                    continue;
                 }
             }
             
