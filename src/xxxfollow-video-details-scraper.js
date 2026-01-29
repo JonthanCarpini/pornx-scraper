@@ -1,24 +1,42 @@
-import puppeteer from 'puppeteer';
 import dotenv from 'dotenv';
 import pool from './database/db.js';
 
 dotenv.config();
 
-const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
+const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 1000;
 
-async function getVideosWithoutSource() {
+async function getModelsWithPendingVideos() {
     try {
         const query = `
-            SELECT v.id, v.video_url, v.title, m.username
+            SELECT DISTINCT m.id, m.username
             FROM xxxfollow_videos v
             JOIN xxxfollow_models m ON v.model_id = m.id
             WHERE v.video_url LIKE '%xxxfollow.com/%'
             AND v.video_url NOT LIKE '%.mp4'
-            ORDER BY v.id ASC
-            LIMIT 100
+            ORDER BY m.username
         `;
         
         const result = await pool.query(query);
+        return result.rows;
+    } catch (error) {
+        console.error('❌ Erro ao buscar modelos:', error.message);
+        return [];
+    }
+}
+
+async function getVideosForModel(username) {
+    try {
+        const query = `
+            SELECT v.id, v.video_url, v.title
+            FROM xxxfollow_videos v
+            JOIN xxxfollow_models m ON v.model_id = m.id
+            WHERE m.username = $1
+            AND v.video_url LIKE '%xxxfollow.com/%'
+            AND v.video_url NOT LIKE '%.mp4'
+            ORDER BY v.id ASC
+        `;
+        
+        const result = await pool.query(query, [username]);
         return result.rows;
     } catch (error) {
         console.error('❌ Erro ao buscar vídeos:', error.message);
@@ -54,180 +72,142 @@ async function updateVideoSource(videoId, sourceUrl, posterUrl = null) {
     }
 }
 
-async function extractVideoDetails(page, videoUrl) {
+async function fetchFromAPI(username) {
     try {
-        // Extrair ID do post da URL (ex: /emmafiore10/522921-una-chupadita -> 522921)
-        const postIdMatch = videoUrl.match(/\/(\d+)-/);
-        const postId = postIdMatch ? postIdMatch[1] : null;
+        const apiUrl = `https://www.xxxfollow.com/api/v1/user/${username}/post/public?limit=100&sort_by=recent`;
         
-        await page.goto(videoUrl, {
-            waitUntil: 'networkidle2',
-            timeout: 30000
+        const response = await fetch(apiUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
         });
         
-        // Aguardar o elemento de vídeo aparecer
-        try {
-            await page.waitForSelector('video', { timeout: 10000 });
-        } catch (e) {
-            console.log('  ⚠️  Timeout aguardando vídeo');
+        if (!response.ok) {
+            throw new Error(`API retornou status ${response.status}`);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        const data = await response.json();
         
-        // Extrair source do vídeo e poster
-        const videoDetails = await page.evaluate((postId) => {
-            let videoSource = null;
-            let posterUrl = null;
-            
-            // Tentar múltiplos seletores para o vídeo
-            const videoSelectors = [
-                '#svp_player_a',
-                'video.index-module__video--pbzTA',
-                'video[src]',
-                'video'
-            ];
-            
-            for (const selector of videoSelectors) {
-                const videoElement = document.querySelector(selector);
-                if (videoElement) {
-                    // Tentar pegar src como propriedade ou atributo
-                    videoSource = videoElement.src || 
-                                 videoElement.getAttribute('src') || 
-                                 videoElement.currentSrc;
-                    if (videoSource) break;
-                }
-            }
-            
-            // Se não encontrou o source dinamicamente, construir a partir do postId
-            if (!videoSource && postId) {
-                // Tentar encontrar o caminho base no HTML
-                const imgElements = document.querySelectorAll('img[src*="post_public"]');
-                let basePath = null;
-                
-                for (const img of imgElements) {
-                    const src = img.src || img.getAttribute('src');
-                    if (src && src.includes('post_public')) {
-                        // Extrair: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/
-                        const match = src.match(/(.*post_public\/\d+\/\d+\/)/);
-                        if (match) {
-                            basePath = match[1];
-                            break;
-                        }
-                    }
-                }
-                
-                // Construir URLs de vídeo com diferentes qualidades
-                if (basePath) {
-                    const qualities = ['_fhd.mp4', '_hd.mp4', '_sd.mp4', '.mp4'];
-                    for (const quality of qualities) {
-                        videoSource = basePath + postId + quality;
-                        break; // Usar a primeira (fhd)
-                    }
-                }
-            }
-            
-            // Extrair poster (_start.webp)
-            const posterSelectors = [
-                'img.index-module__videoPoster--AiD_2',
-                'img[alt="video poster"]',
-                '.index-module__resizerPoster--SGlrk img',
-                '.index-module__videoResizer--jSsQk img'
-            ];
-            
-            for (const selector of posterSelectors) {
-                const posterElement = document.querySelector(selector);
-                if (posterElement) {
-                    posterUrl = posterElement.src || 
-                               posterElement.getAttribute('src') || 
-                               posterElement.currentSrc;
-                    if (posterUrl && posterUrl.includes('_start.webp')) break;
-                }
-            }
-            
-            return { videoSource, posterUrl };
-        }, postId);
+        // Criar mapa de postId -> videoData
+        const videoMap = new Map();
         
-        return videoDetails;
+        for (const item of data) {
+            const postId = item.post?.id;
+            const media = item.post?.media?.[0];
+            
+            if (postId && media && media.type === 'video') {
+                videoMap.set(postId.toString(), {
+                    fhd_url: media.fhd_url,
+                    sd_url: media.sd_url,
+                    url: media.url,
+                    start_webp_url: media.start_webp_url,
+                    thumb_webp_url: media.thumb_webp_url
+                });
+            }
+        }
+        
+        return videoMap;
     } catch (error) {
-        console.error(`❌ Erro ao extrair detalhes:`, error.message);
-        return { videoSource: null, posterUrl: null };
+        console.error(`❌ Erro ao buscar API:`, error.message);
+        return new Map();
     }
 }
 
 async function scrapeVideoDetails() {
-    let browser;
-    
     try {
-        console.log('\n🚀 Iniciando scraping de detalhes dos vídeos do XXXFollow...\n');
+        console.log('\n🚀 Iniciando scraping de detalhes dos vídeos do XXXFollow via API...\n');
         
-        const videos = await getVideosWithoutSource();
+        const models = await getModelsWithPendingVideos();
         
-        if (videos.length === 0) {
+        if (models.length === 0) {
             console.log('✅ Todos os vídeos já possuem source MP4!\n');
             return;
         }
         
-        console.log(`📊 Vídeos pendentes: ${videos.length}\n`);
+        console.log(`📊 Modelos com vídeos pendentes: ${models.length}\n`);
         
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
-        });
-        
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        
+        let totalProcessed = 0;
         let successCount = 0;
         let errorCount = 0;
         
-        for (let i = 0; i < videos.length; i++) {
-            const video = videos[i];
+        for (const model of models) {
+            console.log(`\n👤 Processando modelo: ${model.username}`);
             
-            console.log(`[${i + 1}/${videos.length}] 🎬 ${video.username}: ${video.title?.substring(0, 40) || 'Sem título'}...`);
-            console.log(`  🔗 URL: ${video.video_url}`);
+            // Buscar vídeos pendentes deste modelo
+            const videos = await getVideosForModel(model.username);
             
-            try {
-                const details = await extractVideoDetails(page, video.video_url);
-                
-                if (details.videoSource) {
-                    const updated = await updateVideoSource(video.id, details.videoSource, details.posterUrl);
-                    if (updated) {
-                        successCount++;
-                        console.log(`  ✓ Source: ${details.videoSource.substring(0, 50)}...`);
-                        if (details.posterUrl) {
-                            console.log(`  ✓ Poster: ${details.posterUrl.substring(0, 50)}...`);
-                        }
-                    } else {
-                        errorCount++;
-                        console.log(`  ❌ Erro ao atualizar no banco`);
-                    }
-                } else {
-                    errorCount++;
-                    console.log(`  ⚠️  Source não encontrado`);
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, SCRAPE_DELAY));
-                
-            } catch (error) {
-                errorCount++;
-                console.error(`  ❌ Erro: ${error.message}`);
+            if (videos.length === 0) {
+                console.log(`  ⚠️  Nenhum vídeo pendente`);
+                continue;
             }
             
-            console.log('');
+            console.log(`  📹 Vídeos pendentes: ${videos.length}`);
+            
+            // Buscar dados da API
+            const videoMap = await fetchFromAPI(model.username);
+            
+            if (videoMap.size === 0) {
+                console.log(`  ❌ Erro ao buscar API`);
+                errorCount += videos.length;
+                continue;
+            }
+            
+            console.log(`  ✓ API retornou ${videoMap.size} vídeos\n`);
+            
+            // Processar cada vídeo
+            for (const video of videos) {
+                totalProcessed++;
+                
+                // Extrair postId da URL
+                const postIdMatch = video.video_url.match(/\/(\d+)-/);
+                const postId = postIdMatch ? postIdMatch[1] : null;
+                
+                if (!postId) {
+                    console.log(`  [${totalProcessed}] ❌ ${video.title?.substring(0, 40)} - ID não encontrado na URL`);
+                    errorCount++;
+                    continue;
+                }
+                
+                const videoData = videoMap.get(postId);
+                
+                if (!videoData) {
+                    console.log(`  [${totalProcessed}] ⚠️  ${video.title?.substring(0, 40)} - Post ${postId} não encontrado na API`);
+                    errorCount++;
+                    continue;
+                }
+                
+                // Escolher melhor qualidade disponível
+                const videoSource = videoData.fhd_url || videoData.sd_url || videoData.url;
+                const posterUrl = videoData.start_webp_url;
+                
+                if (!videoSource) {
+                    console.log(`  [${totalProcessed}] ❌ ${video.title?.substring(0, 40)} - Source não disponível`);
+                    errorCount++;
+                    continue;
+                }
+                
+                // Atualizar no banco
+                const updated = await updateVideoSource(video.id, videoSource, posterUrl);
+                
+                if (updated) {
+                    successCount++;
+                    const quality = videoData.fhd_url ? 'FHD' : (videoData.sd_url ? 'SD' : 'STD');
+                    console.log(`  [${totalProcessed}] ✓ ${video.title?.substring(0, 40)} (${quality})`);
+                } else {
+                    errorCount++;
+                    console.log(`  [${totalProcessed}] ❌ ${video.title?.substring(0, 40)} - Erro ao atualizar banco`);
+                }
+            }
+            
+            // Delay entre modelos
+            await new Promise(resolve => setTimeout(resolve, SCRAPE_DELAY));
         }
-        
-        await browser.close();
         
         console.log('\n============================================================');
         console.log('📊 RESUMO DO SCRAPING - XXXFOLLOW VIDEO DETAILS');
         console.log('============================================================');
-        console.log(`Vídeos processados: ${videos.length}`);
+        console.log(`Modelos processados: ${models.length}`);
+        console.log(`Vídeos processados: ${totalProcessed}`);
         console.log(`Sources atualizados: ${successCount}`);
         console.log(`Erros: ${errorCount}`);
         console.log('============================================================\n');
@@ -236,9 +216,6 @@ async function scrapeVideoDetails() {
         
     } catch (error) {
         console.error('❌ Erro fatal:', error.message);
-        if (browser) {
-            await browser.close();
-        }
     } finally {
         process.exit(0);
     }
