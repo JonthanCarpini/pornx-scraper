@@ -74,36 +74,67 @@ async function updateVideoSource(videoId, sourceUrl, posterUrl = null) {
 
 async function fetchFromAPI(username) {
     try {
-        const apiUrl = `https://www.xxxfollow.com/api/v1/user/${username}/post/public?limit=100&sort_by=recent`;
-        
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API retornou status ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // Criar mapa de postId -> videoData
         const videoMap = new Map();
+        let beforeTime = null;
+        let page = 1;
+        const limit = 18;
         
-        for (const item of data) {
-            const postId = item.post?.id;
-            const media = item.post?.media?.[0];
+        while (true) {
+            let apiUrl = `https://www.xxxfollow.com/api/v1/user/${username}/post/public?limit=${limit}&sort_by=recent`;
             
-            if (postId && media && media.type === 'video') {
-                videoMap.set(postId.toString(), {
-                    fhd_url: media.fhd_url,
-                    sd_url: media.sd_url,
-                    url: media.url,
-                    start_webp_url: media.start_webp_url,
-                    thumb_webp_url: media.thumb_webp_url
-                });
+            if (beforeTime) {
+                apiUrl += `&before_time=${encodeURIComponent(beforeTime)}`;
             }
+            
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API retornou status ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (!Array.isArray(data) || data.length === 0) {
+                break; // Não há mais dados
+            }
+            
+            // Processar dados da página atual
+            for (const item of data) {
+                const postId = item.post?.id;
+                const media = item.post?.media?.[0];
+                
+                if (postId && media && media.type === 'video') {
+                    videoMap.set(postId.toString(), {
+                        fhd_url: media.fhd_url,
+                        sd_url: media.sd_url,
+                        url: media.url,
+                        start_webp_url: media.start_webp_url,
+                        thumb_webp_url: media.thumb_webp_url
+                    });
+                }
+            }
+            
+            // Se retornou menos que o limite, não há mais páginas
+            if (data.length < limit) {
+                break;
+            }
+            
+            // Pegar o created_at do último item para próxima página
+            const lastItem = data[data.length - 1];
+            beforeTime = lastItem.post?.created_at;
+            
+            if (!beforeTime) {
+                break;
+            }
+            
+            page++;
+            
+            // Delay entre requisições
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
         
         return videoMap;
