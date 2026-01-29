@@ -81,10 +81,11 @@ async function testEmmaFiore10() {
                     continue;
                 }
                 
-                // Extrair o padrão base da URL
-                // De: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/779727_blur.jpg
+                // Remover query parameters e extrair o padrão base da URL
+                // De: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/779727_blur.jpg?cb=123
                 // Para: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/779727
-                const baseUrl = blurUrl.replace(/_blur\.(jpg|webp)$/, '');
+                const cleanUrl = blurUrl.split('?')[0]; // Remove query parameters
+                const baseUrl = cleanUrl.replace(/_blur\.(jpg|webp)$/, '');
                 
                 const posterUrl = `${baseUrl}_small.jpg`;
                 const sourceUrl = `${baseUrl}.mp4`;
