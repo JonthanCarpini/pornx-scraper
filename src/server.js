@@ -1481,7 +1481,9 @@ app.get('/api/xxxfollow/scrape-models-stream', async (req, res) => {
     try {
         const { spawn } = await import('child_process');
         
-        const scraper = spawn('node', ['src/xxxfollow-models-scraper.js'], {
+        const page = req.query.page || 'most-popular/all';
+        
+        const scraper = spawn('node', ['src/xxxfollow-models-scraper.js', page], {
             cwd: path.join(__dirname, '..')
         });
         

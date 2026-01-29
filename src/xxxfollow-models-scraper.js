@@ -175,7 +175,13 @@ async function scrapeAllModels() {
     let browser;
     
     try {
-        console.log('\n🚀 Iniciando scraping de modelos do XXXFollow...\n');
+        // Pegar página da linha de comando ou usar padrão
+        const scrapePage = process.argv[2] || 'most-popular/all';
+        const scrapeUrl = `${BASE_URL}/${scrapePage}`;
+        
+        console.log('\n🚀 Iniciando scraping de modelos do XXXFollow...');
+        console.log(`📄 Página: ${scrapePage}`);
+        console.log(`🔗 URL: ${scrapeUrl}\n`);
         
         browser = await puppeteer.launch({
             headless: 'new',
@@ -188,7 +194,8 @@ async function scrapeAllModels() {
             ]
         });
         
-        await scrapeCreatorsPage(browser);
+        const page = await browser.newPage();
+        await scrapeModelsFromPage(page, scrapeUrl);
         
         await browser.close();
         

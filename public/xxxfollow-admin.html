@@ -270,6 +270,24 @@
         <div class="controls">
             <h2>🎮 Controles de Scraping</h2>
             
+            <div style="margin-bottom: 20px;">
+                <label for="scrape-page" style="display: block; margin-bottom: 10px; font-weight: bold; color: #667eea;">
+                    📄 Página de Scraping de Modelos:
+                </label>
+                <select id="scrape-page" style="width: 100%; padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 1em; background: white; cursor: pointer;">
+                    <option value="most-popular/all">🔥 Most Popular (Padrão)</option>
+                    <option value="contest-winners">🏆 Contest Winners</option>
+                    <option value="newest-creators">✨ Newest Creators</option>
+                    <option value="tag/teen-18/all">👧 Teen 18+</option>
+                    <option value="tag/latina/all">💃 Latina</option>
+                    <option value="tag/asian/all">🌸 Asian</option>
+                    <option value="tag/ebony/all">🖤 Ebony</option>
+                    <option value="tag/milf/all">👩 MILF</option>
+                    <option value="tag/bigass/all">🍑 Big Ass</option>
+                    <option value="tag/bigboobs/all">🍒 Big Boobs</option>
+                </select>
+            </div>
+            
             <div class="button-group">
                 <button class="btn btn-primary" onclick="scrapeModels()" id="btn-models">
                     <span>👥</span>
@@ -388,11 +406,16 @@
             isRunning = true;
             toggleButtons(true);
             clearLogs();
-            addLog('🚀 Iniciando scraping de modelos do XXXFollow...', 'info');
+            
+            const scrapePage = document.getElementById('scrape-page').value;
+            const pageLabel = document.getElementById('scrape-page').selectedOptions[0].text;
+            
+            addLog(`🚀 Iniciando scraping de modelos: ${pageLabel}`, 'info');
+            addLog(`📄 URL: https://www.xxxfollow.com/${scrapePage}`, 'info');
             updateProgress(10, 'Conectando...');
 
             try {
-                currentEventSource = new EventSource('/api/xxxfollow/scrape-models-stream');
+                currentEventSource = new EventSource(`/api/xxxfollow/scrape-models-stream?page=${encodeURIComponent(scrapePage)}`);
                 let progress = 10;
                 
                 currentEventSource.onmessage = (event) => {
