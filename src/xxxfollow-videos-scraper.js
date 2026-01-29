@@ -1,11 +1,9 @@
-import puppeteer from 'puppeteer';
 import dotenv from 'dotenv';
 import pool from './database/db.js';
 
 dotenv.config();
 
-const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
-const BASE_URL = 'https://www.xxxfollow.com';
+const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 1000;
 
 async function saveVideo(videoData) {
     try {
@@ -59,136 +57,125 @@ async function saveVideo(videoData) {
     }
 }
 
-async function scrapeModelVideos(modelId, username) {
-    let browser;
-    
+async function fetchVideosFromAPI(modelId, username) {
     try {
-        console.log(`\n🎬 Scraping vídeos: ${username}`);
-        console.log(`📄 URL: ${BASE_URL}/${username}`);
+        console.log(`\n🎬 Buscando vídeos via API: ${username}`);
         
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
-        });
+        let allVideos = [];
+        let beforeTime = null;
+        let page = 1;
+        const limit = 18;
         
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        
-        await page.goto(`${BASE_URL}/${username}`, {
-            waitUntil: 'networkidle2',
-            timeout: 60000
-        });
-        
-        console.log('⏳ Aguardando carregamento completo...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        // Extrair vídeos públicos do HTML (ignorar privados com cadeado)
-        const videos = await page.evaluate(() => {
-            const videoItems = document.querySelectorAll('.index-module__item--DUfg0');
-            const foundVideos = [];
+        while (true) {
+            let apiUrl = `https://www.xxxfollow.com/api/v1/user/${username}/post/public?limit=${limit}&sort_by=recent`;
             
-            videoItems.forEach(item => {
-                // Verificar se é vídeo privado (tem botão subscribeFeed ou ícone de cadeado)
-                const isPrivate = item.querySelector('.subscribeFeed') || 
-                                 item.querySelector('svg.mt-0') ||
-                                 item.textContent.includes('Subscribers only');
-                
-                if (isPrivate) return; // Ignorar vídeos privados
-                
-                // Buscar link do vídeo público
-                const link = item.querySelector('a.index-module__itemHolder--MPzxF');
-                if (!link) return;
-                
-                const href = link.getAttribute('href');
-                const img = link.querySelector('img');
-                
-                if (!img || !href) return;
-                
-                const thumbnailUrl = img.getAttribute('src');
-                const title = img.getAttribute('alt') || '';
-                
-                // Extrair duração (segundo span com aria-label="view")
-                const durationSpan = item.querySelector('.index-module__start--RYOXV');
-                const duration = durationSpan ? durationSpan.textContent.trim() : '00:00';
-                
-                // Extrair views (primeiro span com aria-label="view") e converter k/m para número
-                const viewSpan = item.querySelector('.index-module__end--y2ADg');
-                const viewText = viewSpan ? viewSpan.textContent.trim() : '0';
-                let views = 0;
-                if (viewText.includes('k')) {
-                    views = Math.floor(parseFloat(viewText.replace(/[^0-9.]/g, '')) * 1000);
-                } else if (viewText.includes('m')) {
-                    views = Math.floor(parseFloat(viewText.replace(/[^0-9.]/g, '')) * 1000000);
-                } else {
-                    views = parseInt(viewText.replace(/[^0-9]/g, '')) || 0;
+            if (beforeTime) {
+                apiUrl += `&before_time=${encodeURIComponent(beforeTime)}`;
+            }
+            
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
-                
-                foundVideos.push({
-                    videoUrl: href,
-                    thumbnailUrl: thumbnailUrl,
-                    title: title,
-                    duration: duration,
-                    views: views
-                });
             });
             
-            return foundVideos;
-        });
+            if (!response.ok) {
+                console.log(`  ❌ API retornou status ${response.status}`);
+                break;
+            }
+            
+            const data = await response.json();
+            
+            if (!Array.isArray(data) || data.length === 0) {
+                break;
+            }
+            
+            // Processar apenas vídeos públicos com source disponível
+            for (const item of data) {
+                const post = item.post;
+                const media = post?.media?.[0];
+                
+                // Ignorar se não for vídeo ou se for privado/pago
+                if (!media || media.type !== 'video') continue;
+                if (post.access !== 'free') continue;
+                if (item.is_locked || item.is_locked_subscription) continue;
+                
+                // Ignorar se não tiver source de vídeo (só blur)
+                const videoUrl = media.fhd_url || media.sd_url || media.url;
+                if (!videoUrl || videoUrl.includes('blur')) continue;
+                
+                allVideos.push({
+                    modelId: modelId,
+                    postId: post.id,
+                    mediaId: media.id,
+                    title: post.text || 'Sem título',
+                    description: post.text || '',
+                    videoUrl: videoUrl,
+                    sdUrl: media.sd_url,
+                    thumbnailUrl: media.thumb_webp_url || media.thumb_url,
+                    posterUrl: media.start_webp_url || media.start_url,
+                    duration: media.duration_in_second || 0,
+                    width: media.width || 0,
+                    height: media.height || 0,
+                    likeCount: item.like_count || 0,
+                    viewCount: item.view_count || 0,
+                    commentCount: item.comment_count || 0,
+                    hasAudio: media.has_audio || false,
+                    postedAt: post.created_at
+                });
+            }
+            
+            // Se retornou menos que o limite, não há mais páginas
+            if (data.length < limit) {
+                break;
+            }
+            
+            // Pegar o created_at do último item para próxima página
+            const lastItem = data[data.length - 1];
+            beforeTime = lastItem.post?.created_at;
+            
+            if (!beforeTime) {
+                break;
+            }
+            
+            page++;
+            
+            // Delay entre requisições
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
         
-        console.log(`📊 Vídeos públicos encontrados: ${videos.length}`);
+        console.log(`  ✓ API retornou ${allVideos.length} vídeos públicos`);
+        
+        return allVideos;
+    } catch (error) {
+        console.error(`  ❌ Erro ao buscar API:`, error.message);
+        return [];
+    }
+}
+
+async function scrapeModelVideos(modelId, username) {
+    try {
+        const videos = await fetchVideosFromAPI(modelId, username);
+        
+        if (videos.length === 0) {
+            console.log(`  ⚠️  Nenhum vídeo público encontrado`);
+            await pool.query(
+                'UPDATE xxxfollow_models SET videos_scraped = TRUE, videos_scraped_at = CURRENT_TIMESTAMP WHERE id = $1',
+                [modelId]
+            );
+            return { success: true, videosFound: 0, videosSaved: 0 };
+        }
         
         let savedCount = 0;
         let skippedCount = 0;
         
         for (const video of videos) {
-            try {
-                // Converter duração MM:SS para segundos
-                const [mins, secs] = video.duration.split(':').map(n => parseInt(n) || 0);
-                const durationSeconds = (mins * 60) + secs;
-                
-                // Extrair ID do post da URL
-                const postIdMatch = video.videoUrl.match(/\/(\d+)-/);
-                const postId = postIdMatch ? parseInt(postIdMatch[1]) : Math.floor(Math.random() * 1000000000);
-                
-                // Converter thumbnail _small.webp para imagem maior
-                const posterUrl = video.thumbnailUrl.replace('_small.webp', '.webp');
-                
-                const videoData = {
-                    modelId: modelId,
-                    postId: postId,
-                    mediaId: postId,
-                    title: video.title || null,
-                    description: video.title || null,
-                    videoUrl: `${BASE_URL}${video.videoUrl}`, // URL da página do vídeo
-                    sdUrl: null,
-                    thumbnailUrl: posterUrl,
-                    posterUrl: posterUrl,
-                    duration: durationSeconds,
-                    width: 0,
-                    height: 0,
-                    likeCount: 0,
-                    viewCount: parseInt(video.views) || 0,
-                    commentCount: 0,
-                    hasAudio: true,
-                    postedAt: new Date().toISOString()
-                };
-                
-                const result = await saveVideo(videoData);
-                if (result.isNew) {
-                    savedCount++;
-                    console.log(`  ✓ Vídeo salvo: ${video.title.substring(0, 50)}...`);
-                } else {
-                    skippedCount++;
-                }
-                
-            } catch (error) {
-                console.error(`  ❌ Erro ao processar vídeo:`, error.message);
+            const result = await saveVideo(video);
+            if (result.isNew) {
+                savedCount++;
+                console.log(`  ✓ ${video.title.substring(0, 50)}...`);
+            } else {
+                skippedCount++;
             }
         }
         
@@ -198,9 +185,7 @@ async function scrapeModelVideos(modelId, username) {
             [modelId]
         );
         
-        console.log(`\n✅ Scraping concluído: ${savedCount} novos, ${skippedCount} duplicados`);
-        
-        await browser.close();
+        console.log(`  📊 Salvos: ${savedCount} novos, ${skippedCount} duplicados`);
         
         return {
             success: true,
@@ -209,10 +194,7 @@ async function scrapeModelVideos(modelId, username) {
         };
         
     } catch (error) {
-        console.error('❌ Erro durante o scraping:', error.message);
-        if (browser) {
-            await browser.close();
-        }
+        console.error('  ❌ Erro durante o scraping:', error.message);
         return {
             success: false,
             videosFound: 0,
@@ -223,7 +205,7 @@ async function scrapeModelVideos(modelId, username) {
 
 async function scrapeAllModelsVideos() {
     try {
-        console.log('\n🎯 Iniciando scraping de vídeos do XXXFollow...\n');
+        console.log('\n🎯 Iniciando scraping de vídeos do XXXFollow via API...\n');
         
         const result = await pool.query(`
             SELECT id, username 
@@ -233,7 +215,7 @@ async function scrapeAllModelsVideos() {
         `);
         const models = result.rows;
         
-        console.log(`📊 Modelos pendentes (sem vídeos coletados): ${models.length}\n`);
+        console.log(`📊 Modelos pendentes: ${models.length}\n`);
         
         let processedCount = 0;
         let totalVideos = 0;
@@ -241,7 +223,7 @@ async function scrapeAllModelsVideos() {
         for (const model of models) {
             try {
                 processedCount++;
-                console.log(`\n[${processedCount}/${models.length}] Processando: ${model.username}`);
+                console.log(`[${processedCount}/${models.length}] 👤 ${model.username}`);
                 
                 const result = await scrapeModelVideos(model.id, model.username);
                 
@@ -249,10 +231,7 @@ async function scrapeAllModelsVideos() {
                     totalVideos += result.videosSaved;
                 }
                 
-                if (processedCount < models.length) {
-                    console.log(`⏳ Aguardando ${SCRAPE_DELAY}ms antes da próxima modelo...`);
-                    await new Promise(resolve => setTimeout(resolve, SCRAPE_DELAY));
-                }
+                await new Promise(resolve => setTimeout(resolve, SCRAPE_DELAY));
                 
             } catch (error) {
                 console.error(`❌ Erro ao processar ${model.username}:`, error.message);
@@ -260,37 +239,19 @@ async function scrapeAllModelsVideos() {
         }
         
         console.log('\n============================================================');
-        console.log('📊 RESUMO DO SCRAPING DE VÍDEOS - XXXFOLLOW');
+        console.log('📊 RESUMO DO SCRAPING - XXXFOLLOW VIDEOS');
         console.log('============================================================');
-        console.log(`Modelos processadas: ${processedCount}/${models.length}`);
+        console.log(`Modelos processados: ${processedCount}`);
         console.log(`Total de vídeos salvos: ${totalVideos}`);
         console.log('============================================================\n');
         
-        process.exit(0);
+        console.log('✅ Scraping de vídeos concluído!\n');
         
     } catch (error) {
         console.error('❌ Erro fatal:', error.message);
-        process.exit(1);
+    } finally {
+        process.exit(0);
     }
 }
 
-const modelId = process.argv[2];
-
-if (modelId) {
-    pool.query('SELECT id, username FROM xxxfollow_models WHERE id = $1', [modelId])
-        .then(result => {
-            if (result.rows.length === 0) {
-                console.error(`❌ Modelo com ID ${modelId} não encontrada`);
-                process.exit(1);
-            }
-            const model = result.rows[0];
-            return scrapeModelVideos(model.id, model.username);
-        })
-        .then(() => process.exit(0))
-        .catch(error => {
-            console.error('❌ Erro:', error.message);
-            process.exit(1);
-        });
-} else {
-    scrapeAllModelsVideos();
-}
+scrapeAllModelsVideos();
