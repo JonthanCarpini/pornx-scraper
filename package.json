@@ -23,6 +23,8 @@
     "migrate:video-details": "node src/database/migrate-video-details.js",
     "migrate:stages": "node run-migration.js",
     "update:flags": "node update-scraping-flags.js",
+    "backup:db": "node backup-database.js",
+    "restore:db": "node restore-database.js",
     "query": "node src/utils/query-models.js"
   },
   "keywords": [
