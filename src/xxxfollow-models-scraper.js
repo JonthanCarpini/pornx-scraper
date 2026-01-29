@@ -82,8 +82,8 @@ async function scrapeModelsFromPage(page, pageUrl) {
                 if (seen.has(username)) return;
                 seen.add(username);
                 
-                // Buscar imagem do avatar
-                const img = card.querySelector('img[alt]');
+                // Buscar imagem do avatar dentro da estrutura correta
+                const img = card.querySelector('.index-module__avatar--Csl9u img.index-module__img--L9Qid');
                 if (!img) return;
                 
                 const avatarUrl = img.getAttribute('src');
