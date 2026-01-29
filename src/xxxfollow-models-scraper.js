@@ -88,12 +88,25 @@ async function scrapeModelsFromPage(page, pageUrl) {
         const models = [];
         const props = pageData.props.pageProps;
         
-        // Buscar modelos em "sidemenu-most-popular" ou outras chaves
-        const popularModels = props['sidemenu-most-popular'] || [];
+        // Buscar modelos em diferentes seções da página creators
+        const listCreators = props['list-creators'] || {};
+        const allModels = [];
         
-        for (const model of popularModels) {
-            if (model.type === 'model') {
-                models.push({
+        // Coletar modelos de todas as categorias (tags, popular, new, contest)
+        if (listCreators.popular) allModels.push(...listCreators.popular);
+        if (listCreators.new) allModels.push(...listCreators.new);
+        if (listCreators.contest) allModels.push(...listCreators.contest);
+        if (listCreators.tags) {
+            listCreators.tags.forEach(tag => {
+                if (tag.users) allModels.push(...tag.users);
+            });
+        }
+        
+        // Remover duplicatas usando um Set baseado no ID
+        const uniqueModels = new Map();
+        for (const model of allModels) {
+            if (model.type === 'model' && !uniqueModels.has(model.id)) {
+                uniqueModels.set(model.id, {
                     xxxfollowId: model.id,
                     username: model.username,
                     displayName: model.display_name,
@@ -109,6 +122,8 @@ async function scrapeModelsFromPage(page, pageUrl) {
                 });
             }
         }
+        
+        models.push(...uniqueModels.values());
         
         console.log(`📊 Modelos encontradas: ${models.length}`);
         return models;
