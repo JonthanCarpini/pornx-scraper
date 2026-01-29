@@ -109,21 +109,18 @@ async function fetchVideosFromAPI(modelId, username) {
                     continue;
                 }
                 
-                // Verificar se é público e não está bloqueado
-                const isFree = post.access === 'free';
-                const isLocked = item.is_locked || item.is_locked_subscription;
-                
-                // Buscar melhor source disponível
-                const videoUrl = media.fhd_url || media.sd_url || media.url;
-                const hasValidSource = videoUrl && !videoUrl.includes('blur');
-                
-                // Aceitar vídeos públicos OU vídeos com source válido (mesmo que não sejam marcados como free)
-                if (!hasValidSource) {
-                    filteredReasons.noSource++;
+                // Aceitar apenas vídeos gratuitos (access: "free")
+                if (post.access !== 'free') {
+                    filteredReasons.locked++;
                     continue;
                 }
-                if (!isFree && isLocked) {
-                    filteredReasons.locked++;
+                
+                // Buscar melhor source disponível (prioridade: UHD > FHD > SD > URL)
+                const videoUrl = media.uhd_url || media.fhd_url || media.sd_url || media.url;
+                
+                // Verificar se tem source válido (não pode ser null/undefined)
+                if (!videoUrl) {
+                    filteredReasons.noSource++;
                     continue;
                 }
                 
