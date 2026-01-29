@@ -117,10 +117,17 @@ async function scrapeModelVideos(modelId, username) {
                 const durationSpan = item.querySelector('.index-module__start--RYOXV');
                 const duration = durationSpan ? durationSpan.textContent.trim() : '00:00';
                 
-                // Extrair views (primeiro span com aria-label="view")
+                // Extrair views (primeiro span com aria-label="view") e converter k/m para número
                 const viewSpan = item.querySelector('.index-module__end--y2ADg');
                 const viewText = viewSpan ? viewSpan.textContent.trim() : '0';
-                const views = viewText.replace(/[^0-9.]/g, '');
+                let views = 0;
+                if (viewText.includes('k')) {
+                    views = Math.floor(parseFloat(viewText.replace(/[^0-9.]/g, '')) * 1000);
+                } else if (viewText.includes('m')) {
+                    views = Math.floor(parseFloat(viewText.replace(/[^0-9.]/g, '')) * 1000000);
+                } else {
+                    views = parseInt(viewText.replace(/[^0-9]/g, '')) || 0;
+                }
                 
                 foundVideos.push({
                     videoUrl: href,
@@ -149,6 +156,9 @@ async function scrapeModelVideos(modelId, username) {
                 const postIdMatch = video.videoUrl.match(/\/(\d+)-/);
                 const postId = postIdMatch ? parseInt(postIdMatch[1]) : Math.floor(Math.random() * 1000000000);
                 
+                // Converter thumbnail _small.webp para imagem maior
+                const posterUrl = video.thumbnailUrl.replace('_small.webp', '.webp');
+                
                 const videoData = {
                     modelId: modelId,
                     postId: postId,
@@ -157,13 +167,13 @@ async function scrapeModelVideos(modelId, username) {
                     description: video.title || null,
                     videoUrl: `${BASE_URL}${video.videoUrl}`, // URL da página do vídeo
                     sdUrl: null,
-                    thumbnailUrl: video.thumbnailUrl,
-                    posterUrl: video.thumbnailUrl,
+                    thumbnailUrl: posterUrl,
+                    posterUrl: posterUrl,
                     duration: durationSeconds,
                     width: 0,
                     height: 0,
                     likeCount: 0,
-                    viewCount: parseFloat(video.views) || 0,
+                    viewCount: parseInt(video.views) || 0,
                     commentCount: 0,
                     hasAudio: true,
                     postedAt: new Date().toISOString()
