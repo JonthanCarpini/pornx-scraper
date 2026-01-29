@@ -112,9 +112,28 @@ async function saveVideo(modelId, postData, mediaData, statsData) {
             return { isNew: false };
         }
         
-        // Prioridade de URL: uhd > fhd > sd > url
-        const videoUrl = mediaData.uhd_url || mediaData.fhd_url || mediaData.sd_url || mediaData.url;
-        const posterUrl = mediaData.start_url || mediaData.thumb_url;
+        // Construir URLs a partir do blur_url (mesma lógica do xxxfollow-videos-scraper)
+        let videoUrl = null;
+        let posterUrl = null;
+        
+        if (mediaData.blur_url) {
+            // Remover query parameters e extrair o padrão base da URL
+            const cleanUrl = mediaData.blur_url.split('?')[0];
+            const baseUrl = cleanUrl.replace(/_blur\.(jpg|webp)$/, '');
+            
+            posterUrl = `${baseUrl}_small.jpg`;
+            videoUrl = `${baseUrl}.mp4`;
+        } else {
+            // Fallback: tentar usar URLs diretas da API (se disponíveis)
+            videoUrl = mediaData.uhd_url || mediaData.fhd_url || mediaData.sd_url || mediaData.url;
+            posterUrl = mediaData.start_url || mediaData.thumb_url;
+        }
+        
+        // Validar se tem videoUrl válido
+        if (!videoUrl) {
+            console.log(`    ⚠️  Vídeo sem URL válida - pulando`);
+            return { isNew: false };
+        }
         
         const insertQuery = `
             INSERT INTO xxxfollow_videos (
@@ -132,7 +151,7 @@ async function saveVideo(modelId, postData, mediaData, statsData) {
             postData.text || 'Sem título',
             videoUrl,
             posterUrl,
-            mediaData.thumb_url,
+            posterUrl, // thumbnail_url = posterUrl
             mediaData.duration_in_second || 0,
             mediaData.width || 0,
             mediaData.height || 0,
@@ -220,7 +239,19 @@ async function scrapeTag(tag, maxPages = 10) {
                     
                     // Processar cada vídeo do post
                     for (const media of post.media) {
-                        if (media.type !== 'video') continue;
+                        if (!media || media.type !== 'video') continue;
+                        
+                        // Validar se media tem ID
+                        if (!media.id) {
+                            console.log(`    ⚠️  Vídeo sem ID - pulando`);
+                            continue;
+                        }
+                        
+                        // Validar se post tem ID
+                        if (!post.id) {
+                            console.log(`    ⚠️  Post sem ID - pulando`);
+                            continue;
+                        }
                         
                         const videoResult = await saveVideo(modelResult.id, post, media, item);
                         if (videoResult.isNew) {
