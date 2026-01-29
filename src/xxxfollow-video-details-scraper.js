@@ -56,6 +56,10 @@ async function updateVideoSource(videoId, sourceUrl, posterUrl = null) {
 
 async function extractVideoDetails(page, videoUrl) {
     try {
+        // Extrair ID do post da URL (ex: /emmafiore10/522921-una-chupadita -> 522921)
+        const postIdMatch = videoUrl.match(/\/(\d+)-/);
+        const postId = postIdMatch ? postIdMatch[1] : null;
+        
         await page.goto(videoUrl, {
             waitUntil: 'networkidle2',
             timeout: 30000
@@ -71,14 +75,14 @@ async function extractVideoDetails(page, videoUrl) {
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Extrair source do vídeo e poster
-        const videoDetails = await page.evaluate(() => {
+        const videoDetails = await page.evaluate((postId) => {
             let videoSource = null;
             let posterUrl = null;
             
             // Tentar múltiplos seletores para o vídeo
             const videoSelectors = [
-                'video.index-module__video--pbzTA',
                 '#svp_player_a',
+                'video.index-module__video--pbzTA',
                 'video[src]',
                 'video'
             ];
@@ -94,7 +98,35 @@ async function extractVideoDetails(page, videoUrl) {
                 }
             }
             
-            // Extrair poster (_start.webp) - tentar múltiplos seletores
+            // Se não encontrou o source dinamicamente, construir a partir do postId
+            if (!videoSource && postId) {
+                // Tentar encontrar o caminho base no HTML
+                const imgElements = document.querySelectorAll('img[src*="post_public"]');
+                let basePath = null;
+                
+                for (const img of imgElements) {
+                    const src = img.src || img.getAttribute('src');
+                    if (src && src.includes('post_public')) {
+                        // Extrair: https://www.xxxfollow.com/media/fans/post_public/3663/36633397/
+                        const match = src.match(/(.*post_public\/\d+\/\d+\/)/);
+                        if (match) {
+                            basePath = match[1];
+                            break;
+                        }
+                    }
+                }
+                
+                // Construir URLs de vídeo com diferentes qualidades
+                if (basePath) {
+                    const qualities = ['_fhd.mp4', '_hd.mp4', '_sd.mp4', '.mp4'];
+                    for (const quality of qualities) {
+                        videoSource = basePath + postId + quality;
+                        break; // Usar a primeira (fhd)
+                    }
+                }
+            }
+            
+            // Extrair poster (_start.webp)
             const posterSelectors = [
                 'img.index-module__videoPoster--AiD_2',
                 'img[alt="video poster"]',
@@ -113,7 +145,7 @@ async function extractVideoDetails(page, videoUrl) {
             }
             
             return { videoSource, posterUrl };
-        });
+        }, postId);
         
         return videoDetails;
     } catch (error) {
