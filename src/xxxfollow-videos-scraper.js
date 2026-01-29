@@ -95,14 +95,20 @@ async function fetchVideosFromAPI(modelId, username) {
                 const post = item.post;
                 const media = post?.media?.[0];
                 
-                // Ignorar se não for vídeo ou se for privado/pago
+                // Ignorar se não for vídeo
                 if (!media || media.type !== 'video') continue;
-                if (post.access !== 'free') continue;
-                if (item.is_locked || item.is_locked_subscription) continue;
                 
-                // Ignorar se não tiver source de vídeo (só blur)
+                // Verificar se é público e não está bloqueado
+                const isFree = post.access === 'free';
+                const isLocked = item.is_locked || item.is_locked_subscription;
+                
+                // Buscar melhor source disponível
                 const videoUrl = media.fhd_url || media.sd_url || media.url;
-                if (!videoUrl || videoUrl.includes('blur')) continue;
+                const hasValidSource = videoUrl && !videoUrl.includes('blur');
+                
+                // Aceitar vídeos públicos OU vídeos com source válido (mesmo que não sejam marcados como free)
+                if (!hasValidSource) continue;
+                if (!isFree && isLocked) continue;
                 
                 allVideos.push({
                     modelId: modelId,
