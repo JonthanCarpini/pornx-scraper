@@ -271,17 +271,21 @@
             <h2>🎮 Controles de Scraping</h2>
             
             <div class="button-group">
-                <button class="btn btn-primary" onclick="scrapeModels()">
+                <button class="btn btn-primary" onclick="scrapeModels()" id="btn-models">
                     <span>👥</span>
                     <span>Scrape Modelos</span>
                 </button>
-                <button class="btn btn-success" onclick="scrapeVideos()">
+                <button class="btn btn-success" onclick="scrapeVideos()" id="btn-videos">
                     <span>🎬</span>
                     <span>Scrape Vídeos</span>
                 </button>
-                <button class="btn btn-success" onclick="scrapeVideoDetails()">
+                <button class="btn btn-success" onclick="scrapeVideoDetails()" id="btn-details">
                     <span>🎥</span>
                     <span>Scrape Detalhes</span>
+                </button>
+                <button class="btn btn-danger" onclick="stopScraping()" id="btn-stop" style="display:none; background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);">
+                    <span>⛔</span>
+                    <span>Parar Scraping</span>
                 </button>
                 <button class="btn btn-info" onclick="loadStats()">
                     <span>📊</span>
@@ -310,6 +314,25 @@
 
     <script>
         let isRunning = false;
+        let currentEventSource = null;
+
+        function toggleButtons(running) {
+            document.getElementById('btn-models').disabled = running;
+            document.getElementById('btn-videos').disabled = running;
+            document.getElementById('btn-details').disabled = running;
+            document.getElementById('btn-stop').style.display = running ? 'flex' : 'none';
+        }
+
+        function stopScraping() {
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+            }
+            isRunning = false;
+            toggleButtons(false);
+            addLog('⛔ Scraping interrompido pelo usuário!', 'error');
+            updateProgress(0, 'Parado');
+        }
 
         function addLog(message, type = 'info') {
             const logs = document.getElementById('logs');
@@ -363,15 +386,16 @@
             }
 
             isRunning = true;
+            toggleButtons(true);
             clearLogs();
             addLog('🚀 Iniciando scraping de modelos do XXXFollow...', 'info');
             updateProgress(10, 'Conectando...');
 
             try {
-                const eventSource = new EventSource('/api/xxxfollow/scrape-models-stream');
+                currentEventSource = new EventSource('/api/xxxfollow/scrape-models-stream');
                 let progress = 10;
                 
-                eventSource.onmessage = (event) => {
+                currentEventSource.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     
                     if (data.type === 'log') {
@@ -399,16 +423,20 @@
                     } else if (data.type === 'done') {
                         updateProgress(100, 'Concluído!');
                         addLog('✅ Scraping de modelos concluído!', 'success');
-                        eventSource.close();
+                        currentEventSource.close();
+                        currentEventSource = null;
                         isRunning = false;
+                        toggleButtons(false);
                         setTimeout(() => loadStats(), 1000);
                     }
                 };
                 
-                eventSource.onerror = (error) => {
+                currentEventSource.onerror = (error) => {
                     addLog('❌ Erro na conexão: ' + error, 'error');
-                    eventSource.close();
+                    currentEventSource.close();
+                    currentEventSource = null;
                     isRunning = false;
+                    toggleButtons(false);
                 };
                 
             } catch (error) {
@@ -424,15 +452,16 @@
             }
 
             isRunning = true;
+            toggleButtons(true);
             clearLogs();
             addLog('🚀 Iniciando scraping de vídeos do XXXFollow...', 'info');
             updateProgress(10, 'Conectando...');
 
             try {
-                const eventSource = new EventSource('/api/xxxfollow/scrape-videos-stream');
+                currentEventSource = new EventSource('/api/xxxfollow/scrape-videos-stream');
                 let progress = 10;
                 
-                eventSource.onmessage = (event) => {
+                currentEventSource.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     
                     if (data.type === 'log') {
@@ -487,15 +516,16 @@
             }
 
             isRunning = true;
+            toggleButtons(true);
             clearLogs();
             addLog('🚀 Iniciando scraping de detalhes dos vídeos...', 'info');
             updateProgress(10, 'Conectando...');
 
             try {
-                const eventSource = new EventSource('/api/xxxfollow/scrape-video-details-stream');
+                currentEventSource = new EventSource('/api/xxxfollow/scrape-video-details-stream');
                 let progress = 10;
                 
-                eventSource.onmessage = (event) => {
+                currentEventSource.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     
                     if (data.type === 'log') {
@@ -518,16 +548,20 @@
                     } else if (data.type === 'done') {
                         updateProgress(100, 'Concluído!');
                         addLog('✅ Scraping de detalhes concluído!', 'success');
-                        eventSource.close();
+                        currentEventSource.close();
+                        currentEventSource = null;
                         isRunning = false;
+                        toggleButtons(false);
                         setTimeout(() => loadStats(), 1000);
                     }
                 };
                 
-                eventSource.onerror = (error) => {
+                currentEventSource.onerror = (error) => {
                     addLog('❌ Erro na conexão: ' + error, 'error');
-                    eventSource.close();
+                    currentEventSource.close();
+                    currentEventSource = null;
                     isRunning = false;
+                    toggleButtons(false);
                 };
                 
             } catch (error) {
