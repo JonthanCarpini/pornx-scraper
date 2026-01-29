@@ -73,11 +73,27 @@ async function fetchVideosFromAPI(modelId, username) {
                 apiUrl += `&before_time=${encodeURIComponent(beforeTime)}`;
             }
             
-            const response = await fetch(apiUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
+            // Montar cookies de autenticação se disponíveis
+            const cookies = [];
+            if (process.env.XXXFOLLOW_AUTH_ID) {
+                cookies.push(`auth_id=${process.env.XXXFOLLOW_AUTH_ID}`);
+            }
+            if (process.env.XXXFOLLOW_XSRF_TOKEN) {
+                cookies.push(`XSRF-TOKEN=${process.env.XXXFOLLOW_XSRF_TOKEN}`);
+            }
+            if (process.env.XXXFOLLOW_SESSION) {
+                cookies.push(`www_cs_session=${process.env.XXXFOLLOW_SESSION}`);
+            }
+            
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            };
+            
+            if (cookies.length > 0) {
+                headers['Cookie'] = cookies.join('; ');
+            }
+            
+            const response = await fetch(apiUrl, { headers });
             
             if (!response.ok) {
                 console.log(`  ❌ API retornou status ${response.status}`);
