@@ -86,17 +86,28 @@ async function fetchVideosFromAPI(modelId, username) {
             
             const data = await response.json();
             
+            console.log(`  📦 API retornou ${Array.isArray(data) ? data.length : 'erro'} itens (página ${page})`);
+            
             if (!Array.isArray(data) || data.length === 0) {
+                if (!Array.isArray(data)) {
+                    console.log(`  ⚠️  Resposta não é array:`, JSON.stringify(data).substring(0, 200));
+                }
                 break;
             }
             
             // Processar apenas vídeos públicos com source disponível
+            let videoCount = 0;
+            let filteredReasons = { notVideo: 0, noSource: 0, locked: 0 };
+            
             for (const item of data) {
                 const post = item.post;
                 const media = post?.media?.[0];
                 
                 // Ignorar se não for vídeo
-                if (!media || media.type !== 'video') continue;
+                if (!media || media.type !== 'video') {
+                    filteredReasons.notVideo++;
+                    continue;
+                }
                 
                 // Verificar se é público e não está bloqueado
                 const isFree = post.access === 'free';
@@ -107,8 +118,16 @@ async function fetchVideosFromAPI(modelId, username) {
                 const hasValidSource = videoUrl && !videoUrl.includes('blur');
                 
                 // Aceitar vídeos públicos OU vídeos com source válido (mesmo que não sejam marcados como free)
-                if (!hasValidSource) continue;
-                if (!isFree && isLocked) continue;
+                if (!hasValidSource) {
+                    filteredReasons.noSource++;
+                    continue;
+                }
+                if (!isFree && isLocked) {
+                    filteredReasons.locked++;
+                    continue;
+                }
+                
+                videoCount++;
                 
                 allVideos.push({
                     modelId: modelId,
@@ -130,6 +149,8 @@ async function fetchVideosFromAPI(modelId, username) {
                     postedAt: post.created_at
                 });
             }
+            
+            console.log(`  📊 Página ${page}: ${videoCount} vídeos aceitos | Filtrados: ${filteredReasons.notVideo} não-vídeo, ${filteredReasons.noSource} sem source, ${filteredReasons.locked} bloqueados`);
             
             // Se retornou menos que o limite, não há mais páginas
             if (data.length < limit) {
