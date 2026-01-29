@@ -28,9 +28,14 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-pornx_db}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pornx_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pornx_db
       PORT: 3000
-      SCRAPE_DELAY: ${SCRAPE_DELAY:-2000}
+      SCRAPE_DELAY: 2000
     ports:
       - "${APP_PORT:-3001}:3000"
     volumes:
