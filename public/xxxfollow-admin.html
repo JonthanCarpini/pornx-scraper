@@ -331,6 +331,10 @@
                     <span>🎥</span>
                     <span>Scrape Detalhes</span>
                 </button>
+                <button class="btn btn-primary" onclick="scrapeTags()" id="btn-tags" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <span>🏷️</span>
+                    <span>Scrape Tags API</span>
+                </button>
                 <button class="btn btn-danger" onclick="stopScraping()" id="btn-stop" style="display:none; background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);">
                     <span>⛔</span>
                     <span>Parar Scraping</span>
@@ -559,6 +563,69 @@
             } catch (error) {
                 addLog('❌ Erro: ' + error.message, 'error');
                 isRunning = false;
+            }
+        }
+
+        async function scrapeTags() {
+            if (isRunning) {
+                addLog('Já existe um scraping em andamento!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            toggleButtons(true);
+            clearLogs();
+            addLog('🚀 Iniciando scraping de tags via API...', 'info');
+            addLog('🏷️  Processando 40 tags com modelos e vídeos...', 'info');
+            updateProgress(10, 'Conectando...');
+
+            try {
+                currentEventSource = new EventSource('/api/xxxfollow/scrape-tags-stream');
+                let progress = 10;
+                
+                currentEventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
+                        }
+                        
+                        if (message.includes('Tag')) {
+                            progress = Math.min(progress + 2, 90);
+                            updateProgress(progress, 'Processando tags...');
+                        }
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        updateProgress(100, 'Concluído!');
+                        addLog('✅ Scraping de tags concluído!', 'success');
+                        currentEventSource.close();
+                        currentEventSource = null;
+                        isRunning = false;
+                        toggleButtons(false);
+                        setTimeout(() => loadStats(), 1000);
+                    }
+                };
+                
+                currentEventSource.onerror = (error) => {
+                    addLog('❌ Erro na conexão: ' + error, 'error');
+                    currentEventSource.close();
+                    currentEventSource = null;
+                    isRunning = false;
+                    toggleButtons(false);
+                };
+                
+            } catch (error) {
+                addLog('❌ Erro: ' + error.message, 'error');
+                isRunning = false;
+                toggleButtons(false);
             }
         }
 

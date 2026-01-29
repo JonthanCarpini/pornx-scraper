@@ -30,7 +30,8 @@
     "xxxfollow:clear": "node src/database/clear-xxxfollow-models.js",
     "xxxfollow:models": "node src/xxxfollow-models-scraper.js",
     "xxxfollow:videos": "node src/xxxfollow-videos-scraper.js",
-    "xxxfollow:video-details": "node src/xxxfollow-video-details-scraper.js"
+    "xxxfollow:video-details": "node src/xxxfollow-video-details-scraper.js",
+    "xxxfollow:tags": "node src/xxxfollow-tag-scraper.js"
   },
   "keywords": [
     "scraper",
