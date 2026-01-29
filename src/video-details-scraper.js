@@ -57,29 +57,94 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
         console.log('⏳ Aguardando carregamento da página...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Extrair poster e source do vídeo
         const videoDetails = await page.evaluate(() => {
             let posterUrl = null;
             let videoSourceUrl = null;
+            let debugInfo = [];
             
-            // Buscar o elemento video
-            const videoElement = document.querySelector('video, video.js-fluid-player');
+            // Tentar múltiplos seletores para o vídeo
+            const videoSelectors = [
+                'video.js-fluid-player',
+                'video#player',
+                'video',
+                'iframe[src*="player"]'
+            ];
             
-            if (videoElement) {
-                // Pegar o poster do atributo poster
-                posterUrl = videoElement.getAttribute('poster');
-                
-                // Pegar o source do elemento source dentro do video
-                const sourceElement = videoElement.querySelector('source');
-                if (sourceElement) {
-                    videoSourceUrl = sourceElement.getAttribute('src');
-                } else {
-                    // Fallback: tentar pegar do atributo src do video
-                    videoSourceUrl = videoElement.getAttribute('src');
+            let videoElement = null;
+            for (const selector of videoSelectors) {
+                videoElement = document.querySelector(selector);
+                if (videoElement) {
+                    debugInfo.push(`Vídeo encontrado com: ${selector}`);
+                    break;
                 }
             }
             
-            // Garantir URLs completas
+            if (!videoElement) {
+                debugInfo.push('Nenhum elemento de vídeo encontrado');
+                return { posterUrl, videoSourceUrl, debugInfo };
+            }
+            
+            // Buscar poster
+            posterUrl = videoElement.getAttribute('poster') || 
+                       videoElement.getAttribute('data-poster') ||
+                       videoElement.dataset?.poster;
+            
+            if (posterUrl) {
+                debugInfo.push(`Poster encontrado: ${posterUrl}`);
+            }
+            
+            // Buscar video source - múltiplas estratégias
+            // 1. Source element
+            let sourceElement = videoElement.querySelector('source');
+            if (sourceElement) {
+                videoSourceUrl = sourceElement.getAttribute('src');
+                debugInfo.push(`Source encontrado via element: ${videoSourceUrl}`);
+            }
+            
+            // 2. Atributo src do vídeo
+            if (!videoSourceUrl) {
+                videoSourceUrl = videoElement.getAttribute('src');
+                if (videoSourceUrl) {
+                    debugInfo.push(`Source encontrado via src: ${videoSourceUrl}`);
+                }
+            }
+            
+            // 3. Data attributes
+            if (!videoSourceUrl) {
+                const dataSetup = videoElement.getAttribute('data-setup');
+                if (dataSetup) {
+                    try {
+                        const setup = JSON.parse(dataSetup);
+                        if (setup.sources && setup.sources[0]) {
+                            videoSourceUrl = setup.sources[0].src;
+                            debugInfo.push(`Source encontrado via data-setup: ${videoSourceUrl}`);
+                        }
+                    } catch (e) {
+                        debugInfo.push('Erro ao parsear data-setup');
+                    }
+                }
+            }
+            
+            // 4. Buscar em scripts da página
+            if (!videoSourceUrl) {
+                const scripts = Array.from(document.querySelectorAll('script'));
+                for (const script of scripts) {
+                    const content = script.textContent || script.innerHTML;
+                    const m3u8Match = content.match(/https?:\/\/[^"'\s]+\.m3u8/);
+                    const mp4Match = content.match(/https?:\/\/[^"'\s]+\.mp4/);
+                    if (m3u8Match) {
+                        videoSourceUrl = m3u8Match[0];
+                        debugInfo.push(`Source M3U8 encontrado via script: ${videoSourceUrl}`);
+                        break;
+                    } else if (mp4Match) {
+                        videoSourceUrl = mp4Match[0];
+                        debugInfo.push(`Source MP4 encontrado via script: ${videoSourceUrl}`);
+                        break;
+                    }
+                }
+            }
+            
+            // Normalizar URLs
             if (posterUrl && !posterUrl.startsWith('http')) {
                 posterUrl = posterUrl.startsWith('/') ? `https://nsfwpics.co${posterUrl}` : `https://nsfwpics.co/${posterUrl}`;
             }
@@ -90,9 +155,15 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
             
             return {
                 posterUrl,
-                videoSourceUrl
+                videoSourceUrl,
+                debugInfo
             };
         });
+        
+        // Mostrar debug info
+        if (videoDetails.debugInfo && videoDetails.debugInfo.length > 0) {
+            console.log('🔍 Debug:', videoDetails.debugInfo.join(' | '));
+        }
         
         if (videoDetails.posterUrl) {
             console.log(`✓ Poster URL: ${videoDetails.posterUrl}`);

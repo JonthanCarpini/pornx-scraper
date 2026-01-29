@@ -60,27 +60,87 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
         const videoDetails = await page.evaluate(() => {
             let posterUrl = null;
             let m3u8Url = null;
+            let debugInfo = [];
             
-            const videoElement = document.querySelector('video#player');
+            // Tentar múltiplos seletores para o vídeo
+            const videoSelectors = [
+                'video#player',
+                'video.js-fluid-player',
+                'video',
+                'iframe[src*="player"]'
+            ];
             
-            if (videoElement) {
-                posterUrl = videoElement.getAttribute('poster');
-                
-                const sourceElement = videoElement.querySelector('source[type="video/m3u8"]');
-                if (sourceElement) {
-                    m3u8Url = sourceElement.getAttribute('src');
+            let videoElement = null;
+            for (const selector of videoSelectors) {
+                videoElement = document.querySelector(selector);
+                if (videoElement) {
+                    debugInfo.push(`Vídeo encontrado com: ${selector}`);
+                    break;
                 }
-                
-                if (!m3u8Url) {
-                    const dataSrc = videoElement.getAttribute('data-post-id');
-                    const dataVttUrl = videoElement.getAttribute('data-vtt-url');
-                    if (dataVttUrl) {
-                        const baseUrl = dataVttUrl.substring(0, dataVttUrl.lastIndexOf('/'));
-                        m3u8Url = `${baseUrl}/hls.m3u8`;
+            }
+            
+            if (!videoElement) {
+                debugInfo.push('Nenhum elemento de vídeo encontrado');
+                return { posterUrl, m3u8Url, debugInfo };
+            }
+            
+            // Buscar poster
+            posterUrl = videoElement.getAttribute('poster') || 
+                       videoElement.getAttribute('data-poster') ||
+                       videoElement.dataset?.poster;
+            
+            if (posterUrl) {
+                debugInfo.push(`Poster encontrado: ${posterUrl}`);
+            }
+            
+            // Buscar M3U8 - múltiplas estratégias
+            // 1. Source element com type m3u8
+            let sourceElement = videoElement.querySelector('source[type="application/x-mpegURL"], source[type="video/m3u8"], source[src*=".m3u8"]');
+            if (sourceElement) {
+                m3u8Url = sourceElement.getAttribute('src');
+                debugInfo.push(`M3U8 encontrado via source: ${m3u8Url}`);
+            }
+            
+            // 2. Atributo src do vídeo
+            if (!m3u8Url) {
+                const videoSrc = videoElement.getAttribute('src');
+                if (videoSrc && videoSrc.includes('.m3u8')) {
+                    m3u8Url = videoSrc;
+                    debugInfo.push(`M3U8 encontrado via src: ${m3u8Url}`);
+                }
+            }
+            
+            // 3. Data attributes
+            if (!m3u8Url) {
+                const dataSetup = videoElement.getAttribute('data-setup');
+                if (dataSetup) {
+                    try {
+                        const setup = JSON.parse(dataSetup);
+                        if (setup.sources && setup.sources[0]) {
+                            m3u8Url = setup.sources[0].src;
+                            debugInfo.push(`M3U8 encontrado via data-setup: ${m3u8Url}`);
+                        }
+                    } catch (e) {
+                        debugInfo.push('Erro ao parsear data-setup');
                     }
                 }
             }
             
+            // 4. Buscar em scripts da página
+            if (!m3u8Url) {
+                const scripts = Array.from(document.querySelectorAll('script'));
+                for (const script of scripts) {
+                    const content = script.textContent || script.innerHTML;
+                    const m3u8Match = content.match(/https?:\/\/[^"'\s]+\.m3u8/);
+                    if (m3u8Match) {
+                        m3u8Url = m3u8Match[0];
+                        debugInfo.push(`M3U8 encontrado via script: ${m3u8Url}`);
+                        break;
+                    }
+                }
+            }
+            
+            // Normalizar URLs
             if (posterUrl && !posterUrl.startsWith('http')) {
                 posterUrl = posterUrl.startsWith('/') ? `https://clubeadulto.net${posterUrl}` : `https://clubeadulto.net/${posterUrl}`;
             }
@@ -91,9 +151,15 @@ async function scrapeVideoDetails(videoId, videoTitle, videoUrl) {
             
             return {
                 posterUrl,
-                m3u8Url
+                m3u8Url,
+                debugInfo
             };
         });
+        
+        // Mostrar debug info
+        if (videoDetails.debugInfo && videoDetails.debugInfo.length > 0) {
+            console.log('🔍 Debug:', videoDetails.debugInfo.join(' | '));
+        }
         
         if (videoDetails.posterUrl) {
             console.log(`✓ Poster URL: ${videoDetails.posterUrl}`);
