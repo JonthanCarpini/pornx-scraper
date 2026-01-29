@@ -27,6 +27,7 @@
     "restore:db": "node restore-database.js",
     "query": "node src/utils/query-models.js",
     "xxxfollow:create-tables": "node src/database/create-xxxfollow-tables.js",
+    "xxxfollow:clear": "node src/database/clear-xxxfollow-models.js",
     "xxxfollow:models": "node src/xxxfollow-models-scraper.js",
     "xxxfollow:videos": "node src/xxxfollow-videos-scraper.js"
   },
