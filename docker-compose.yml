@@ -32,7 +32,7 @@ services:
       PORT: 3000
       SCRAPE_DELAY: ${SCRAPE_DELAY:-2000}
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3001}:3000"
     volumes:
       - ./public:/app/public
       - ./logs:/app/logs
