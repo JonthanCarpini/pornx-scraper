@@ -230,11 +230,16 @@ async function scrapeAllModelsVideos() {
     try {
         console.log('\n🎯 Iniciando scraping de vídeos de todas as modelos...\n');
         
-        // Buscar todas as modelos do banco
-        const result = await pool.query('SELECT id, name, profile_url FROM models ORDER BY id');
+        // Buscar apenas modelos que ainda não tiveram vídeos coletados
+        const result = await pool.query(`
+            SELECT id, name, profile_url 
+            FROM models 
+            WHERE videos_scraped IS NULL OR videos_scraped = false
+            ORDER BY id
+        `);
         const models = result.rows;
         
-        console.log(`📊 Total de modelos encontradas: ${models.length}\n`);
+        console.log(`📊 Modelos pendentes (sem vídeos coletados): ${models.length}\n`);
         
         let totalVideos = 0;
         let totalSaved = 0;

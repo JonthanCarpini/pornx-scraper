@@ -198,11 +198,12 @@ async function scrapeAllModelsVideos() {
         const result = await pool.query(`
             SELECT id, name, profile_url 
             FROM clubeadulto_models 
+            WHERE videos_scraped IS NULL OR videos_scraped = false
             ORDER BY id
         `);
         const models = result.rows;
         
-        console.log(`📊 Total de modelos para processar: ${models.length}\n`);
+        console.log(`📊 Modelos pendentes (sem vídeos coletados): ${models.length}\n`);
         
         let processedCount = 0;
         let totalVideos = 0;
