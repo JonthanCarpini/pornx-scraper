@@ -233,10 +233,10 @@
                             </div>
                             <div class="stat">
                                 <span>📹</span>
-                                <span>${model.post_count || 0}</span>
+                                <span>${parseInt(model.video_count) || 0} vídeos</span>
                             </div>
                         </div>
-                        ${model.videos_scraped 
+                        ${parseInt(model.video_count) > 0
                             ? '<span class="badge badge-success">✓ Vídeos Coletados</span>'
                             : '<span class="badge badge-warning">⏳ Pendente</span>'
                         }

@@ -1450,8 +1450,13 @@ app.get('/api/xxxfollow/models', async (req, res) => {
         const totalModels = parseInt(countResult.rows[0].count);
         
         const result = await pool.query(`
-            SELECT * FROM xxxfollow_models 
-            ORDER BY created_at DESC 
+            SELECT 
+                m.*,
+                COUNT(v.id) as video_count
+            FROM xxxfollow_models m
+            LEFT JOIN xxxfollow_videos v ON m.id = v.model_id
+            GROUP BY m.id
+            ORDER BY m.created_at DESC 
             LIMIT $1 OFFSET $2
         `, [limit, offset]);
         
