@@ -1865,7 +1865,7 @@ app.get('/api/clubeadulto/scrape-details-stream', authenticateToken, async (req,
     }
 });
 
-// NSFW247 - Mesmas rotas mas apontando para scrapers diferentes
+// NSFW247 - Rotas específicas para o site NSFW247
 app.get('/api/nsfw247/scrape-models-stream', authenticateToken, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -1876,7 +1876,7 @@ app.get('/api/nsfw247/scrape-models-stream', authenticateToken, async (req, res)
         const start = req.query.start || '1';
         const end = req.query.end || '5';
         
-        const scraper = spawn('node', ['src/clubeadulto-models-scraper.js', start, end], {
+        const scraper = spawn('node', ['src/nsfw247-models-scraper.js', start, end], {
             cwd: path.join(__dirname, '..')
         });
         
@@ -1917,7 +1917,7 @@ app.get('/api/nsfw247/scrape-videos-stream', authenticateToken, async (req, res)
     try {
         const { spawn } = await import('child_process');
         
-        const scraper = spawn('node', ['src/clubeadulto-videos-scraper.js'], {
+        const scraper = spawn('node', ['src/nsfw247-videos-scraper.js'], {
             cwd: path.join(__dirname, '..')
         });
         
@@ -1958,7 +1958,7 @@ app.get('/api/nsfw247/scrape-details-stream', authenticateToken, async (req, res
     try {
         const { spawn } = await import('child_process');
         
-        const scraper = spawn('node', ['src/clubeadulto-details-scraper.js'], {
+        const scraper = spawn('node', ['src/nsfw247-details-scraper.js'], {
             cwd: path.join(__dirname, '..')
         });
         
