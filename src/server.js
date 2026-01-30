@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import pool from './database/db.js';
 import authRoutes from './routes/auth.js';
 import userAuthRoutes from './routes/user-auth.js';
+import adminUsersRoutes from './routes/admin-users.js';
 import { authenticateToken } from './middleware/auth.js';
 
 dotenv.config();
@@ -25,6 +26,9 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // Rotas de autenticação (não protegidas)
 app.use('/api/admin', authRoutes);
 app.use('/api/auth', userAuthRoutes);
+
+// Rotas admin (protegidas)
+app.use('/api/admin', adminUsersRoutes);
 
 const ADMIN_DB_ALLOWED_TABLES = [
     'xxxfollow_models',
