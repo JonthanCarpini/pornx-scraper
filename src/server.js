@@ -2766,21 +2766,12 @@ app.get('/api/unified-videos', async (req, res) => {
                 model_name,
                 model_avatar,
                 title,
-                description,
-                page_url,
-                video_source_url,
-                sd_url,
                 thumbnail_url,
                 poster_url,
                 duration,
-                width,
-                height,
-                like_count,
                 view_count,
-                comment_count,
-                has_audio,
-                posted_at,
-                status,
+                like_count,
+                video_source_url,
                 created_at
             FROM unified_videos
             ${whereClause}

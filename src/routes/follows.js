@@ -51,8 +51,8 @@ router.get('/', async (req, res) => {
                     WHEN f.model_source = 'nsfw247' THEN (
                         SELECT json_build_object(
                             'name', m.name,
-                            'avatar_url', m.avatar_url,
-                            'cover_url', m.banner_url,
+                            'avatar_url', m.cover_url,
+                            'cover_url', m.cover_url,
                             'bio', m.bio,
                             'follower_count', m.follower_count,
                             'video_count', m.video_count
