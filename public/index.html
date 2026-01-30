@@ -1370,12 +1370,14 @@
                 // Adicionar onclick para abrir player
                 card.onclick = (e) => {
                     if (!e.target.closest('.favorite-btn')) {
-                        const videoUrl = video.video_url || video.video_source_url || video.sd_url;
+                        // Priorizar video_source_url (M3U8) para ClubAdulto, depois video_url, depois sd_url
+                        const videoUrl = video.video_source_url || video.sd_url || video.video_url;
                         if (!videoUrl) {
                             console.error('Vídeo sem URL válida (Favoritos):', video);
                             alert('Este vídeo não possui URL de reprodução disponível');
                             return;
                         }
+                        console.log('🎬 Abrindo vídeo (Favoritos):', { source: fav.video_source, videoUrl });
                         openVideo(videoUrl);
                     }
                 };
