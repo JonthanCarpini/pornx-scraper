@@ -89,6 +89,9 @@ router.get('/', async (req, res) => {
 
         const total = parseInt(countResult.rows[0].count);
 
+        // DEBUG: Log dos primeiros resultados
+        console.log('🔍 DEBUG Favoritos - Primeiras 3 rows:', JSON.stringify(result.rows.slice(0, 3), null, 2));
+
         // Filtrar favoritos com vídeos válidos
         const favorites = result.rows
             .filter(row => row.video_info !== null)
@@ -99,6 +102,9 @@ router.get('/', async (req, res) => {
                 created_at: row.created_at,
                 video: row.video_info
             }));
+        
+        // DEBUG: Log dos favoritos processados
+        console.log('🔍 DEBUG Favoritos processados - Primeiros 3:', JSON.stringify(favorites.slice(0, 3), null, 2));
 
         res.json({
             favorites,
