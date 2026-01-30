@@ -34,7 +34,6 @@ router.get('/', async (req, res) => {
                             'model_name', m.username,
                             'model_avatar', m.avatar_url,
                             'video_url', v.video_url,
-                            'video_source_url', v.video_url,
                             'sd_url', v.sd_url
                         )
                         FROM xxxfollow_videos v
