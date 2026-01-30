@@ -2633,6 +2633,156 @@ app.get('/api/nsfw247/scrape-details-stream', authenticateToken, async (req, res
 });
 
 // ========================================
+// UNIFIED ENDPOINTS - VIEWs Unificadas
+// ========================================
+
+// Endpoint para modelos unificados de todas as fontes
+app.get('/api/unified-models', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+        const source = req.query.source; // Filtro opcional por fonte
+        
+        let whereClause = '';
+        const params = [limit, offset];
+        
+        if (search) {
+            whereClause = 'WHERE name ILIKE $3';
+            params.push(`%${search}%`);
+        }
+        
+        if (source) {
+            whereClause += (whereClause ? ' AND ' : 'WHERE ') + `source = $${params.length + 1}`;
+            params.push(source);
+        }
+        
+        const result = await pool.query(`
+            SELECT 
+                source,
+                id,
+                name,
+                profile_url,
+                avatar_url,
+                banner_url,
+                bio,
+                gender,
+                follower_count,
+                like_count,
+                view_count,
+                post_count,
+                video_count,
+                status,
+                created_at
+            FROM unified_models
+            ${whereClause}
+            ORDER BY video_count DESC, follower_count DESC
+            LIMIT $1 OFFSET $2
+        `, params);
+        
+        const countResult = await pool.query(`
+            SELECT COUNT(*) FROM unified_models ${whereClause}
+        `, params.slice(2));
+        
+        const total = parseInt(countResult.rows[0].count);
+        
+        res.json({
+            models: result.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar modelos unificados:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Endpoint para vídeos unificados de todas as fontes
+app.get('/api/unified-videos', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+        const source = req.query.source; // Filtro opcional por fonte
+        const modelId = req.query.modelId; // Filtro por modelo (source:id)
+        
+        let whereClause = "WHERE status = 'active'";
+        const params = [limit, offset];
+        
+        if (search) {
+            whereClause += ` AND title ILIKE $${params.length + 1}`;
+            params.push(`%${search}%`);
+        }
+        
+        if (source) {
+            whereClause += ` AND source = $${params.length + 1}`;
+            params.push(source);
+        }
+        
+        if (modelId) {
+            const [modelSource, modelIdNum] = modelId.split(':');
+            whereClause += ` AND source = $${params.length + 1} AND model_id = $${params.length + 2}`;
+            params.push(modelSource, parseInt(modelIdNum));
+        }
+        
+        const result = await pool.query(`
+            SELECT 
+                source,
+                id,
+                model_id,
+                model_name,
+                model_avatar,
+                title,
+                description,
+                page_url,
+                video_source_url,
+                sd_url,
+                thumbnail_url,
+                poster_url,
+                duration,
+                width,
+                height,
+                like_count,
+                view_count,
+                comment_count,
+                has_audio,
+                posted_at,
+                status,
+                created_at
+            FROM unified_videos
+            ${whereClause}
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+        `, params);
+        
+        const countResult = await pool.query(`
+            SELECT COUNT(*) FROM unified_videos ${whereClause}
+        `, params.slice(2));
+        
+        const total = parseInt(countResult.rows[0].count);
+        
+        res.json({
+            videos: result.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao buscar vídeos unificados:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ========================================
 // ADMIN - Limpar Banco
 // ========================================
 
