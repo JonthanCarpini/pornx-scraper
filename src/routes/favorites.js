@@ -29,6 +29,7 @@ router.get('/', async (req, res) => {
                             'title', v.title,
                             'thumbnail_url', v.thumbnail_url,
                             'duration', v.duration,
+                            'view_count', v.view_count,
                             'model_id', v.model_id,
                             'model_name', m.username,
                             'model_avatar', m.avatar_url
@@ -42,6 +43,7 @@ router.get('/', async (req, res) => {
                             'title', v.title,
                             'thumbnail_url', v.thumbnail_url,
                             'duration', v.duration,
+                            'view_count', v.view_count,
                             'model_id', v.model_id,
                             'model_name', m.name,
                             'model_avatar', m.image_url
@@ -55,6 +57,7 @@ router.get('/', async (req, res) => {
                             'title', v.title,
                             'thumbnail_url', v.thumbnail_url,
                             'duration', v.duration,
+                            'view_count', v.view_count,
                             'model_id', v.model_id,
                             'model_name', m.name,
                             'model_avatar', NULL
