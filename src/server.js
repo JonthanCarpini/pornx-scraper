@@ -2736,23 +2736,27 @@ app.get('/api/unified-videos', async (req, res) => {
         const source = req.query.source; // Filtro opcional por fonte
         const modelId = req.query.modelId; // Filtro por modelo (source:id)
         
-        let whereClause = "WHERE status = 'active'";
+        let whereClause = "";
         const whereParams = [];
+        let hasWhere = false;
         
         if (search) {
-            whereClause += ` AND title ILIKE $${whereParams.length + 1}`;
+            whereClause += hasWhere ? ` AND title ILIKE $${whereParams.length + 1}` : `WHERE title ILIKE $${whereParams.length + 1}`;
             whereParams.push(`%${search}%`);
+            hasWhere = true;
         }
         
         if (source) {
-            whereClause += ` AND source = $${whereParams.length + 1}`;
+            whereClause += hasWhere ? ` AND source = $${whereParams.length + 1}` : `WHERE source = $${whereParams.length + 1}`;
             whereParams.push(source);
+            hasWhere = true;
         }
         
         if (modelId) {
             const [modelSource, modelIdNum] = modelId.split(':');
-            whereClause += ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
+            whereClause += hasWhere ? ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}` : `WHERE source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
             whereParams.push(modelSource, parseInt(modelIdNum));
+            hasWhere = true;
         }
         
         // Parâmetros para a query principal (LIMIT e OFFSET no final)
