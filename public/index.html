@@ -1329,8 +1329,13 @@
             grid.innerHTML = '';
 
             favorites.forEach(fav => {
+                console.log('Favorito completo:', fav);
                 const video = fav.video;
-                if (!video) return;
+                if (!video) {
+                    console.error('Favorito sem vídeo:', fav);
+                    return;
+                }
+                console.log('Objeto video extraído:', video);
 
                 const card = document.createElement('div');
                 card.className = 'video-card';
