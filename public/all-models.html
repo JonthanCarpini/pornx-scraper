@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todas as Modelos - XXXFollow, Clube Adulto & NSFW247</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2em;
+        }
+
+        .header-subtitle {
+            color: #666;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+            color: #666;
+        }
+
+        .stat-icon {
+            font-size: 1.3em;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .model-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .source-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+        }
+
+        .source-xxxfollow {
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+        }
+
+        .source-clubeadulto {
+            background: rgba(17, 153, 142, 0.9);
+            color: white;
+        }
+
+        .source-nsfw247 {
+            background: rgba(255, 65, 108, 0.9);
+            color: white;
+        }
+
+        .model-avatar {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .model-info {
+            padding: 20px;
+        }
+
+        .model-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .model-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .badge-success {
+            background: #38ef7d;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #fee140;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.5em;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 15px;
+            color: #666;
+        }
+
+        #pagination {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .pagination-btn {
+            padding: 12px 25px;
+            margin: 0 5px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        #page-info {
+            margin: 0 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div>
+                    <h1>🌟 Todas as Modelos</h1>
+                    <p class="header-subtitle">XXXFollow, Clube Adulto & NSFW247</p>
+                </div>
+                <a href="/admin/dashboard.html" class="back-btn">← Voltar ao Admin</a>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-icon">👥</span>
+                    <span>Total: <span class="stat-value" id="total-models">-</span> modelos</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">🎬</span>
+                    <span>XXXFollow</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">🔞</span>
+                    <span>Clube Adulto</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">🔥</span>
+                    <span>NSFW247</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Carregando modelos...</div>
+        <div id="models-grid" class="models-grid"></div>
+        <div id="empty" class="empty" style="display: none;">
+            <h2>Nenhuma modelo encontrada</h2>
+            <p>Execute os scrapers primeiro para coletar modelos</p>
+        </div>
+
+        <div id="pagination">
+            <button onclick="changePage(currentPage - 1)" id="prev-btn" class="pagination-btn">← Anterior</button>
+            <span id="page-info"></span>
+            <button onclick="changePage(currentPage + 1)" id="next-btn" class="pagination-btn">Próxima →</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function loadModels(page = 1) {
+            try {
+                const response = await fetch(`/api/all-models?page=${page}&limit=100`);
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.models && data.models.length > 0) {
+                    currentPage = data.pagination.page;
+                    totalPages = data.pagination.totalPages;
+                    document.getElementById('total-models').textContent = data.pagination.total;
+                    renderModels(data.models);
+                    updatePagination(data.pagination);
+                } else {
+                    document.getElementById('empty').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar modelos:', error);
+                document.getElementById('loading').textContent = 'Erro ao carregar modelos';
+            }
+        }
+
+        function updatePagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            const pageInfo = document.getElementById('page-info');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (pagination.totalPages > 1) {
+                paginationDiv.style.display = 'block';
+                pageInfo.textContent = `Página ${pagination.page} de ${pagination.totalPages}`;
+                prevBtn.disabled = pagination.page === 1;
+                nextBtn.disabled = pagination.page === pagination.totalPages;
+            }
+        }
+
+        function changePage(page) {
+            if (page < 1 || page > totalPages) return;
+            window.scrollTo(0, 0);
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('models-grid').innerHTML = '';
+            loadModels(page);
+        }
+
+        function getSourceLabel(source) {
+            const labels = {
+                'xxxfollow': 'XXXFollow',
+                'clubeadulto': 'Clube Adulto',
+                'nsfw247': 'NSFW247'
+            };
+            return labels[source] || source;
+        }
+
+        function getSourceClass(source) {
+            return `source-${source}`;
+        }
+
+        function renderModels(models) {
+            const grid = document.getElementById('models-grid');
+            grid.innerHTML = '';
+
+            models.forEach(model => {
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                card.onclick = () => {
+                    if (model.profile_url) {
+                        window.open(model.profile_url, '_blank');
+                    }
+                };
+                
+                const videoCount = parseInt(model.video_count) || 0;
+                const viewCount = parseInt(model.view_count) || 0;
+                const likeCount = parseInt(model.like_count) || 0;
+                
+                card.innerHTML = `
+                    <div class="source-badge ${getSourceClass(model.source)}">
+                        ${getSourceLabel(model.source)}
+                    </div>
+                    <img src="${model.cover_url || '/placeholder.jpg'}" 
+                         alt="${model.name}" 
+                         class="model-avatar"
+                         onerror="this.src='/placeholder.jpg'">
+                    <div class="model-info">
+                        <div class="model-name">${model.name || model.username}</div>
+                        <div class="model-stats">
+                            ${viewCount > 0 ? `
+                                <div class="stat">
+                                    <span>👁️</span>
+                                    <span>${formatNumber(viewCount)}</span>
+                                </div>
+                            ` : ''}
+                            ${likeCount > 0 ? `
+                                <div class="stat">
+                                    <span>❤️</span>
+                                    <span>${formatNumber(likeCount)}</span>
+                                </div>
+                            ` : ''}
+                            <div class="stat">
+                                <span>📹</span>
+                                <span>${videoCount} vídeos</span>
+                            </div>
+                        </div>
+                        ${videoCount > 0
+                            ? '<span class="badge badge-success">✓ Vídeos Coletados</span>'
+                            : '<span class="badge badge-warning">⏳ Pendente</span>'
+                        }
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        window.addEventListener('load', loadModels);
+    </script>
+</body>
+</html>

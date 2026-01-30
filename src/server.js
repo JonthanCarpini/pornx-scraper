@@ -1447,6 +1447,89 @@ app.get('/api/xxxfollow/stats', async (req, res) => {
     }
 });
 
+// Endpoint para todas as modelos dos 3 sites misturadas
+app.get('/api/all-models', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (page - 1) * limit;
+        
+        // Buscar modelos de todos os 3 sites
+        const result = await pool.query(`
+            (
+                SELECT 
+                    'xxxfollow' as source,
+                    m.id,
+                    m.display_name as name,
+                    m.username,
+                    m.avatar_url as cover_url,
+                    m.profile_url,
+                    m.view_count,
+                    m.like_count,
+                    COUNT(v.id) as video_count,
+                    m.created_at
+                FROM xxxfollow_models m
+                LEFT JOIN xxxfollow_videos v ON m.id = v.model_id
+                GROUP BY m.id, m.display_name, m.username, m.avatar_url, m.profile_url, m.view_count, m.like_count, m.created_at
+            )
+            UNION ALL
+            (
+                SELECT 
+                    'clubeadulto' as source,
+                    m.id,
+                    m.name,
+                    m.slug as username,
+                    m.cover_url,
+                    m.profile_url,
+                    0 as view_count,
+                    0 as like_count,
+                    COALESCE(m.video_count, 0) as video_count,
+                    m.created_at
+                FROM clubeadulto_models m
+            )
+            UNION ALL
+            (
+                SELECT 
+                    'nsfw247' as source,
+                    m.id,
+                    m.name,
+                    m.slug as username,
+                    m.cover_url,
+                    m.profile_url,
+                    0 as view_count,
+                    0 as like_count,
+                    COALESCE(m.video_count, 0) as video_count,
+                    m.created_at
+                FROM nsfw247_models m
+            )
+            ORDER BY RANDOM()
+            LIMIT $1 OFFSET $2
+        `, [limit, offset]);
+        
+        // Contar total de modelos
+        const countResult = await pool.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM xxxfollow_models) +
+                (SELECT COUNT(*) FROM clubeadulto_models) +
+                (SELECT COUNT(*) FROM nsfw247_models) as total
+        `);
+        
+        const totalModels = parseInt(countResult.rows[0].total);
+        
+        res.json({ 
+            models: result.rows,
+            pagination: {
+                page,
+                limit,
+                total: totalModels,
+                totalPages: Math.ceil(totalModels / limit)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/xxxfollow/models', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
