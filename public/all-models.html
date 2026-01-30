@@ -367,14 +367,8 @@
                 const card = document.createElement('div');
                 card.className = 'model-card';
                 card.onclick = () => {
-                    // Redirecionar para a página de vídeos do site correspondente
-                    if (model.source === 'xxxfollow') {
-                        window.location.href = `/xxxfollow-videos.html?model=${model.id}`;
-                    } else if (model.source === 'clubeadulto') {
-                        window.location.href = `/clubeadulto-videos.html?model=${model.id}`;
-                    } else if (model.source === 'nsfw247') {
-                        window.location.href = `/nsfw247-videos.html?model=${model.id}`;
-                    }
+                    // Redirecionar para a página única de vídeos com source e model
+                    window.location.href = `/all-videos.html?source=${model.source}&model=${model.id}`;
                 };
                 
                 const videoCount = parseInt(model.video_count) || 0;
