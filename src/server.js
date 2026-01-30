@@ -24,6 +24,289 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // Rotas de autenticação (não protegidas)
 app.use('/api/admin', authRoutes);
 
+const ADMIN_DB_ALLOWED_TABLES = [
+    'xxxfollow_models',
+    'clubeadulto_models',
+    'nsfw247_models',
+    'xxxfollow_videos',
+    'clubeadulto_videos',
+    'nsfw247_videos'
+];
+
+function isValidIdentifier(value) {
+    return typeof value === 'string' && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value);
+}
+
+function ensureAllowedTable(table) {
+    if (!isValidIdentifier(table) || !ADMIN_DB_ALLOWED_TABLES.includes(table)) {
+        const error = new Error('Tabela não permitida');
+        error.statusCode = 400;
+        throw error;
+    }
+}
+
+async function getTableColumns(table) {
+    ensureAllowedTable(table);
+
+    const result = await pool.query(
+        `SELECT
+            column_name,
+            data_type,
+            is_nullable,
+            column_default,
+            ordinal_position
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = $1
+        ORDER BY ordinal_position`,
+        [table]
+    );
+
+    return result.rows;
+}
+
+// ========================================
+// ADMIN DB - Introspecção e CRUD genérico
+// ========================================
+
+app.get('/api/admin/db/tables', authenticateToken, async (req, res) => {
+    try {
+        const kind = req.query.kind;
+
+        const existingTablesResult = await pool.query(
+            `SELECT table_name
+             FROM information_schema.tables
+             WHERE table_schema = 'public'
+               AND table_name = ANY($1::text[])
+             ORDER BY table_name`,
+            [ADMIN_DB_ALLOWED_TABLES]
+        );
+
+        let tables = existingTablesResult.rows.map(r => r.table_name);
+
+        if (kind === 'models') {
+            tables = tables.filter(t => t.endsWith('_models'));
+        }
+        if (kind === 'videos') {
+            tables = tables.filter(t => t.endsWith('_videos'));
+        }
+
+        res.json({ tables });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+});
+
+app.get('/api/admin/db/columns', authenticateToken, async (req, res) => {
+    try {
+        const table = req.query.table;
+        const columns = await getTableColumns(table);
+
+        if (!columns || columns.length === 0) {
+            return res.status(404).json({ error: 'Tabela não encontrada ou sem colunas' });
+        }
+
+        res.json({ table, columns });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+});
+
+app.get('/api/admin/db/rows', authenticateToken, async (req, res) => {
+    try {
+        const table = req.query.table;
+        ensureAllowedTable(table);
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const offset = (page - 1) * limit;
+
+        const q = (req.query.q || '').toString().trim();
+        const filterColumn = req.query.filterColumn;
+        const filterValueRaw = req.query.filterValue;
+
+        const columns = await getTableColumns(table);
+        if (!columns || columns.length === 0) {
+            return res.status(404).json({ error: 'Tabela não encontrada ou sem colunas' });
+        }
+
+        const columnNames = new Set(columns.map(c => c.column_name));
+        const whereParts = [];
+        const whereParams = [];
+
+        if (filterColumn !== undefined || filterValueRaw !== undefined) {
+            if (!isValidIdentifier(filterColumn) || !columnNames.has(filterColumn)) {
+                return res.status(400).json({ error: 'filterColumn inválido' });
+            }
+            whereParts.push(`"${filterColumn}" = $${whereParams.length + 1}`);
+            whereParams.push(filterValueRaw);
+        }
+
+        if (q) {
+            const textColumns = columns
+                .filter(c => ['text', 'character varying', 'character'].includes(c.data_type))
+                .map(c => c.column_name);
+
+            if (textColumns.length > 0) {
+                const qParamIndex = whereParams.length + 1;
+                const orParts = textColumns.map(col => `"${col}" ILIKE $${qParamIndex}`);
+                whereParts.push(`(${orParts.join(' OR ')})`);
+                whereParams.push(`%${q}%`);
+            }
+        }
+
+        const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+
+        const countResult = await pool.query(
+            `SELECT COUNT(*) FROM "${table}" ${whereClause}`,
+            whereParams
+        );
+        const total = parseInt(countResult.rows[0].count);
+
+        const rowsResult = await pool.query(
+            `SELECT *
+             FROM "${table}"
+             ${whereClause}
+             ORDER BY 1 DESC
+             LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}`,
+            [...whereParams, limit, offset]
+        );
+
+        res.json({
+            table,
+            rows: rowsResult.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+});
+
+app.post('/api/admin/db/rows', authenticateToken, async (req, res) => {
+    try {
+        const table = req.query.table;
+        ensureAllowedTable(table);
+
+        const data = req.body?.data;
+        if (!data || typeof data !== 'object') {
+            return res.status(400).json({ error: 'Body inválido' });
+        }
+
+        const columns = await getTableColumns(table);
+        const allowedColumns = new Set(columns.map(c => c.column_name));
+
+        const keys = Object.keys(data).filter(k => isValidIdentifier(k) && allowedColumns.has(k));
+        if (keys.length === 0) {
+            return res.status(400).json({ error: 'Nenhuma coluna válida para inserir' });
+        }
+
+        const colList = keys.map(k => `"${k}"`).join(', ');
+        const valuesList = keys.map((_, i) => `$${i + 1}`).join(', ');
+        const values = keys.map(k => data[k]);
+
+        const insertResult = await pool.query(
+            `INSERT INTO "${table}" (${colList})
+             VALUES (${valuesList})
+             RETURNING *`,
+            values
+        );
+
+        res.json({ table, row: insertResult.rows[0] });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+});
+
+app.put('/api/admin/db/rows', authenticateToken, async (req, res) => {
+    try {
+        const table = req.query.table;
+        ensureAllowedTable(table);
+
+        const pkColumn = req.body?.pkColumn;
+        const pkValue = req.body?.pkValue;
+        const updates = req.body?.updates;
+
+        if (!isValidIdentifier(pkColumn)) {
+            return res.status(400).json({ error: 'pkColumn inválido' });
+        }
+        if (pkValue === undefined || pkValue === null) {
+            return res.status(400).json({ error: 'pkValue obrigatório' });
+        }
+        if (!updates || typeof updates !== 'object') {
+            return res.status(400).json({ error: 'updates inválido' });
+        }
+
+        const columns = await getTableColumns(table);
+        const allowedColumns = new Set(columns.map(c => c.column_name));
+        if (!allowedColumns.has(pkColumn)) {
+            return res.status(400).json({ error: 'pkColumn não existe na tabela' });
+        }
+
+        const keys = Object.keys(updates).filter(k => isValidIdentifier(k) && allowedColumns.has(k) && k !== pkColumn);
+        if (keys.length === 0) {
+            return res.status(400).json({ error: 'Nenhuma coluna válida para atualizar' });
+        }
+
+        const setParts = keys.map((k, i) => `"${k}" = $${i + 1}`);
+        const params = keys.map(k => updates[k]);
+        params.push(pkValue);
+
+        const updateResult = await pool.query(
+            `UPDATE "${table}"
+             SET ${setParts.join(', ')}
+             WHERE "${pkColumn}" = $${params.length}
+             RETURNING *`,
+            params
+        );
+
+        if (updateResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Registro não encontrado' });
+        }
+
+        res.json({ table, row: updateResult.rows[0] });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/admin/db/rows', authenticateToken, async (req, res) => {
+    try {
+        const table = req.query.table;
+        ensureAllowedTable(table);
+
+        const pkColumn = req.query.pkColumn;
+        const pkValue = req.query.pkValue;
+
+        if (!isValidIdentifier(pkColumn)) {
+            return res.status(400).json({ error: 'pkColumn inválido' });
+        }
+        if (pkValue === undefined || pkValue === null) {
+            return res.status(400).json({ error: 'pkValue obrigatório' });
+        }
+
+        const columns = await getTableColumns(table);
+        const allowedColumns = new Set(columns.map(c => c.column_name));
+        if (!allowedColumns.has(pkColumn)) {
+            return res.status(400).json({ error: 'pkColumn não existe na tabela' });
+        }
+
+        const deleteResult = await pool.query(
+            `DELETE FROM "${table}"
+             WHERE "${pkColumn}" = $1`,
+            [pkValue]
+        );
+
+        res.json({ table, deletedCount: deleteResult.rowCount });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ error: error.message });
+    }
+});
+
 let scrapingProcess = null;
 let scrapingLogs = [];
 

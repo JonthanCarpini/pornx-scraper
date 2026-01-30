@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conteúdo - Admin Panel</title>
+    <link rel="stylesheet" href="/admin/styles/admin.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>🎯 Admin Panel</h1>
+            <p>XXXFollow Scraper</p>
+        </div>
+
+        <div class="user-info">
+            <div class="user-avatar">👤</div>
+            <div class="user-details">
+                <h3 id="username">Admin</h3>
+                <p>Administrador</p>
+            </div>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/admin/dashboard.html" class="nav-link">
+                    <span>📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/scraper.html" class="nav-link">
+                    <span>🎬</span>
+                    <span>XXXFollow Scraper</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/clubeadulto.html" class="nav-link">
+                    <span>🔞</span>
+                    <span>Clube Adulto & NSFW247</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/content.html" class="nav-link active">
+                    <span>🗂️</span>
+                    <span>Modelos & Vídeos (CRUD)</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/todos-videos.html" class="nav-link">
+                    <span>🎬</span>
+                    <span>Todos os Vídeos</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/all-models.html" class="nav-link">
+                    <span>🌟</span>
+                    <span>Todas as Modelos</span>
+                </a>
+            </li>
+        </ul>
+
+        <button class="logout-btn" onclick="logout()">
+            🚪 Sair
+        </button>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h2>Modelos & Vídeos (CRUD)</h2>
+                <p>Edite e mantenha seus dados com segurança</p>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <h3 class="card-title">📁 Fonte de dados</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                    <button class="btn btn-primary" id="tab-models" onclick="setKind('models')">👥 Modelos</button>
+                    <button class="btn" id="tab-videos" onclick="setKind('videos')">🎬 Vídeos</button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Tabela</label>
+                    <select class="form-select" id="table-select"></select>
+                </div>
+                <div>
+                    <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Buscar</label>
+                    <input class="form-input" id="search-input" placeholder="Buscar por texto" />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 5px;">
+                <div>
+                    <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Filtrar coluna</label>
+                    <select class="form-select" id="filter-column-select"></select>
+                </div>
+                <div>
+                    <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Filtrar valor</label>
+                    <input class="form-input" id="filter-value-input" placeholder="Valor exato" />
+                </div>
+            </div>
+
+            <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                <button class="btn btn-primary" onclick="reloadRows()">🔄 Atualizar</button>
+                <button class="btn btn-success" onclick="openCreateModal()">➕ Criar</button>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header" style="display:flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <h3 class="card-title">🧾 Registros</h3>
+                <div style="display:flex; gap: 10px; align-items: center;">
+                    <button class="btn" id="prev-btn" onclick="changePage(currentPage - 1)">←</button>
+                    <div style="color:#666; font-size: 14px;" id="page-info">-</div>
+                    <button class="btn" id="next-btn" onclick="changePage(currentPage + 1)">→</button>
+                </div>
+            </div>
+
+            <div id="table-container" class="admin-table-container"></div>
+            <div id="empty" style="display:none; color:#666; padding: 10px 2px;">Nenhum registro encontrado.</div>
+            <div id="error" style="display:none; color:#ff4b2b; padding: 10px 2px;"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="admin-modal" style="display:none;">
+        <div class="admin-modal-content">
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="font-size: 16px; font-weight: 700; color: #111827;" id="modal-title">Editar</div>
+                <button class="btn btn-danger" onclick="closeModal()">✕</button>
+            </div>
+
+            <div id="modal-form" class="admin-form-grid"></div>
+
+            <div style="display:flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap;">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-danger" id="delete-btn" onclick="deleteRow()">🗑️ Excluir</button>
+                <button class="btn btn-primary" id="save-btn" onclick="saveRow()">💾 Salvar</button>
+            </div>
+
+            <div id="modal-error" style="display:none; color:#ff4b2b; padding-top: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let kind = 'models';
+        let selectedTable = '';
+        let columns = [];
+
+        let currentPage = 1;
+        let totalPages = 1;
+
+        let modalMode = 'edit';
+        let modalPkColumn = 'id';
+        let modalPkValue = null;
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/verify', { credentials: 'include' });
+                if (!response.ok) {
+                    window.location.href = '/admin/login.html';
+                    return;
+                }
+                const data = await response.json();
+                if (data?.username) {
+                    document.getElementById('username').textContent = data.username;
+                }
+            } catch (error) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+                window.location.href = '/admin/login.html';
+            } catch (error) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        function setKind(nextKind) {
+            kind = nextKind;
+
+            const tabModels = document.getElementById('tab-models');
+            const tabVideos = document.getElementById('tab-videos');
+
+            if (kind === 'models') {
+                tabModels.classList.add('btn-primary');
+                tabVideos.classList.remove('btn-primary');
+            } else {
+                tabVideos.classList.add('btn-primary');
+                tabModels.classList.remove('btn-primary');
+            }
+
+            currentPage = 1;
+            totalPages = 1;
+
+            loadTables();
+        }
+
+        function resetFeedback() {
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('error').textContent = '';
+            document.getElementById('empty').style.display = 'none';
+        }
+
+        async function loadTables() {
+            resetFeedback();
+
+            const select = document.getElementById('table-select');
+            select.innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/admin/db/tables?kind=${encodeURIComponent(kind)}`, { credentials: 'include' });
+                const data = await response.json();
+
+                const tables = data?.tables || [];
+                if (tables.length === 0) {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = 'Nenhuma tabela encontrada.';
+                    return;
+                }
+
+                tables.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    opt.textContent = t;
+                    select.appendChild(opt);
+                });
+
+                selectedTable = select.value;
+                await loadColumns();
+                await loadRows(1);
+            } catch (error) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Erro ao carregar tabelas.';
+            }
+        }
+
+        async function loadColumns() {
+            resetFeedback();
+
+            const tableSelect = document.getElementById('table-select');
+            selectedTable = tableSelect.value;
+
+            const filterColumnSelect = document.getElementById('filter-column-select');
+            filterColumnSelect.innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/admin/db/columns?table=${encodeURIComponent(selectedTable)}`, { credentials: 'include' });
+                const data = await response.json();
+                columns = data?.columns || [];
+
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = 'Sem filtro';
+                filterColumnSelect.appendChild(emptyOpt);
+
+                columns.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.column_name;
+                    opt.textContent = c.column_name;
+                    filterColumnSelect.appendChild(opt);
+                });
+
+                modalPkColumn = columns.some(c => c.column_name === 'id') ? 'id' : (columns[0]?.column_name || 'id');
+            } catch (error) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Erro ao carregar colunas.';
+            }
+        }
+
+        async function loadRows(page = 1) {
+            resetFeedback();
+
+            const q = document.getElementById('search-input').value || '';
+            const filterColumn = document.getElementById('filter-column-select').value;
+            const filterValue = document.getElementById('filter-value-input').value;
+
+            const params = new URLSearchParams();
+            params.set('table', selectedTable);
+            params.set('page', String(page));
+            params.set('limit', '50');
+            if (q.trim()) params.set('q', q.trim());
+            if (filterColumn && filterValue !== '') {
+                params.set('filterColumn', filterColumn);
+                params.set('filterValue', filterValue);
+            }
+
+            try {
+                const response = await fetch(`/api/admin/db/rows?${params.toString()}`, { credentials: 'include' });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = data?.error || 'Erro ao carregar registros.';
+                    return;
+                }
+
+                const rows = data?.rows || [];
+                currentPage = data?.pagination?.page || 1;
+                totalPages = data?.pagination?.totalPages || 1;
+
+                renderRows(rows);
+                updatePagination(data?.pagination);
+
+                if (rows.length === 0) {
+                    document.getElementById('empty').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Erro ao carregar registros.';
+            }
+        }
+
+        function updatePagination(pagination) {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const pageInfo = document.getElementById('page-info');
+
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+
+            pageInfo.textContent = `Página ${currentPage} de ${totalPages} (${pagination?.total || 0})`;
+        }
+
+        function changePage(page) {
+            if (page < 1 || page > totalPages) return;
+            loadRows(page);
+        }
+
+        function reloadRows() {
+            loadRows(1);
+        }
+
+        function renderRows(rows) {
+            const container = document.getElementById('table-container');
+            container.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.className = 'admin-table';
+
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+
+            const visibleColumns = columns.slice(0, 10).map(c => c.column_name);
+            visibleColumns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headRow.appendChild(th);
+            });
+
+            const thActions = document.createElement('th');
+            thActions.textContent = 'Ações';
+            headRow.appendChild(thActions);
+
+            thead.appendChild(headRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+
+                visibleColumns.forEach(col => {
+                    const td = document.createElement('td');
+                    const v = row[col];
+                    td.textContent = v === null || v === undefined ? '' : String(v);
+                    tr.appendChild(td);
+                });
+
+                const tdActions = document.createElement('td');
+                tdActions.style.whiteSpace = 'nowrap';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-primary';
+                editBtn.textContent = 'Editar';
+                editBtn.onclick = () => openEditModal(row);
+
+                tdActions.appendChild(editBtn);
+                tr.appendChild(tdActions);
+
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+
+        function openCreateModal() {
+            modalMode = 'create';
+            modalPkValue = null;
+
+            document.getElementById('modal-title').textContent = `Criar em ${selectedTable}`;
+            document.getElementById('delete-btn').style.display = 'none';
+            document.getElementById('modal-error').style.display = 'none';
+            document.getElementById('modal-error').textContent = '';
+
+            renderModalForm({});
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function openEditModal(row) {
+            modalMode = 'edit';
+            modalPkValue = row[modalPkColumn];
+
+            document.getElementById('modal-title').textContent = `Editar ${selectedTable}`;
+            document.getElementById('delete-btn').style.display = 'inline-flex';
+            document.getElementById('modal-error').style.display = 'none';
+            document.getElementById('modal-error').textContent = '';
+
+            renderModalForm(row);
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function renderModalForm(row) {
+            const form = document.getElementById('modal-form');
+            form.innerHTML = '';
+
+            columns.forEach(c => {
+                const col = c.column_name;
+
+                const field = document.createElement('div');
+                field.className = 'admin-form-field';
+
+                const label = document.createElement('label');
+                label.textContent = col;
+
+                const input = document.createElement('input');
+                input.className = 'form-input';
+                input.dataset.column = col;
+
+                const isPk = col === modalPkColumn;
+                const isCreate = modalMode === 'create';
+
+                if (!isCreate && isPk) {
+                    input.disabled = true;
+                }
+
+                const value = row[col];
+                input.value = value === null || value === undefined ? '' : String(value);
+
+                field.appendChild(label);
+                field.appendChild(input);
+                form.appendChild(field);
+            });
+        }
+
+        function collectFormValues() {
+            const inputs = Array.from(document.querySelectorAll('#modal-form input[data-column]'));
+            const data = {};
+
+            inputs.forEach(input => {
+                const col = input.dataset.column;
+                if (!col) return;
+
+                if (modalMode === 'edit' && col === modalPkColumn) {
+                    return;
+                }
+
+                data[col] = input.value;
+            });
+
+            return data;
+        }
+
+        async function saveRow() {
+            const modalError = document.getElementById('modal-error');
+            modalError.style.display = 'none';
+            modalError.textContent = '';
+
+            try {
+                if (modalMode === 'create') {
+                    const payload = { data: collectFormValues() };
+                    const response = await fetch(`/api/admin/db/rows?table=${encodeURIComponent(selectedTable)}`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        modalError.style.display = 'block';
+                        modalError.textContent = data?.error || 'Erro ao criar.';
+                        return;
+                    }
+
+                    closeModal();
+                    loadRows(1);
+                    return;
+                }
+
+                const updates = collectFormValues();
+                const payload = {
+                    pkColumn: modalPkColumn,
+                    pkValue: modalPkValue,
+                    updates
+                };
+
+                const response = await fetch(`/api/admin/db/rows?table=${encodeURIComponent(selectedTable)}`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    modalError.style.display = 'block';
+                    modalError.textContent = data?.error || 'Erro ao salvar.';
+                    return;
+                }
+
+                closeModal();
+                loadRows(currentPage);
+            } catch (error) {
+                modalError.style.display = 'block';
+                modalError.textContent = 'Erro ao salvar.';
+            }
+        }
+
+        async function deleteRow() {
+            const modalError = document.getElementById('modal-error');
+            modalError.style.display = 'none';
+            modalError.textContent = '';
+
+            if (modalMode !== 'edit') return;
+            if (!confirm('Tem certeza que deseja excluir este registro?')) return;
+
+            try {
+                const params = new URLSearchParams();
+                params.set('table', selectedTable);
+                params.set('pkColumn', modalPkColumn);
+                params.set('pkValue', String(modalPkValue));
+
+                const response = await fetch(`/api/admin/db/rows?${params.toString()}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    modalError.style.display = 'block';
+                    modalError.textContent = data?.error || 'Erro ao excluir.';
+                    return;
+                }
+
+                closeModal();
+                loadRows(1);
+            } catch (error) {
+                modalError.style.display = 'block';
+                modalError.textContent = 'Erro ao excluir.';
+            }
+        }
+
+        document.getElementById('table-select').addEventListener('change', async () => {
+            currentPage = 1;
+            await loadColumns();
+            await loadRows(1);
+        });
+
+        document.getElementById('search-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') reloadRows();
+        });
+
+        document.getElementById('filter-value-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') reloadRows();
+        });
+
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        checkAuth();
+        setKind('models');
+    </script>
+</body>
+</html>
