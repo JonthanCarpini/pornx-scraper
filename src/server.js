@@ -1460,6 +1460,7 @@ app.get('/api/all-models', async (req, res) => {
             SELECT * FROM (
                 SELECT 
                     'xxxfollow' as source,
+                    ('xxxfollow:' || m.id::text) as model_key,
                     m.id,
                     m.display_name as name,
                     m.username,
@@ -1471,12 +1472,13 @@ app.get('/api/all-models', async (req, res) => {
                     m.created_at
                 FROM xxxfollow_models m
                 LEFT JOIN xxxfollow_videos v ON m.id = v.model_id
-                GROUP BY m.id, m.display_name, m.username, m.avatar_url, m.view_count, m.like_count, m.created_at
+                GROUP BY m.id, m.display_name, m.username, m.avatar_url, m.view_count, m.like_count, m.created_at, ('xxxfollow:' || m.id::text)
                 
                 UNION ALL
                 
                 SELECT 
                     'clubeadulto' as source,
+                    ('clubeadulto:' || m.id::text) as model_key,
                     m.id,
                     m.name,
                     m.slug as username,
@@ -1511,6 +1513,162 @@ app.get('/api/all-models', async (req, res) => {
             }
         });
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/model-videos', async (req, res) => {
+    try {
+        const modelKey = req.query.model;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (page - 1) * limit;
+
+        if (!modelKey || typeof modelKey !== 'string' || !modelKey.includes(':')) {
+            return res.status(400).json({ error: 'Parâmetro model inválido' });
+        }
+
+        const [source, modelIdRaw] = modelKey.split(':');
+        const modelId = parseInt(modelIdRaw);
+
+        if (!source || Number.isNaN(modelId)) {
+            return res.status(400).json({ error: 'Parâmetro model inválido' });
+        }
+
+        const tableCandidates = ['xxxfollow_videos', 'clubeadulto_videos', 'nsfw247_videos'];
+        const tablesResult = await pool.query(
+            `SELECT table_name
+             FROM information_schema.tables
+             WHERE table_schema = 'public'
+               AND table_name = ANY($1::text[])`,
+            [tableCandidates]
+        );
+        const existingTables = new Set(tablesResult.rows.map(r => r.table_name));
+
+        let countQuery = null;
+        let videosQuery = null;
+        let queryParams = [];
+        let countParams = [];
+
+        if (source === 'xxxfollow') {
+            if (!existingTables.has('xxxfollow_videos')) {
+                return res.json({
+                    videos: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 }
+                });
+            }
+
+            countQuery = 'SELECT COUNT(*) FROM xxxfollow_videos WHERE model_id = $1';
+            countParams = [modelId];
+
+            videosQuery = `
+                SELECT
+                    v.id,
+                    v.title,
+                    v.description,
+                    v.video_url,
+                    v.sd_url,
+                    v.thumbnail_url,
+                    v.poster_url,
+                    NULL::text as m3u8_url,
+                    v.duration,
+                    v.width,
+                    v.height,
+                    v.view_count,
+                    v.like_count,
+                    COALESCE(v.posted_at, v.created_at) as created_at
+                FROM xxxfollow_videos v
+                WHERE v.model_id = $1
+                ORDER BY COALESCE(v.posted_at, v.created_at) DESC NULLS LAST
+                LIMIT $2 OFFSET $3
+            `;
+            queryParams = [modelId, limit, offset];
+        } else if (source === 'clubeadulto') {
+            if (!existingTables.has('clubeadulto_videos')) {
+                return res.json({
+                    videos: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 }
+                });
+            }
+
+            countQuery = 'SELECT COUNT(*) FROM clubeadulto_videos WHERE model_id = $1';
+            countParams = [modelId];
+
+            videosQuery = `
+                SELECT
+                    v.id,
+                    v.title,
+                    NULL::text as description,
+                    v.video_url,
+                    NULL::text as sd_url,
+                    v.thumbnail_url,
+                    v.poster_url,
+                    v.m3u8_url,
+                    v.duration::text as duration,
+                    NULL::int as width,
+                    NULL::int as height,
+                    0::int as view_count,
+                    0::int as like_count,
+                    v.created_at
+                FROM clubeadulto_videos v
+                WHERE v.model_id = $1
+                ORDER BY v.created_at DESC NULLS LAST
+                LIMIT $2 OFFSET $3
+            `;
+            queryParams = [modelId, limit, offset];
+        } else if (source === 'nsfw247') {
+            if (!existingTables.has('nsfw247_videos')) {
+                return res.json({
+                    videos: [],
+                    pagination: { page, limit, total: 0, totalPages: 0 }
+                });
+            }
+
+            countQuery = 'SELECT COUNT(*) FROM nsfw247_videos WHERE model_id = $1';
+            countParams = [modelId];
+
+            videosQuery = `
+                SELECT
+                    v.id,
+                    v.title,
+                    NULL::text as description,
+                    v.video_url,
+                    NULL::text as sd_url,
+                    v.thumbnail_url,
+                    v.poster_url,
+                    v.m3u8_url,
+                    v.duration::text as duration,
+                    NULL::int as width,
+                    NULL::int as height,
+                    0::int as view_count,
+                    0::int as like_count,
+                    v.created_at
+                FROM nsfw247_videos v
+                WHERE v.model_id = $1
+                ORDER BY v.created_at DESC NULLS LAST
+                LIMIT $2 OFFSET $3
+            `;
+            queryParams = [modelId, limit, offset];
+        } else {
+            return res.status(400).json({ error: 'Source inválido' });
+        }
+
+        const countResult = await pool.query(countQuery, countParams);
+        const totalVideos = parseInt(countResult.rows[0].count);
+
+        const videosResult = await pool.query(videosQuery, queryParams);
+
+        res.json({
+            videos: videosResult.rows,
+            pagination: {
+                page,
+                limit,
+                total: totalVideos,
+                totalPages: Math.ceil(totalVideos / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Erro no endpoint /api/model-videos:', error);
         res.status(500).json({ error: error.message });
     }
 });

@@ -367,7 +367,8 @@
                 const card = document.createElement('div');
                 card.className = 'model-card';
                 card.onclick = () => {
-                    window.location.href = `/todos-videos.html`;
+                    const modelKey = model.model_key || '';
+                    window.location.href = `/model-videos.html?model=${encodeURIComponent(modelKey)}`;
                 };
                 
                 const videoCount = parseInt(model.video_count) || 0;
