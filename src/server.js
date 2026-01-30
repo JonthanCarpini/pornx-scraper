@@ -124,6 +124,7 @@ app.get('/api/admin/db/rows', authenticateToken, async (req, res) => {
         const q = (req.query.q || '').toString().trim();
         const filterColumn = req.query.filterColumn;
         const filterValueRaw = req.query.filterValue;
+        const videoFormat = req.query.videoFormat;
 
         const columns = await getTableColumns(table);
         if (!columns || columns.length === 0) {
@@ -152,6 +153,14 @@ app.get('/api/admin/db/rows', authenticateToken, async (req, res) => {
                 const orParts = textColumns.map(col => `"${col}" ILIKE $${qParamIndex}`);
                 whereParts.push(`(${orParts.join(' OR ')})`);
                 whereParams.push(`%${q}%`);
+            }
+        }
+
+        if (videoFormat && table.endsWith('_videos')) {
+            if (videoFormat === 'mp4') {
+                whereParts.push(`("video_url" IS NOT NULL AND "video_url" != '' AND ("m3u8_url" IS NULL OR "m3u8_url" = ''))`);
+            } else if (videoFormat === 'm3u8') {
+                whereParts.push(`("m3u8_url" IS NOT NULL AND "m3u8_url" != '')`);
             }
         }
 

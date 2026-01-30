@@ -367,8 +367,8 @@ body {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    min-width: 760px;
     background: #fff;
+    table-layout: auto;
 }
 
 .admin-table thead th {
@@ -437,6 +437,16 @@ body {
 
 .admin-form-field input.form-input {
     margin-bottom: 0;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 14px;
+    min-width: auto;
+}
+
+.admin-table tbody td {
+    vertical-align: middle;
 }
 
 @media (max-width: 900px) {

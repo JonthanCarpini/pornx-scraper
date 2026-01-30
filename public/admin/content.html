@@ -93,7 +93,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 5px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 5px;">
                 <div>
                     <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Filtrar coluna</label>
                     <select class="form-select" id="filter-column-select"></select>
@@ -101,6 +101,14 @@
                 <div>
                     <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Filtrar valor</label>
                     <input class="form-input" id="filter-value-input" placeholder="Valor exato" />
+                </div>
+                <div id="video-format-filter-container" style="display:none;">
+                    <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Formato do Vídeo</label>
+                    <select class="form-select" id="video-format-select">
+                        <option value="">Todos</option>
+                        <option value="mp4">MP4</option>
+                        <option value="m3u8">M3U8</option>
+                    </select>
                 </div>
             </div>
 
@@ -142,6 +150,24 @@
             </div>
 
             <div id="modal-error" style="display:none; color:#ff4b2b; padding-top: 10px;"></div>
+        </div>
+    </div>
+
+    <div id="video-modal" class="admin-modal" style="display:none;">
+        <div class="admin-modal-content" style="max-width: 900px; width: 90%;">
+            <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="font-size: 16px; font-weight: 700; color: #111827;" id="video-modal-title">Testar Vídeo</div>
+                <button class="btn btn-danger" onclick="closeVideoModal()">✕</button>
+            </div>
+
+            <div id="video-player-container" style="background: #000; border-radius: 8px; overflow: hidden;">
+                <video id="video-player" controls style="width: 100%; max-height: 70vh;">
+                    <source id="video-source" src="" type="video/mp4">
+                    Seu navegador não suporta a tag de vídeo.
+                </video>
+            </div>
+
+            <div id="video-error" style="display:none; color:#ff4b2b; padding-top: 10px; text-align: center;"></div>
         </div>
     </div>
 
@@ -187,13 +213,16 @@
 
             const tabModels = document.getElementById('tab-models');
             const tabVideos = document.getElementById('tab-videos');
+            const videoFormatFilter = document.getElementById('video-format-filter-container');
 
             if (kind === 'models') {
                 tabModels.classList.add('btn-primary');
                 tabVideos.classList.remove('btn-primary');
+                videoFormatFilter.style.display = 'none';
             } else {
                 tabVideos.classList.add('btn-primary');
                 tabModels.classList.remove('btn-primary');
+                videoFormatFilter.style.display = 'block';
             }
 
             currentPage = 1;
@@ -280,6 +309,7 @@
             const q = document.getElementById('search-input').value || '';
             const filterColumn = document.getElementById('filter-column-select').value;
             const filterValue = document.getElementById('filter-value-input').value;
+            const videoFormat = document.getElementById('video-format-select').value;
 
             const params = new URLSearchParams();
             params.set('table', selectedTable);
@@ -289,6 +319,9 @@
             if (filterColumn && filterValue !== '') {
                 params.set('filterColumn', filterColumn);
                 params.set('filterValue', filterValue);
+            }
+            if (kind === 'videos' && videoFormat) {
+                params.set('videoFormat', videoFormat);
             }
 
             try {
@@ -337,6 +370,22 @@
             loadRows(1);
         }
 
+        function getVisibleColumns() {
+            if (kind === 'models') {
+                const essentialCols = ['id', 'name', 'username', 'display_name', 'video_count', 'videos_scraped'];
+                return columns.filter(c => essentialCols.includes(c.column_name)).map(c => c.column_name);
+            } else {
+                const essentialCols = ['id', 'title', 'model_id', 'duration', 'view_count', 'like_count', 'created_at'];
+                return columns.filter(c => essentialCols.includes(c.column_name)).map(c => c.column_name);
+            }
+        }
+
+        function truncateText(text, maxLength = 50) {
+            if (!text) return '';
+            const str = String(text);
+            return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+        }
+
         function renderRows(rows) {
             const container = document.getElementById('table-container');
             container.innerHTML = '';
@@ -347,7 +396,7 @@
             const thead = document.createElement('thead');
             const headRow = document.createElement('tr');
 
-            const visibleColumns = columns.slice(0, 10).map(c => c.column_name);
+            const visibleColumns = getVisibleColumns();
             visibleColumns.forEach(col => {
                 const th = document.createElement('th');
                 th.textContent = col;
@@ -356,6 +405,7 @@
 
             const thActions = document.createElement('th');
             thActions.textContent = 'Ações';
+            thActions.style.minWidth = '200px';
             headRow.appendChild(thActions);
 
             thead.appendChild(headRow);
@@ -368,21 +418,53 @@
                 visibleColumns.forEach(col => {
                     const td = document.createElement('td');
                     const v = row[col];
-                    td.textContent = v === null || v === undefined ? '' : String(v);
+                    if (col === 'title') {
+                        td.textContent = truncateText(v, 40);
+                        td.title = v;
+                    } else {
+                        td.textContent = v === null || v === undefined ? '' : String(v);
+                    }
                     tr.appendChild(td);
                 });
 
                 const tdActions = document.createElement('td');
                 tdActions.style.whiteSpace = 'nowrap';
+                tdActions.style.display = 'flex';
+                tdActions.style.gap = '5px';
+                tdActions.style.flexWrap = 'wrap';
 
                 const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-primary';
-                editBtn.textContent = 'Editar';
+                editBtn.className = 'btn btn-sm btn-primary';
+                editBtn.textContent = '✏️';
+                editBtn.title = 'Editar';
                 editBtn.onclick = () => openEditModal(row);
 
-                tdActions.appendChild(editBtn);
-                tr.appendChild(tdActions);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-danger';
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.title = 'Excluir';
+                deleteBtn.onclick = () => quickDeleteRow(row);
 
+                const suspendBtn = document.createElement('button');
+                suspendBtn.className = 'btn btn-sm';
+                suspendBtn.textContent = '⏸️';
+                suspendBtn.title = 'Suspender';
+                suspendBtn.onclick = () => suspendRow(row);
+
+                tdActions.appendChild(editBtn);
+                tdActions.appendChild(deleteBtn);
+                tdActions.appendChild(suspendBtn);
+
+                if (kind === 'videos') {
+                    const testBtn = document.createElement('button');
+                    testBtn.className = 'btn btn-sm btn-success';
+                    testBtn.textContent = '▶️';
+                    testBtn.title = 'Testar Vídeo';
+                    testBtn.onclick = () => testVideo(row);
+                    tdActions.appendChild(testBtn);
+                }
+
+                tr.appendChild(tdActions);
                 tbody.appendChild(tr);
             });
 
@@ -575,14 +657,152 @@
             if (e.key === 'Enter') reloadRows();
         });
 
+        document.getElementById('video-format-select').addEventListener('change', () => {
+            reloadRows();
+        });
+
         document.getElementById('modal').addEventListener('click', (e) => {
             if (e.target.id === 'modal') {
                 closeModal();
             }
         });
 
+        document.getElementById('video-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'video-modal') {
+                closeVideoModal();
+            }
+        });
+
+        async function quickDeleteRow(row) {
+            if (!confirm('Tem certeza que deseja excluir este registro?')) return;
+
+            try {
+                const pkValue = row[modalPkColumn];
+                const params = new URLSearchParams();
+                params.set('table', selectedTable);
+                params.set('pkColumn', modalPkColumn);
+                params.set('pkValue', String(pkValue));
+
+                const response = await fetch(`/api/admin/db/rows?${params.toString()}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    alert('Erro ao excluir: ' + (data?.error || 'Erro desconhecido'));
+                    return;
+                }
+
+                loadRows(currentPage);
+            } catch (error) {
+                alert('Erro ao excluir registro.');
+            }
+        }
+
+        async function suspendRow(row) {
+            const suspendField = columns.find(c => c.column_name === 'videos_scraped' || c.column_name === 'suspended');
+            if (!suspendField) {
+                alert('Esta tabela não possui campo de suspensão.');
+                return;
+            }
+
+            const currentValue = row[suspendField.column_name];
+            const newValue = !currentValue;
+
+            try {
+                const pkValue = row[modalPkColumn];
+                const payload = {
+                    pkColumn: modalPkColumn,
+                    pkValue: pkValue,
+                    updates: { [suspendField.column_name]: newValue }
+                };
+
+                const response = await fetch(`/api/admin/db/rows?table=${encodeURIComponent(selectedTable)}`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    alert('Erro ao suspender: ' + (data?.error || 'Erro desconhecido'));
+                    return;
+                }
+
+                loadRows(currentPage);
+            } catch (error) {
+                alert('Erro ao suspender registro.');
+            }
+        }
+
+        function testVideo(row) {
+            const videoUrl = row.video_url || row.sd_url;
+            const m3u8Url = row.m3u8_url;
+            const title = row.title || 'Vídeo sem título';
+
+            if (!videoUrl && !m3u8Url) {
+                alert('Este vídeo não possui URL válida.');
+                return;
+            }
+
+            const videoError = document.getElementById('video-error');
+            videoError.style.display = 'none';
+            videoError.textContent = '';
+
+            document.getElementById('video-modal-title').textContent = truncateText(title, 60);
+
+            const videoPlayer = document.getElementById('video-player');
+            const videoSource = document.getElementById('video-source');
+
+            if (m3u8Url) {
+                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(m3u8Url)}`;
+                if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoSource.src = proxiedUrl;
+                    videoSource.type = 'application/vnd.apple.mpegurl';
+                } else if (window.Hls && Hls.isSupported()) {
+                    if (window.hlsInstance) {
+                        window.hlsInstance.destroy();
+                    }
+                    window.hlsInstance = new Hls();
+                    window.hlsInstance.loadSource(proxiedUrl);
+                    window.hlsInstance.attachMedia(videoPlayer);
+                    window.hlsInstance.on(Hls.Events.ERROR, function (event, data) {
+                        if (data.fatal) {
+                            videoError.style.display = 'block';
+                            videoError.textContent = 'Erro ao carregar vídeo M3U8: ' + data.type;
+                        }
+                    });
+                } else {
+                    videoError.style.display = 'block';
+                    videoError.textContent = 'Seu navegador não suporta HLS. Tente usar Safari ou instale uma extensão.';
+                }
+            } else {
+                videoSource.src = videoUrl;
+                videoSource.type = 'video/mp4';
+            }
+
+            videoPlayer.load();
+            document.getElementById('video-modal').style.display = 'flex';
+        }
+
+        function closeVideoModal() {
+            const videoPlayer = document.getElementById('video-player');
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0;
+
+            if (window.hlsInstance) {
+                window.hlsInstance.destroy();
+                window.hlsInstance = null;
+            }
+
+            document.getElementById('video-modal').style.display = 'none';
+        }
+
         checkAuth();
         setKind('models');
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </body>
 </html>
