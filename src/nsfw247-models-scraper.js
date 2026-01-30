@@ -9,7 +9,7 @@ const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
 
 async function saveModel(modelData) {
     try {
-        const checkQuery = 'SELECT id, profile_url FROM nsfw247_models WHERE profile_url = $1';
+        const checkQuery = 'SELECT id, profile_url FROM models WHERE profile_url = $1';
         const checkResult = await pool.query(checkQuery, [modelData.profileUrl]);
         
         console.log(`🔍 Verificando: ${modelData.name} - URL: ${modelData.profileUrl}`);
@@ -23,14 +23,13 @@ async function saveModel(modelData) {
         console.log(`✨ Nova modelo: ${modelData.name}`);
         
         const insertQuery = `
-            INSERT INTO nsfw247_models (name, slug, profile_url, cover_url)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO models (name, profile_url, cover_url)
+            VALUES ($1, $2, $3)
             RETURNING id;
         `;
         
         const values = [
             modelData.name,
-            modelData.slug,
             modelData.profileUrl,
             modelData.coverUrl
         ];

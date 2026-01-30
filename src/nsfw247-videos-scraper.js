@@ -9,7 +9,7 @@ const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
 async function scrapeVideos() {
     console.log('\n🚀 Iniciando scraper de vídeos do NSFW247...\n');
     
-    const result = await pool.query('SELECT id, name, slug, profile_url FROM nsfw247_models ORDER BY id');
+    const result = await pool.query('SELECT id, name, profile_url FROM models ORDER BY id');
     const models = result.rows;
     
     console.log(`📊 Total de modelos: ${models.length}\n`);

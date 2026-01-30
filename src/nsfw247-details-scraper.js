@@ -10,7 +10,7 @@ async function scrapeDetails() {
     console.log('\n🚀 Iniciando scraper de detalhes do NSFW247...\n');
     
     const result = await pool.query(
-        'SELECT id, title, video_url FROM nsfw247_videos WHERE poster_url IS NULL OR m3u8_url IS NULL ORDER BY id'
+        'SELECT id, title, video_url FROM videos WHERE poster_url IS NULL OR video_source_url IS NULL ORDER BY id'
     );
     const videos = result.rows;
     
