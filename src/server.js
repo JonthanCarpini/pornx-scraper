@@ -1737,6 +1737,261 @@ app.get('/api/xxxfollow/scrape-custom-url-stream', authenticateToken, async (req
 });
 
 // ========================================
+// CLUBE ADULTO & NSFW247 - Streaming Endpoints
+// ========================================
+
+app.get('/api/clubeadulto/scrape-models-stream', authenticateToken, async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        const start = req.query.start || '1';
+        const end = req.query.end || '5';
+        
+        const scraper = spawn('node', ['src/clubeadulto-models-scraper.js', start, end], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+app.get('/api/clubeadulto/scrape-videos-stream', authenticateToken, async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/clubeadulto-videos-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+app.get('/api/clubeadulto/scrape-details-stream', authenticateToken, async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/clubeadulto-details-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+// NSFW247 - Mesmas rotas mas apontando para scrapers diferentes
+app.get('/api/nsfw247/scrape-models-stream', authenticateToken, async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        const start = req.query.start || '1';
+        const end = req.query.end || '5';
+        
+        const scraper = spawn('node', ['src/clubeadulto-models-scraper.js', start, end], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+app.get('/api/nsfw247/scrape-videos-stream', authenticateToken, async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/clubeadulto-videos-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+app.get('/api/nsfw247/scrape-details-stream', authenticateToken, async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    try {
+        const { spawn } = await import('child_process');
+        
+        const scraper = spawn('node', ['src/clubeadulto-details-scraper.js'], {
+            cwd: path.join(__dirname, '..')
+        });
+        
+        scraper.stdout.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'log', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.stderr.on('data', (data) => {
+            const lines = data.toString().split('\n');
+            lines.forEach(line => {
+                if (line.trim()) {
+                    res.write(`data: ${JSON.stringify({ type: 'error', message: line })}\n\n`);
+                }
+            });
+        });
+        
+        scraper.on('close', (code) => {
+            res.write(`data: ${JSON.stringify({ type: 'done', code })}\n\n`);
+            res.end();
+        });
+        
+    } catch (error) {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+// ========================================
 // ADMIN - Limpar Banco
 // ========================================
 
