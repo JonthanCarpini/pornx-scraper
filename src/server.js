@@ -3,7 +3,10 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import dotenv from 'dotenv';
 import { spawn } from 'child_process';
+import cookieParser from 'cookie-parser';
 import pool from './database/db.js';
+import authRoutes from './routes/auth.js';
+import { authenticateToken } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -15,7 +18,11 @@ const PORT = process.env.PORT || 3000;
 const FALLBACK_PORT = 3001;
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Rotas de autenticação (não protegidas)
+app.use('/api/admin', authRoutes);
 
 let scrapingProcess = null;
 let scrapingLogs = [];
@@ -1421,6 +1428,9 @@ app.get('/api/proxy/m3u8', async (req, res) => {
 // ========================================
 // XXXFOLLOW - Endpoints
 // ========================================
+
+// Proteger rotas de scraping (requer autenticação)
+app.get('/api/xxxfollow/scrape-*', authenticateToken);
 
 app.get('/api/xxxfollow/stats', async (req, res) => {
     try {
