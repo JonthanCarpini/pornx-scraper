@@ -31,8 +31,7 @@ router.get('/', async (req, res) => {
                             'cover_url', m.cover_url,
                             'bio', m.bio,
                             'follower_count', m.follower_count,
-                            'video_count', m.video_count,
-                            'profile_url', m.profile_url
+                            'video_count', m.video_count
                         )
                         FROM xxxfollow_models m
                         WHERE m.id = f.model_id
@@ -44,8 +43,7 @@ router.get('/', async (req, res) => {
                             'cover_url', m.image_url,
                             'bio', m.bio,
                             'follower_count', m.follower_count,
-                            'video_count', m.video_count,
-                            'profile_url', m.profile_url
+                            'video_count', m.video_count
                         )
                         FROM clubeadulto_models m
                         WHERE m.id = f.model_id
@@ -57,8 +55,7 @@ router.get('/', async (req, res) => {
                             'cover_url', m.banner_url,
                             'bio', m.bio,
                             'follower_count', m.follower_count,
-                            'video_count', m.video_count,
-                            'profile_url', m.profile_url
+                            'video_count', m.video_count
                         )
                         FROM models m
                         WHERE m.id = f.model_id
