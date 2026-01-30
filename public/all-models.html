@@ -305,7 +305,7 @@
             }
             
             try {
-                const response = await fetch(`/api/all-models?page=${page}&limit=100`);
+                const response = await fetch(`/api/unified-models?page=${page}&limit=100`);
                 const data = await response.json();
                 
                 document.getElementById('loading').style.display = 'none';
@@ -368,7 +368,7 @@
                 const card = document.createElement('div');
                 card.className = 'model-card';
                 card.onclick = () => {
-                    const modelKey = model.model_key || '';
+                    const modelKey = `${model.source}:${model.id}`;
                     window.location.href = `/model-videos.html?model=${encodeURIComponent(modelKey)}`;
                 };
                 
@@ -380,12 +380,12 @@
                     <div class="source-badge ${getSourceClass(model.source)}">
                         ${getSourceLabel(model.source)}
                     </div>
-                    <img src="${model.cover_url || '/placeholder.jpg'}" 
+                    <img src="${model.avatar_url || model.banner_url || '/placeholder.jpg'}" 
                          alt="${model.name}" 
                          class="model-avatar"
                          onerror="this.src='/placeholder.jpg'">
                     <div class="model-info">
-                        <div class="model-name">${model.name || model.username}</div>
+                        <div class="model-name">${model.name}</div>
                         <div class="model-stats">
                             ${viewCount > 0 ? `
                                 <div class="stat">

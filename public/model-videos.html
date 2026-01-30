@@ -224,7 +224,7 @@
                     return;
                 }
 
-                const response = await fetch(`/api/model-videos?model=${encodeURIComponent(modelKey)}&page=${page}&limit=100`);
+                const response = await fetch(`/api/unified-videos?modelId=${encodeURIComponent(modelKey)}&page=${page}&limit=100`);
                 const data = await response.json();
 
                 document.getElementById('loading').style.display = 'none';
@@ -324,9 +324,11 @@
                 hlsInstance = null;
             }
 
-            const m3u8Url = video.m3u8_url;
-            if (m3u8Url) {
-                const proxied = `/api/proxy/m3u8?url=${encodeURIComponent(m3u8Url)}`;
+            const videoUrl = video.video_source_url || video.sd_url;
+            
+            // Detectar se é M3U8
+            if (videoUrl && videoUrl.includes('.m3u8')) {
+                const proxied = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}`;
 
                 if (Hls.isSupported()) {
                     hlsInstance = new Hls();
@@ -338,7 +340,8 @@
                     modalVideo.src = '';
                 }
             } else {
-                modalVideo.src = video.sd_url || video.video_url;
+                // MP4 ou outro formato direto
+                modalVideo.src = videoUrl || '';
             }
 
             modal.classList.add('active');
