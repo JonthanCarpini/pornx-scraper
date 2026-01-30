@@ -1457,7 +1457,7 @@ app.get('/api/all-models', async (req, res) => {
         // Buscar modelos de todos os sites (XXXFollow e Clube Adulto)
         // NSFW247 será adicionado quando a tabela for criada
         const result = await pool.query(`
-            (
+            SELECT * FROM (
                 SELECT 
                     'xxxfollow' as source,
                     m.id,
@@ -1472,9 +1472,9 @@ app.get('/api/all-models', async (req, res) => {
                 FROM xxxfollow_models m
                 LEFT JOIN xxxfollow_videos v ON m.id = v.model_id
                 GROUP BY m.id, m.display_name, m.username, m.avatar_url, m.view_count, m.like_count, m.created_at
-            )
-            UNION ALL
-            (
+                
+                UNION ALL
+                
                 SELECT 
                     'clubeadulto' as source,
                     m.id,
@@ -1487,7 +1487,7 @@ app.get('/api/all-models', async (req, res) => {
                     COALESCE(m.video_count, 0) as video_count,
                     m.created_at
                 FROM clubeadulto_models m
-            )
+            ) AS all_models
             ORDER BY RANDOM()
             LIMIT $1 OFFSET $2
         `, [limit, offset]);
