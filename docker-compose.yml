@@ -1,12 +1,39 @@
 services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pornx_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Aplicação Node.js
   app:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pornx_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pornx_db
       PORT: 3000
       SCRAPE_DELAY: 2000
     ports:
@@ -15,3 +42,7 @@ services:
       - ./public:/app/public
       - ./logs:/app/logs
     command: node src/server.js
+
+volumes:
+  postgres_data:
+    driver: local
