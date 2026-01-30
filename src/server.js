@@ -1515,6 +1515,129 @@ app.get('/api/all-models', async (req, res) => {
     }
 });
 
+app.get('/api/videos', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = (page - 1) * limit;
+
+        const tableCandidates = ['xxxfollow_videos', 'clubeadulto_videos', 'nsfw247_videos'];
+        const tablesResult = await pool.query(
+            `SELECT table_name
+             FROM information_schema.tables
+             WHERE table_schema = 'public'
+               AND table_name = ANY($1::text[])`,
+            [tableCandidates]
+        );
+        const existingTables = new Set(tablesResult.rows.map(r => r.table_name));
+
+        const unionParts = [];
+        const countParts = [];
+
+        if (existingTables.has('xxxfollow_videos')) {
+            unionParts.push(`
+                SELECT
+                    v.id,
+                    COALESCE(v.title, v.description, 'Sem título') as title,
+                    v.video_url,
+                    v.sd_url,
+                    v.thumbnail_url,
+                    v.poster_url,
+                    NULL::text as m3u8_url,
+                    v.duration::text as duration,
+                    v.width,
+                    v.height,
+                    v.view_count,
+                    v.like_count,
+                    COALESCE(v.posted_at, v.created_at) as created_at
+                FROM xxxfollow_videos v
+            `);
+            countParts.push('SELECT COUNT(*)::int as count FROM xxxfollow_videos');
+        }
+
+        if (existingTables.has('clubeadulto_videos')) {
+            unionParts.push(`
+                SELECT
+                    v.id,
+                    COALESCE(v.title, 'Sem título') as title,
+                    v.video_url,
+                    NULL::text as sd_url,
+                    v.thumbnail_url,
+                    v.poster_url,
+                    v.m3u8_url,
+                    v.duration::text as duration,
+                    NULL::int as width,
+                    NULL::int as height,
+                    0::int as view_count,
+                    0::int as like_count,
+                    v.created_at
+                FROM clubeadulto_videos v
+            `);
+            countParts.push('SELECT COUNT(*)::int as count FROM clubeadulto_videos');
+        }
+
+        if (existingTables.has('nsfw247_videos')) {
+            unionParts.push(`
+                SELECT
+                    v.id,
+                    COALESCE(v.title, 'Sem título') as title,
+                    v.video_url,
+                    NULL::text as sd_url,
+                    v.thumbnail_url,
+                    v.poster_url,
+                    v.m3u8_url,
+                    v.duration::text as duration,
+                    NULL::int as width,
+                    NULL::int as height,
+                    0::int as view_count,
+                    0::int as like_count,
+                    v.created_at
+                FROM nsfw247_videos v
+            `);
+            countParts.push('SELECT COUNT(*)::int as count FROM nsfw247_videos');
+        }
+
+        if (unionParts.length === 0) {
+            return res.json({
+                videos: [],
+                pagination: {
+                    page,
+                    limit,
+                    total: 0,
+                    totalPages: 0
+                }
+            });
+        }
+
+        const countQuery = `SELECT COALESCE(SUM(count), 0)::int as total FROM (${countParts.join(' UNION ALL ')}) c`;
+        const countResult = await pool.query(countQuery);
+        const totalVideos = parseInt(countResult.rows[0].total);
+
+        const videosQuery = `
+            SELECT *
+            FROM (
+                ${unionParts.join(' UNION ALL ')}
+            ) all_videos
+            ORDER BY created_at DESC NULLS LAST
+            LIMIT $1 OFFSET $2
+        `;
+        const videosResult = await pool.query(videosQuery, [limit, offset]);
+
+        res.json({
+            videos: videosResult.rows,
+            pagination: {
+                page,
+                limit,
+                total: totalVideos,
+                totalPages: Math.ceil(totalVideos / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Erro no endpoint /api/videos:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/xxxfollow/models', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;

@@ -367,8 +367,7 @@
                 const card = document.createElement('div');
                 card.className = 'model-card';
                 card.onclick = () => {
-                    // Redirecionar para a página única de vídeos com source e model
-                    window.location.href = `/all-videos.html?source=${model.source}&model=${model.id}`;
+                    window.location.href = `/todos-videos.html`;
                 };
                 
                 const videoCount = parseInt(model.video_count) || 0;
