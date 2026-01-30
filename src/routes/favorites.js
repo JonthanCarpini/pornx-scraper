@@ -32,7 +32,10 @@ router.get('/', async (req, res) => {
                             'view_count', v.view_count,
                             'model_id', v.model_id,
                             'model_name', m.username,
-                            'model_avatar', m.avatar_url
+                            'model_avatar', m.avatar_url,
+                            'video_url', v.video_url,
+                            'video_source_url', v.video_url,
+                            'sd_url', v.sd_url
                         )
                         FROM xxxfollow_videos v
                         LEFT JOIN xxxfollow_models m ON v.model_id = m.id
@@ -46,7 +49,10 @@ router.get('/', async (req, res) => {
                             'view_count', v.view_count,
                             'model_id', v.model_id,
                             'model_name', m.name,
-                            'model_avatar', m.image_url
+                            'model_avatar', m.image_url,
+                            'video_url', v.video_url,
+                            'video_source_url', COALESCE(v.video_source_url, v.m3u8_url, v.video_url),
+                            'sd_url', v.m3u8_url
                         )
                         FROM clubeadulto_videos v
                         LEFT JOIN clubeadulto_models m ON v.model_id = m.id
@@ -60,7 +66,10 @@ router.get('/', async (req, res) => {
                             'view_count', v.view_count,
                             'model_id', v.model_id,
                             'model_name', m.name,
-                            'model_avatar', NULL
+                            'model_avatar', NULL,
+                            'video_url', v.video_url,
+                            'video_source_url', v.video_source_url,
+                            'sd_url', NULL
                         )
                         FROM videos v
                         LEFT JOIN models m ON v.model_id = m.id
