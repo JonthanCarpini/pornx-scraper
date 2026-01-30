@@ -380,6 +380,25 @@
     </div>
 
     <script>
+        // Verificar autenticação ao carregar a página
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/verify', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    window.location.href = '/admin/login.html';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        // Executar verificação ao carregar
+        checkAuth();
+
         let isRunning = false;
         let currentEventSource = null;
 
