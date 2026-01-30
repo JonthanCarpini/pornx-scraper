@@ -367,8 +367,13 @@
                 const card = document.createElement('div');
                 card.className = 'model-card';
                 card.onclick = () => {
-                    if (model.profile_url) {
-                        window.open(model.profile_url, '_blank');
+                    // Redirecionar para a página de vídeos do site correspondente
+                    if (model.source === 'xxxfollow') {
+                        window.location.href = `/xxxfollow-videos.html?model=${model.id}`;
+                    } else if (model.source === 'clubeadulto') {
+                        window.location.href = `/clubeadulto-videos.html?model=${model.id}`;
+                    } else if (model.source === 'nsfw247') {
+                        window.location.href = `/nsfw247-videos.html?model=${model.id}`;
                     }
                 };
                 
