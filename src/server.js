@@ -1515,7 +1515,7 @@ app.get('/api/all-models', async (req, res) => {
     }
 });
 
-app.get('/api/videos', async (req, res) => {
+app.get('/api/all-videos', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 100;
@@ -1633,7 +1633,7 @@ app.get('/api/videos', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Erro no endpoint /api/videos:', error);
+        console.error('Erro no endpoint /api/all-videos:', error);
         res.status(500).json({ error: error.message });
     }
 });

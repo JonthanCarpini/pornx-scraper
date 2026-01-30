@@ -204,7 +204,7 @@
 
         async function loadVideos(page = 1) {
             try {
-                const response = await fetch(`/api/videos?page=${page}&limit=100`);
+                const response = await fetch(`/api/all-videos?page=${page}&limit=100`);
                 const data = await response.json();
 
                 document.getElementById('loading').style.display = 'none';
