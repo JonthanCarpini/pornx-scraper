@@ -27,10 +27,10 @@ app.use('/api/admin', authRoutes);
 const ADMIN_DB_ALLOWED_TABLES = [
     'xxxfollow_models',
     'clubeadulto_models',
-    'nsfw247_models',
+    'models',
     'xxxfollow_videos',
     'clubeadulto_videos',
-    'nsfw247_videos'
+    'videos'
 ];
 
 function isValidIdentifier(value) {

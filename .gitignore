@@ -4,4 +4,6 @@ node_modules/
 *.log
 .DS_Store
 backups/
-*.sql
+backups/*.sql
+pornx_*.sql
+debug-*.png

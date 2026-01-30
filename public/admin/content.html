@@ -82,7 +82,15 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div>
+                    <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Fonte</label>
+                    <select class="form-select" id="source-select">
+                        <option value="xxxfollow">XXXFollow</option>
+                        <option value="clubeadulto">Clube Adulto</option>
+                        <option value="nsfw247">NSFW247</option>
+                    </select>
+                </div>
                 <div>
                     <label style="display:block; font-size: 13px; color: #666; margin-bottom: 8px;">Tabela</label>
                     <select class="form-select" id="table-select"></select>
@@ -173,6 +181,7 @@
 
     <script>
         let kind = 'models';
+        let source = 'xxxfollow';
         let selectedTable = '';
         let columns = [];
 
@@ -228,7 +237,32 @@
             currentPage = 1;
             totalPages = 1;
 
-            loadTables();
+            updateTableSelect();
+        }
+
+        function updateTableSelect() {
+            const select = document.getElementById('table-select');
+            select.innerHTML = '';
+
+            source = document.getElementById('source-select').value;
+
+            let tableName = '';
+            if (source === 'xxxfollow') {
+                tableName = kind === 'models' ? 'xxxfollow_models' : 'xxxfollow_videos';
+            } else if (source === 'clubeadulto') {
+                tableName = kind === 'models' ? 'clubeadulto_models' : 'clubeadulto_videos';
+            } else if (source === 'nsfw247') {
+                tableName = kind === 'models' ? 'models' : 'videos';
+            }
+
+            const opt = document.createElement('option');
+            opt.value = tableName;
+            opt.textContent = tableName;
+            select.appendChild(opt);
+
+            selectedTable = tableName;
+            loadColumns();
+            loadRows(1);
         }
 
         function resetFeedback() {
@@ -237,38 +271,6 @@
             document.getElementById('empty').style.display = 'none';
         }
 
-        async function loadTables() {
-            resetFeedback();
-
-            const select = document.getElementById('table-select');
-            select.innerHTML = '';
-
-            try {
-                const response = await fetch(`/api/admin/db/tables?kind=${encodeURIComponent(kind)}`, { credentials: 'include' });
-                const data = await response.json();
-
-                const tables = data?.tables || [];
-                if (tables.length === 0) {
-                    document.getElementById('error').style.display = 'block';
-                    document.getElementById('error').textContent = 'Nenhuma tabela encontrada.';
-                    return;
-                }
-
-                tables.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t;
-                    opt.textContent = t;
-                    select.appendChild(opt);
-                });
-
-                selectedTable = select.value;
-                await loadColumns();
-                await loadRows(1);
-            } catch (error) {
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = 'Erro ao carregar tabelas.';
-            }
-        }
 
         async function loadColumns() {
             resetFeedback();
@@ -643,6 +645,10 @@
             }
         }
 
+        document.getElementById('source-select').addEventListener('change', () => {
+            updateTableSelect();
+        });
+
         document.getElementById('table-select').addEventListener('change', async () => {
             currentPage = 1;
             await loadColumns();
@@ -802,6 +808,7 @@
 
         checkAuth();
         setKind('models');
+        updateTableSelect();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </body>
