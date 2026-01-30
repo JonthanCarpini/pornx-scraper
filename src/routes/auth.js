@@ -42,8 +42,8 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Usuário ou senha incorretos' });
         }
 
-        // Gerar token
-        const token = generateToken(1, username);
+        // Gerar token com role admin
+        const token = generateToken(1, username, 'admin');
         console.log('✅ Token gerado para:', username);
 
         // Definir cookie (sem secure para funcionar em HTTP)
