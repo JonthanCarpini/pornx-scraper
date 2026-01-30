@@ -699,6 +699,26 @@
             </div>
         </div>
 
+        <!-- FOLLOWING SECTION -->
+        <div id="following-section" class="section">
+            <h2 style="margin-bottom: 30px;">👥 Modelos Seguindo</h2>
+            <div id="following-loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p>Carregando modelos...</p>
+            </div>
+            <div id="following-empty" class="favorites-empty" style="display:none;">
+                <div class="favorites-empty-icon">😢</div>
+                <h3>Nenhuma modelo seguida ainda</h3>
+                <p>Comece a seguir modelos para vê-las aqui!</p>
+            </div>
+            <div id="following-grid" class="models-grid"></div>
+            <div id="following-pagination" class="pagination" style="display:none;">
+                <button onclick="changeFollowingPage(currentFollowingPage - 1)" id="following-prev">← Anterior</button>
+                <span id="following-page-info"></span>
+                <button onclick="changeFollowingPage(currentFollowingPage + 1)" id="following-next">Próxima →</button>
+            </div>
+        </div>
+
         <!-- PROFILE SECTION -->
         <div id="profile-section" class="section">
             <div class="profile-header">
@@ -712,7 +732,7 @@
                     <div class="stat-number" id="stat-favorites">0</div>
                     <div class="stat-label">Favoritos</div>
                 </div>
-                <div class="stat-card" onclick="showSection('home'); setTimeout(() => switchTab('models'), 100);" style="cursor: pointer;">
+                <div class="stat-card" onclick="showSection('following')" style="cursor: pointer;">
                     <div class="stat-number" id="stat-follows">0</div>
                     <div class="stat-label">Seguindo</div>
                 </div>
@@ -737,9 +757,11 @@
         let currentVideosPage = 1;
         let currentModelsPage = 1;
         let currentFavoritesPage = 1;
+        let currentFollowingPage = 1;
         let totalVideosPages = 1;
         let totalModelsPages = 1;
         let totalFavoritesPages = 1;
+        let totalFollowingPages = 1;
         let userFavorites = new Set();
         let userFollows = new Set();
         let searchFilter = 'all';
@@ -921,12 +943,7 @@
                     </div>
                 `;
 
-                card.onclick = (e) => {
-                    if (!e.target.closest('.follow-btn')) {
-                        window.location.href = `/model-videos.html?modelId=${model.source}:${model.id}`;
-                    }
-                };
-
+                // Não adicionar onclick - navegação interna apenas
                 grid.appendChild(card);
             });
         }
@@ -1005,6 +1022,11 @@
 
         // ABRIR VÍDEO
         function openVideo(videoUrl) {
+            if (!videoUrl) {
+                console.error('URL do vídeo não fornecida');
+                return;
+            }
+
             const modal = document.getElementById('video-modal');
             const player = document.getElementById('video-player');
 
@@ -1137,6 +1159,11 @@
                 document.getElementById('favorites-section').classList.add('active');
                 document.querySelectorAll('.nav-link')[1].classList.add('active');
                 loadFavorites();
+            } else if (section === 'following') {
+                document.getElementById('home-tabs').style.display = 'none';
+                document.getElementById('search-container').style.display = 'none';
+                document.getElementById('following-section').classList.add('active');
+                loadFollowing();
             } else if (section === 'profile') {
                 document.getElementById('home-tabs').style.display = 'none';
                 document.getElementById('search-container').style.display = 'none';
@@ -1303,6 +1330,99 @@
             document.getElementById('favorites-prev').disabled = pagination.page === 1;
             document.getElementById('favorites-next').disabled = pagination.page === pagination.totalPages;
             document.getElementById('favorites-pagination').style.display = 'flex';
+        }
+
+        // CARREGAR MODELOS SEGUIDAS
+        async function loadFollowing(page = 1) {
+            try {
+                document.getElementById('following-loading').style.display = 'block';
+                document.getElementById('following-grid').style.display = 'none';
+                document.getElementById('following-empty').style.display = 'none';
+
+                const response = await fetch(`/api/follows?page=${page}&limit=20`, { credentials: 'include' });
+                const data = await response.json();
+
+                document.getElementById('following-loading').style.display = 'none';
+
+                if (data.follows.length === 0) {
+                    document.getElementById('following-empty').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('following-grid').style.display = 'grid';
+                renderFollowing(data.follows);
+                updateFollowingPagination(data.pagination);
+            } catch (error) {
+                console.error('Erro ao carregar modelos seguidas:', error);
+                document.getElementById('following-loading').innerHTML = '<p>Erro ao carregar modelos</p>';
+            }
+        }
+
+        function renderFollowing(follows) {
+            const grid = document.getElementById('following-grid');
+            grid.innerHTML = '';
+
+            follows.forEach(follow => {
+                const model = follow.model;
+                if (!model) return;
+
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                card.innerHTML = `
+                    <div class="source-badge source-${follow.model_source}">${follow.model_source.toUpperCase()}</div>
+                    <img src="${model.cover_url || model.avatar_url || '/placeholder.jpg'}" 
+                         alt="${model.name}" 
+                         class="model-cover"
+                         onerror="this.src='/placeholder.jpg'">
+                    <div class="model-info">
+                        <div class="model-name-title">${model.name}</div>
+                        <div class="model-stats">
+                            ${model.video_count ? `<span>🎬 ${model.video_count}</span>` : ''}
+                            ${model.follower_count ? `<span>👥 ${formatNumber(model.follower_count)}</span>` : ''}
+                        </div>
+                        <button class="follow-btn following" 
+                                onclick="unfollowFromList(${follow.id}, event)">
+                            ✓ Seguindo
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        async function unfollowFromList(followId, event) {
+            event.stopPropagation();
+            try {
+                const response = await fetch(`/api/follows/${followId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    loadFollowing(currentFollowingPage);
+                    await loadUserFollows(); // Atualizar cache
+                }
+            } catch (error) {
+                console.error('Erro ao deixar de seguir:', error);
+            }
+        }
+
+        function changeFollowingPage(page) {
+            if (page < 1 || page > totalFollowingPages) return;
+            currentFollowingPage = page;
+            loadFollowing(page);
+            window.scrollTo(0, 0);
+        }
+
+        function updateFollowingPagination(pagination) {
+            currentFollowingPage = pagination.page;
+            totalFollowingPages = pagination.totalPages;
+
+            document.getElementById('following-page-info').textContent = 
+                `Página ${pagination.page} de ${pagination.totalPages}`;
+            document.getElementById('following-prev').disabled = pagination.page === 1;
+            document.getElementById('following-next').disabled = pagination.page === pagination.totalPages;
+            document.getElementById('following-pagination').style.display = 'flex';
         }
 
         // CARREGAR PERFIL
