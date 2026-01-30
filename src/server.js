@@ -8,6 +8,7 @@ import pool from './database/db.js';
 import authRoutes from './routes/auth.js';
 import userAuthRoutes from './routes/user-auth.js';
 import adminUsersRoutes from './routes/admin-users.js';
+import favoritesRoutes from './routes/favorites.js';
 import { authenticateToken } from './middleware/auth.js';
 
 dotenv.config();
@@ -29,6 +30,9 @@ app.use('/api/auth', userAuthRoutes);
 
 // Rotas admin (protegidas)
 app.use('/api/admin', adminUsersRoutes);
+
+// Rotas de usuários (protegidas)
+app.use('/api/favorites', favoritesRoutes);
 
 const ADMIN_DB_ALLOWED_TABLES = [
     'xxxfollow_models',
