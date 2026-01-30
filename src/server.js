@@ -2644,6 +2644,7 @@ app.get('/api/unified-models', async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
         const source = req.query.source; // Filtro opcional por fonte
+        const sortBy = req.query.sortBy || 'videos'; // 'videos' ou 'recent'
         
         let whereClause = '';
         const whereParams = [];
@@ -2656,6 +2657,12 @@ app.get('/api/unified-models', async (req, res) => {
         if (source) {
             whereClause += (whereClause ? ' AND ' : 'WHERE ') + `source = $${whereParams.length + 1}`;
             whereParams.push(source);
+        }
+        
+        // Definir ordenação baseada no parâmetro sortBy
+        let orderBy = 'ORDER BY video_count DESC, follower_count DESC';
+        if (sortBy === 'recent') {
+            orderBy = 'ORDER BY created_at DESC';
         }
         
         // Parâmetros para a query principal (LIMIT e OFFSET no final)
@@ -2680,7 +2687,7 @@ app.get('/api/unified-models', async (req, res) => {
                 created_at
             FROM unified_models
             ${whereClause}
-            ORDER BY video_count DESC, follower_count DESC
+            ${orderBy}
             LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}
         `, selectParams);
         

@@ -73,6 +73,31 @@
             padding: 15px;
             background: #f8f9fa;
             border-radius: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .filter-select {
+            padding: 8px 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:hover {
+            background: #667eea;
+            color: white;
         }
 
         .stat-item {
@@ -248,6 +273,40 @@
             background: rgba(255,255,255,0.2);
             border-radius: 8px;
         }
+
+        .page-jump {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .page-jump input {
+            width: 80px;
+            padding: 10px;
+            border: 2px solid white;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1em;
+        }
+
+        .page-jump button {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .page-jump button:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -277,6 +336,12 @@
                     <span class="stat-icon">🔥</span>
                     <span>NSFW247</span>
                 </div>
+                <div class="filter-group">
+                    <select id="sort-select" class="filter-select" onchange="changeSortOrder()">
+                        <option value="recent">🕒 Mais Recentes</option>
+                        <option value="videos">📹 Mais Vídeos</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -291,12 +356,18 @@
             <button onclick="changePage(currentPage - 1)" id="prev-btn" class="pagination-btn">← Anterior</button>
             <span id="page-info"></span>
             <button onclick="changePage(currentPage + 1)" id="next-btn" class="pagination-btn">Próxima →</button>
+            <div class="page-jump">
+                <span style="color: white; font-weight: bold;">Ir para:</span>
+                <input type="number" id="page-input" min="1" placeholder="Página">
+                <button onclick="jumpToPage()">Ir</button>
+            </div>
         </div>
     </div>
 
     <script>
         let currentPage = 1;
         let totalPages = 1;
+        let currentSort = 'recent';
 
         async function loadModels(page) {
             // Garantir que page é um número
@@ -305,7 +376,7 @@
             }
             
             try {
-                const response = await fetch(`/api/unified-models?page=${page}&limit=100`);
+                const response = await fetch(`/api/unified-models?page=${page}&limit=100&sortBy=${currentSort}`);
                 const data = await response.json();
                 
                 document.getElementById('loading').style.display = 'none';
@@ -330,12 +401,30 @@
             const pageInfo = document.getElementById('page-info');
             const prevBtn = document.getElementById('prev-btn');
             const nextBtn = document.getElementById('next-btn');
+            const pageInput = document.getElementById('page-input');
 
             if (pagination.totalPages > 1) {
                 paginationDiv.style.display = 'block';
                 pageInfo.textContent = `Página ${pagination.page} de ${pagination.totalPages}`;
                 prevBtn.disabled = pagination.page === 1;
                 nextBtn.disabled = pagination.page === pagination.totalPages;
+                pageInput.max = pagination.totalPages;
+                pageInput.value = '';
+            }
+        }
+
+        function changeSortOrder() {
+            currentSort = document.getElementById('sort-select').value;
+            changePage(1);
+        }
+
+        function jumpToPage() {
+            const pageInput = document.getElementById('page-input');
+            const page = parseInt(pageInput.value);
+            if (page && page >= 1 && page <= totalPages) {
+                changePage(page);
+            } else {
+                alert(`Por favor, insira um número entre 1 e ${totalPages}`);
             }
         }
 
