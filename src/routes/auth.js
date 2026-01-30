@@ -7,11 +7,8 @@ const router = express.Router();
 // Usuário padrão (em produção, usar banco de dados)
 const ADMIN_USER = {
     username: process.env.ADMIN_USERNAME || 'admin',
-    password: process.env.ADMIN_PASSWORD || '$2b$10$rZ5YhJKvX8qKqKqKqKqKqOqKqKqKqKqKqKqKqKqKqKqKqKqKqKqK' // senha: admin123
+    password: process.env.ADMIN_PASSWORD || '$2b$10$8mRgUC/lHM6BCT9m1CgAh.V37O4fIVGL4W0yxrp4m.dTdSTdiKV/K' // senha: admin123
 };
-
-// Hash da senha padrão "admin123"
-const DEFAULT_PASSWORD_HASH = '$2b$10$rZ5YhJKvX8qKqKqKqKqKqOqKqKqKqKqKqKqKqKqKqKqKqKqKqKqK';
 
 router.post('/login', async (req, res) => {
     try {
