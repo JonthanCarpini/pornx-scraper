@@ -1429,9 +1429,6 @@ app.get('/api/proxy/m3u8', async (req, res) => {
 // XXXFOLLOW - Endpoints
 // ========================================
 
-// Proteger rotas de scraping (requer autenticação)
-app.get('/api/xxxfollow/scrape-*', authenticateToken);
-
 app.get('/api/xxxfollow/stats', async (req, res) => {
     try {
         const totalModels = await pool.query('SELECT COUNT(*) FROM xxxfollow_models');
@@ -1525,7 +1522,7 @@ app.get('/api/xxxfollow/videos', async (req, res) => {
     }
 });
 
-app.get('/api/xxxfollow/scrape-models-stream', async (req, res) => {
+app.get('/api/xxxfollow/scrape-models-stream', authenticateToken, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -1568,7 +1565,7 @@ app.get('/api/xxxfollow/scrape-models-stream', async (req, res) => {
     }
 });
 
-app.get('/api/xxxfollow/scrape-videos-stream', async (req, res) => {
+app.get('/api/xxxfollow/scrape-videos-stream', authenticateToken, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -1609,7 +1606,7 @@ app.get('/api/xxxfollow/scrape-videos-stream', async (req, res) => {
     }
 });
 
-app.get('/api/xxxfollow/scrape-video-details-stream', async (req, res) => {
+app.get('/api/xxxfollow/scrape-video-details-stream', authenticateToken, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -1650,7 +1647,7 @@ app.get('/api/xxxfollow/scrape-video-details-stream', async (req, res) => {
     }
 });
 
-app.get('/api/xxxfollow/scrape-tags-stream', async (req, res) => {
+app.get('/api/xxxfollow/scrape-tags-stream', authenticateToken, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -1691,7 +1688,7 @@ app.get('/api/xxxfollow/scrape-tags-stream', async (req, res) => {
     }
 });
 
-app.get('/api/xxxfollow/scrape-custom-url-stream', async (req, res) => {
+app.get('/api/xxxfollow/scrape-custom-url-stream', authenticateToken, async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
