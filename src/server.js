@@ -2789,6 +2789,93 @@ app.get('/api/unified-videos', async (req, res) => {
 });
 
 // ========================================
+// ADMIN - Sincronizar Video Counts
+// ========================================
+
+app.post('/api/admin/sync-video-counts', authenticateToken, async (req, res) => {
+    try {
+        console.log('\n🔄 Iniciando sincronização de video_count...\n');
+        
+        // Atualizar XXXFollow
+        const xxxfollowResult = await pool.query(`
+            UPDATE xxxfollow_models m
+            SET video_count = (
+                SELECT COUNT(*)
+                FROM xxxfollow_videos v
+                WHERE v.model_id = m.id
+            )
+        `);
+        console.log(`✅ XXXFollow: ${xxxfollowResult.rowCount} modelos atualizados`);
+        
+        // Atualizar Clube Adulto
+        const clubeadultoResult = await pool.query(`
+            UPDATE clubeadulto_models m
+            SET video_count = (
+                SELECT COUNT(*)
+                FROM clubeadulto_videos v
+                WHERE v.model_id = m.id
+            )
+        `);
+        console.log(`✅ Clube Adulto: ${clubeadultoResult.rowCount} modelos atualizados`);
+        
+        // Atualizar NSFW247
+        const nsfw247Result = await pool.query(`
+            UPDATE models m
+            SET video_count = (
+                SELECT COUNT(*)
+                FROM videos v
+                WHERE v.model_id = m.id
+            )
+        `);
+        console.log(`✅ NSFW247: ${nsfw247Result.rowCount} modelos atualizados`);
+        
+        // Buscar estatísticas atualizadas
+        const statsResult = await pool.query(`
+            SELECT 
+                'xxxfollow' as source,
+                COUNT(*) as total_models,
+                SUM(video_count) as total_videos
+            FROM xxxfollow_models
+            UNION ALL
+            SELECT 
+                'clubeadulto' as source,
+                COUNT(*) as total_models,
+                SUM(video_count) as total_videos
+            FROM clubeadulto_models
+            UNION ALL
+            SELECT 
+                'nsfw247' as source,
+                COUNT(*) as total_models,
+                SUM(video_count) as total_videos
+            FROM models
+        `);
+        
+        console.log('\n📊 Estatísticas atualizadas:');
+        statsResult.rows.forEach(row => {
+            console.log(`   ${row.source}: ${row.total_models} modelos, ${row.total_videos} vídeos`);
+        });
+        console.log('');
+        
+        res.json({
+            success: true,
+            message: 'Video counts sincronizados com sucesso',
+            updated: {
+                xxxfollow: xxxfollowResult.rowCount,
+                clubeadulto: clubeadultoResult.rowCount,
+                nsfw247: nsfw247Result.rowCount
+            },
+            stats: statsResult.rows
+        });
+    } catch (error) {
+        console.error('Erro ao sincronizar video counts:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ========================================
 // ADMIN - Limpar Banco
 // ========================================
 

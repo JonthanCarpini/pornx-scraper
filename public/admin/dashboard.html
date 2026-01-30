@@ -451,6 +451,10 @@
                     <span>📊</span>
                     <span>Atualizar Stats</span>
                 </button>
+                <button class="btn btn-success" onclick="syncVideoCounts()" id="syncBtn">
+                    <span>🔄</span>
+                    <span>Sincronizar Video Counts</span>
+                </button>
             </div>
         </div>
 
@@ -501,6 +505,43 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Sincronizar video counts
+        async function syncVideoCounts() {
+            const btn = document.getElementById('syncBtn');
+            const originalHTML = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span><span>Sincronizando...</span>';
+                
+                const response = await fetch('/api/admin/sync-video-counts', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ Sincronização concluída!\n\n` +
+                          `XXXFollow: ${data.updated.xxxfollow} modelos\n` +
+                          `Clube Adulto: ${data.updated.clubeadulto} modelos\n` +
+                          `NSFW247: ${data.updated.nsfw247} modelos\n\n` +
+                          `Total de vídeos: ${data.stats.reduce((sum, s) => sum + parseInt(s.total_videos || 0), 0)}`);
+                    
+                    // Recarregar estatísticas
+                    loadStats();
+                } else {
+                    alert('❌ Erro ao sincronizar: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Erro ao sincronizar video counts:', error);
+                alert('❌ Erro ao sincronizar video counts');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
             }
         }
 
