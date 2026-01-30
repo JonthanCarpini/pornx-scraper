@@ -9,13 +9,19 @@ const SCRAPE_DELAY = parseInt(process.env.SCRAPE_DELAY) || 2000;
 
 async function saveModel(modelData) {
     try {
-        const checkQuery = 'SELECT id FROM clubeadulto_models WHERE profile_url = $1';
+        const checkQuery = 'SELECT id, profile_url FROM clubeadulto_models WHERE profile_url = $1';
         const checkResult = await pool.query(checkQuery, [modelData.profileUrl]);
         
+        // Debug: mostrar URL sendo verificada
+        console.log(`🔍 Verificando: ${modelData.name} - URL: ${modelData.profileUrl}`);
+        console.log(`   Resultado da query: ${checkResult.rows.length} registros encontrados`);
+        
         if (checkResult.rows.length > 0) {
-            console.log(`⚠️  Modelo já existe: ${modelData.name}`);
+            console.log(`⚠️  Modelo já existe: ${modelData.name} (ID: ${checkResult.rows[0].id})`);
             return { id: checkResult.rows[0].id, isNew: false };
         }
+        
+        console.log(`✨ Nova modelo: ${modelData.name}`);
         
         const insertQuery = `
             INSERT INTO clubeadulto_models (name, slug, profile_url, cover_url)
