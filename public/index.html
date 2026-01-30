@@ -1061,6 +1061,8 @@
         }
 
         // ABRIR VÍDEO
+        let hlsInstance = null;
+
         function openVideo(videoUrl) {
             if (!videoUrl) {
                 console.error('URL do vídeo não fornecida');
@@ -1070,13 +1072,29 @@
             const modal = document.getElementById('video-modal');
             const player = document.getElementById('video-player');
 
+            // Limpar player anterior
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            // Detectar se é M3U8
             if (videoUrl.includes('.m3u8')) {
+                // Usar proxy para evitar erro 403 Forbidden
+                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}`;
+
                 if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(videoUrl);
-                    hls.attachMedia(player);
+                    hlsInstance = new Hls();
+                    hlsInstance.loadSource(proxiedUrl);
+                    hlsInstance.attachMedia(player);
+                } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+                    player.src = proxiedUrl;
+                } else {
+                    console.error('HLS não suportado neste navegador');
+                    player.src = '';
                 }
             } else {
+                // MP4 ou outro formato direto
                 player.src = videoUrl;
             }
 
@@ -1087,6 +1105,13 @@
         function closeVideoModal() {
             const modal = document.getElementById('video-modal');
             const player = document.getElementById('video-player');
+            
+            // Limpar HLS instance
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+            
             player.pause();
             player.src = '';
             modal.classList.remove('active');
