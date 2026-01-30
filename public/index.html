@@ -699,6 +699,34 @@
             </div>
         </div>
 
+        <!-- MODEL VIDEOS SECTION -->
+        <div id="model-videos-section" class="section">
+            <div style="display: flex; align-items: center; margin-bottom: 30px;">
+                <button onclick="showSection('home'); switchTab('models');" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-right: 20px;">
+                    ← Voltar
+                </button>
+                <div>
+                    <h2 style="margin: 0;" id="model-videos-title">🎬 Vídeos da Modelo</h2>
+                    <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.6);" id="model-videos-subtitle">0 vídeos</p>
+                </div>
+            </div>
+            <div id="model-videos-loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p>Carregando vídeos...</p>
+            </div>
+            <div id="model-videos-empty" class="favorites-empty" style="display:none;">
+                <div class="favorites-empty-icon">😢</div>
+                <h3>Nenhum vídeo encontrado</h3>
+                <p>Esta modelo ainda não possui vídeos.</p>
+            </div>
+            <div id="model-videos-grid" class="videos-grid"></div>
+            <div id="model-videos-pagination" class="pagination" style="display:none;">
+                <button onclick="changeModelVideosPage(currentModelVideosPage - 1)" id="model-videos-prev">← Anterior</button>
+                <span id="model-videos-page-info"></span>
+                <button onclick="changeModelVideosPage(currentModelVideosPage + 1)" id="model-videos-next">Próxima →</button>
+            </div>
+        </div>
+
         <!-- FOLLOWING SECTION -->
         <div id="following-section" class="section">
             <h2 style="margin-bottom: 30px;">👥 Modelos Seguindo</h2>
@@ -758,15 +786,19 @@
         let currentModelsPage = 1;
         let currentFavoritesPage = 1;
         let currentFollowingPage = 1;
+        let currentModelVideosPage = 1;
         let totalVideosPages = 1;
         let totalModelsPages = 1;
         let totalFavoritesPages = 1;
         let totalFollowingPages = 1;
+        let totalModelVideosPages = 1;
         let userFavorites = new Set();
         let userFollows = new Set();
         let searchFilter = 'all';
         let searchTimeout = null;
         let currentSection = 'home';
+        let currentModelId = null;
+        let currentModelSource = null;
 
         // VERIFICAR AUTENTICAÇÃO
         async function checkAuth() {
@@ -885,7 +917,8 @@
 
                 card.onclick = (e) => {
                     if (!e.target.closest('.favorite-btn')) {
-                        openVideo(video.video_source_url);
+                        const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+                        openVideo(videoUrl);
                     }
                 };
 
@@ -943,7 +976,14 @@
                     </div>
                 `;
 
-                // Não adicionar onclick - navegação interna apenas
+                // Adicionar onclick para abrir vídeos da modelo
+                card.onclick = (e) => {
+                    if (!e.target.closest('.follow-btn')) {
+                        showModelVideos(model.source, model.id, model.name);
+                    }
+                };
+                card.style.cursor = 'pointer';
+
                 grid.appendChild(card);
             });
         }
@@ -1164,6 +1204,11 @@
                 document.getElementById('search-container').style.display = 'none';
                 document.getElementById('following-section').classList.add('active');
                 loadFollowing();
+            } else if (section === 'model-videos') {
+                document.getElementById('home-tabs').style.display = 'none';
+                document.getElementById('search-container').style.display = 'none';
+                document.getElementById('model-videos-section').classList.add('active');
+                // Vídeos já foram carregados ao chamar showModelVideos
             } else if (section === 'profile') {
                 document.getElementById('home-tabs').style.display = 'none';
                 document.getElementById('search-container').style.display = 'none';
@@ -1290,7 +1335,8 @@
                 // Adicionar onclick para abrir player
                 card.onclick = (e) => {
                     if (!e.target.closest('.favorite-btn')) {
-                        openVideo(video.video_url || video.video_source_url);
+                        const videoUrl = video.video_url || video.video_source_url || video.sd_url;
+                        openVideo(videoUrl);
                     }
                 };
 
@@ -1387,6 +1433,14 @@
                     </div>
                 `;
 
+                // Adicionar onclick para abrir vídeos da modelo
+                card.onclick = (e) => {
+                    if (!e.target.closest('.follow-btn')) {
+                        showModelVideos(follow.model_source, follow.model_id, model.name);
+                    }
+                };
+                card.style.cursor = 'pointer';
+
                 grid.appendChild(card);
             });
         }
@@ -1423,6 +1477,111 @@
             document.getElementById('following-prev').disabled = pagination.page === 1;
             document.getElementById('following-next').disabled = pagination.page === pagination.totalPages;
             document.getElementById('following-pagination').style.display = 'flex';
+        }
+
+        // MOSTRAR VÍDEOS DA MODELO
+        function showModelVideos(source, modelId, modelName) {
+            currentModelSource = source;
+            currentModelId = modelId;
+            
+            document.getElementById('model-videos-title').textContent = `🎬 Vídeos de ${modelName}`;
+            showSection('model-videos');
+            loadModelVideos(1);
+        }
+
+        // CARREGAR VÍDEOS DA MODELO
+        async function loadModelVideos(page = 1) {
+            try {
+                document.getElementById('model-videos-loading').style.display = 'block';
+                document.getElementById('model-videos-grid').style.display = 'none';
+                document.getElementById('model-videos-empty').style.display = 'none';
+
+                const response = await fetch(`/api/unified-videos?page=${page}&limit=20&source=${currentModelSource}&modelId=${currentModelSource}:${currentModelId}`);
+                const data = await response.json();
+
+                document.getElementById('model-videos-loading').style.display = 'none';
+
+                if (data.videos.length === 0) {
+                    document.getElementById('model-videos-empty').style.display = 'block';
+                    document.getElementById('model-videos-subtitle').textContent = '0 vídeos';
+                    return;
+                }
+
+                document.getElementById('model-videos-subtitle').textContent = `${data.pagination.total} vídeos`;
+                document.getElementById('model-videos-grid').style.display = 'grid';
+                renderModelVideos(data.videos);
+                updateModelVideosPagination(data.pagination);
+            } catch (error) {
+                console.error('Erro ao carregar vídeos da modelo:', error);
+                document.getElementById('model-videos-loading').innerHTML = '<p>Erro ao carregar vídeos</p>';
+            }
+        }
+
+        function renderModelVideos(videos) {
+            const grid = document.getElementById('model-videos-grid');
+            grid.innerHTML = '';
+
+            videos.forEach(video => {
+                const videoKey = `${video.source}:${video.id}`;
+                const isFavorited = userFavorites.has(videoKey);
+
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="source-badge source-${video.source}">${video.source.toUpperCase()}</div>
+                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
+                            onclick="toggleFavorite('${video.source}', ${video.id}, event)">
+                        ${isFavorited ? '❤️' : '🤍'}
+                    </button>
+                    <img src="${video.thumbnail_url || '/placeholder.jpg'}" 
+                         alt="${video.title}" 
+                         class="video-thumbnail"
+                         onerror="this.src='/placeholder.jpg'">
+                    <div class="video-info">
+                        <div class="video-title">${video.title || 'Sem título'}</div>
+                        <div class="video-meta">
+                            ${video.model_avatar ? `
+                                <img src="${video.model_avatar}" 
+                                     alt="${video.model_name}" 
+                                     class="model-avatar"
+                                     onerror="this.src='/placeholder.jpg'">
+                            ` : ''}
+                            <span class="model-name">${video.model_name || 'Desconhecido'}</span>
+                        </div>
+                        <div class="video-stats">
+                            ${video.view_count ? `<span>👁️ ${formatNumber(video.view_count)}</span>` : ''}
+                            ${video.duration ? `<span>⏱️ ${formatDuration(video.duration)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                card.onclick = (e) => {
+                    if (!e.target.closest('.favorite-btn')) {
+                        const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+                        openVideo(videoUrl);
+                    }
+                };
+
+                grid.appendChild(card);
+            });
+        }
+
+        function changeModelVideosPage(page) {
+            if (page < 1 || page > totalModelVideosPages) return;
+            currentModelVideosPage = page;
+            loadModelVideos(page);
+            window.scrollTo(0, 0);
+        }
+
+        function updateModelVideosPagination(pagination) {
+            currentModelVideosPage = pagination.page;
+            totalModelVideosPages = pagination.totalPages;
+
+            document.getElementById('model-videos-page-info').textContent = 
+                `Página ${pagination.page} de ${pagination.totalPages}`;
+            document.getElementById('model-videos-prev').disabled = pagination.page === 1;
+            document.getElementById('model-videos-next').disabled = pagination.page === pagination.totalPages;
+            document.getElementById('model-videos-pagination').style.display = 'flex';
         }
 
         // CARREGAR PERFIL
