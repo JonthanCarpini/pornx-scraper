@@ -297,7 +297,12 @@
         let currentPage = 1;
         let totalPages = 1;
 
-        async function loadModels(page = 1) {
+        async function loadModels(page) {
+            // Garantir que page é um número
+            if (typeof page !== 'number') {
+                page = 1;
+            }
+            
             try {
                 const response = await fetch(`/api/all-models?page=${page}&limit=100`);
                 const data = await response.json();
@@ -416,7 +421,7 @@
             return num.toString();
         }
 
-        window.addEventListener('load', loadModels);
+        window.addEventListener('load', () => loadModels(1));
     </script>
 </body>
 </html>
