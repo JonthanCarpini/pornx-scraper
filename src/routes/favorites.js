@@ -57,10 +57,10 @@ router.get('/', async (req, res) => {
                             'title', v.title,
                             'thumbnail_url', v.thumbnail_url,
                             'duration', v.duration,
-                            'view_count', v.view_count,
+                            'view_count', COALESCE(v.view_count, 0),
                             'model_id', v.model_id,
                             'model_name', m.name,
-                            'model_avatar', m.avatar_url
+                            'model_avatar', NULL
                         )
                         FROM videos v
                         LEFT JOIN models m ON v.model_id = m.id
