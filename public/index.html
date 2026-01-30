@@ -708,11 +708,11 @@
                 <div class="subscription-badge" id="subscription-badge">Assinatura Ativa</div>
             </div>
             <div class="profile-stats">
-                <div class="stat-card">
+                <div class="stat-card" onclick="showSection('favorites')" style="cursor: pointer;">
                     <div class="stat-number" id="stat-favorites">0</div>
                     <div class="stat-label">Favoritos</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="showSection('home'); setTimeout(() => switchTab('models'), 100);" style="cursor: pointer;">
                     <div class="stat-number" id="stat-follows">0</div>
                     <div class="stat-label">Seguindo</div>
                 </div>
@@ -808,7 +808,7 @@
                 document.getElementById('videos-loading').style.display = 'block';
                 document.getElementById('videos-grid').style.display = 'none';
 
-                const response = await fetch(`/api/unified-videos?page=${page}&limit=20`);
+                const response = await fetch(`/api/unified-videos?page=${page}&limit=20&random=true`);
                 const data = await response.json();
 
                 document.getElementById('videos-loading').style.display = 'none';
@@ -904,7 +904,7 @@
                 card.className = 'model-card';
                 card.innerHTML = `
                     <div class="source-badge source-${model.source}">${model.source.toUpperCase()}</div>
-                    <img src="${model.avatar_url || '/placeholder.jpg'}" 
+                    <img src="${model.cover_url || model.avatar_url || '/placeholder.jpg'}" 
                          alt="${model.name}" 
                          class="model-cover"
                          onerror="this.src='/placeholder.jpg'">
@@ -1259,6 +1259,13 @@
                         </div>
                     </div>
                 `;
+
+                // Adicionar onclick para abrir player
+                card.onclick = (e) => {
+                    if (!e.target.closest('.favorite-btn')) {
+                        openVideo(video.video_url || video.video_source_url);
+                    }
+                };
 
                 grid.appendChild(card);
             });

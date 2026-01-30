@@ -2689,6 +2689,7 @@ app.get('/api/unified-models', async (req, res) => {
                 name,
                 profile_url,
                 avatar_url,
+                COALESCE(banner_url, avatar_url) as cover_url,
                 banner_url,
                 bio,
                 gender,
@@ -2735,6 +2736,7 @@ app.get('/api/unified-videos', async (req, res) => {
         const search = req.query.search || '';
         const source = req.query.source; // Filtro opcional por fonte
         const modelId = req.query.modelId; // Filtro por modelo (source:id)
+        const random = req.query.random === 'true'; // Ordenação aleatória
         
         let whereClause = "";
         const whereParams = [];
@@ -2779,7 +2781,7 @@ app.get('/api/unified-videos', async (req, res) => {
                 created_at
             FROM unified_videos
             ${whereClause}
-            ORDER BY created_at DESC
+            ORDER BY ${random ? 'RANDOM()' : 'created_at DESC'}
             LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}
         `, selectParams);
         
