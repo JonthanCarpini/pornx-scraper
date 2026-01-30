@@ -918,6 +918,11 @@
                 card.onclick = (e) => {
                     if (!e.target.closest('.favorite-btn')) {
                         const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+                        if (!videoUrl) {
+                            console.error('Vídeo sem URL válida (Home - Vídeos):', video);
+                            alert('Este vídeo não possui URL de reprodução disponível');
+                            return;
+                        }
                         openVideo(videoUrl);
                     }
                 };
@@ -1361,6 +1366,11 @@
                 card.onclick = (e) => {
                     if (!e.target.closest('.favorite-btn')) {
                         const videoUrl = video.video_url || video.video_source_url || video.sd_url;
+                        if (!videoUrl) {
+                            console.error('Vídeo sem URL válida (Favoritos):', video);
+                            alert('Este vídeo não possui URL de reprodução disponível');
+                            return;
+                        }
                         openVideo(videoUrl);
                     }
                 };
@@ -1583,6 +1593,11 @@
                 card.onclick = (e) => {
                     if (!e.target.closest('.favorite-btn')) {
                         const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+                        if (!videoUrl) {
+                            console.error('Vídeo sem URL válida (Vídeos da Modelo):', video);
+                            alert('Este vídeo não possui URL de reprodução disponível');
+                            return;
+                        }
                         openVideo(videoUrl);
                     }
                 };
