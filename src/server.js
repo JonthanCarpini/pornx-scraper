@@ -1463,14 +1463,14 @@ app.get('/api/all-models', async (req, res) => {
                     m.display_name as name,
                     m.username,
                     m.avatar_url as cover_url,
-                    m.profile_url,
+                    CONCAT('https://www.xxxfollow.com/', m.username) as profile_url,
                     m.view_count,
                     m.like_count,
                     COUNT(v.id) as video_count,
                     m.created_at
                 FROM xxxfollow_models m
                 LEFT JOIN xxxfollow_videos v ON m.id = v.model_id
-                GROUP BY m.id, m.display_name, m.username, m.avatar_url, m.profile_url, m.view_count, m.like_count, m.created_at
+                GROUP BY m.id, m.display_name, m.username, m.avatar_url, m.view_count, m.like_count, m.created_at
             )
             UNION ALL
             (
