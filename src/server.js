@@ -2646,17 +2646,20 @@ app.get('/api/unified-models', async (req, res) => {
         const source = req.query.source; // Filtro opcional por fonte
         
         let whereClause = '';
-        const params = [limit, offset];
+        const whereParams = [];
         
         if (search) {
-            whereClause = 'WHERE name ILIKE $3';
-            params.push(`%${search}%`);
+            whereClause = 'WHERE name ILIKE $1';
+            whereParams.push(`%${search}%`);
         }
         
         if (source) {
-            whereClause += (whereClause ? ' AND ' : 'WHERE ') + `source = $${params.length + 1}`;
-            params.push(source);
+            whereClause += (whereClause ? ' AND ' : 'WHERE ') + `source = $${whereParams.length + 1}`;
+            whereParams.push(source);
         }
+        
+        // Parâmetros para a query principal (LIMIT e OFFSET no final)
+        const selectParams = [...whereParams, limit, offset];
         
         const result = await pool.query(`
             SELECT 
@@ -2678,12 +2681,12 @@ app.get('/api/unified-models', async (req, res) => {
             FROM unified_models
             ${whereClause}
             ORDER BY video_count DESC, follower_count DESC
-            LIMIT $1 OFFSET $2
-        `, params);
+            LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}
+        `, selectParams);
         
         const countResult = await pool.query(`
             SELECT COUNT(*) FROM unified_models ${whereClause}
-        `, params.slice(2));
+        `, whereParams);
         
         const total = parseInt(countResult.rows[0].count);
         
@@ -2713,23 +2716,26 @@ app.get('/api/unified-videos', async (req, res) => {
         const modelId = req.query.modelId; // Filtro por modelo (source:id)
         
         let whereClause = "WHERE status = 'active'";
-        const params = [limit, offset];
+        const whereParams = [];
         
         if (search) {
-            whereClause += ` AND title ILIKE $${params.length + 1}`;
-            params.push(`%${search}%`);
+            whereClause += ` AND title ILIKE $${whereParams.length + 1}`;
+            whereParams.push(`%${search}%`);
         }
         
         if (source) {
-            whereClause += ` AND source = $${params.length + 1}`;
-            params.push(source);
+            whereClause += ` AND source = $${whereParams.length + 1}`;
+            whereParams.push(source);
         }
         
         if (modelId) {
             const [modelSource, modelIdNum] = modelId.split(':');
-            whereClause += ` AND source = $${params.length + 1} AND model_id = $${params.length + 2}`;
-            params.push(modelSource, parseInt(modelIdNum));
+            whereClause += ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
+            whereParams.push(modelSource, parseInt(modelIdNum));
         }
+        
+        // Parâmetros para a query principal (LIMIT e OFFSET no final)
+        const selectParams = [...whereParams, limit, offset];
         
         const result = await pool.query(`
             SELECT 
@@ -2758,12 +2764,12 @@ app.get('/api/unified-videos', async (req, res) => {
             FROM unified_videos
             ${whereClause}
             ORDER BY created_at DESC
-            LIMIT $1 OFFSET $2
-        `, params);
+            LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}
+        `, selectParams);
         
         const countResult = await pool.query(`
             SELECT COUNT(*) FROM unified_videos ${whereClause}
-        `, params.slice(2));
+        `, whereParams);
         
         const total = parseInt(countResult.rows[0].count);
         
