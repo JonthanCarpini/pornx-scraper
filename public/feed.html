@@ -2,12 +2,627 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=/">
-    <title>Redirecionando...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed - PornX</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        /* CONTAINER PRINCIPAL */
+        .feed-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* VÍDEO CONTAINER */
+        .video-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-wrapper.active {
+            opacity: 1;
+            z-index: 1;
+        }
+
+        .video-wrapper video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* BOTÃO FECHAR */
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 45px;
+            height: 45px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* SIDEBAR DIREITA */
+        .sidebar {
+            position: fixed;
+            right: 20px;
+            bottom: 100px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .model-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            cursor: pointer;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .model-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .action-btn.active {
+            color: #ef4444;
+        }
+
+        .action-count {
+            font-size: 12px;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* INFO MODELO */
+        .model-info {
+            position: fixed;
+            left: 20px;
+            bottom: 100px;
+            z-index: 10;
+            max-width: 350px;
+        }
+
+        .model-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .model-name:hover {
+            color: #667eea;
+        }
+
+        .video-title {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .follow-btn {
+            padding: 10px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .follow-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .follow-btn.following {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* NAVEGAÇÃO */
+        .nav-arrow {
+            position: fixed;
+            right: 50%;
+            transform: translateX(50%);
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow.up {
+            top: 20px;
+        }
+
+        .nav-arrow.down {
+            bottom: 20px;
+        }
+
+        /* LOADING */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            .sidebar {
+                right: 10px;
+                bottom: 80px;
+                gap: 15px;
+            }
+
+            .model-info {
+                left: 10px;
+                bottom: 80px;
+                max-width: 250px;
+            }
+
+            .close-btn {
+                top: 10px;
+                left: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .action-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+
+            .model-avatar {
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="feed-container" id="feed-container">
+        <!-- Botão Fechar -->
+        <button class="close-btn" onclick="goBack()">✕</button>
+
+        <!-- Navegação -->
+        <button class="nav-arrow up" onclick="previousVideo()">▲</button>
+        <button class="nav-arrow down" onclick="nextVideo()">▼</button>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Vídeos serão inseridos aqui -->
+    </div>
+
+    <!-- Sidebar Direita -->
+    <div class="sidebar" id="sidebar">
+        <img id="model-avatar" class="model-avatar" src="" alt="Modelo" onclick="goToModel()">
+        
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <button class="action-btn" id="like-btn" onclick="toggleLike()">❤️</button>
+            <div class="action-count" id="like-count">0</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <button class="action-btn" onclick="toggleFavorite()">⭐</button>
+            <div class="action-count" id="view-count">0</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <button class="action-btn" onclick="shareVideo()">📤</button>
+            <div class="action-count">Compartilhar</div>
+        </div>
+    </div>
+
+    <!-- Info Modelo -->
+    <div class="model-info" id="model-info">
+        <div class="model-name" id="model-name" onclick="goToModel()">@modelo</div>
+        <div class="video-title" id="video-title">Título do vídeo</div>
+        <button class="follow-btn" id="follow-btn" onclick="toggleFollow()">Seguir</button>
+    </div>
+
     <script>
-        window.location.href = '/';
+        let currentUser = null;
+        let videos = [];
+        let currentIndex = 0;
+        let hlsInstances = [];
+        let userFavorites = new Set();
+        let userFollows = new Set();
+
+        // Verificar autenticação
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me', { credentials: 'include' });
+                if (!response.ok) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                currentUser = await response.json();
+                return true;
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+        // Carregar vídeos
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/unified-videos?page=1&limit=20&random=true');
+                const data = await response.json();
+                videos = data.videos;
+
+                if (videos.length === 0) {
+                    alert('Nenhum vídeo disponível');
+                    goBack();
+                    return;
+                }
+
+                createVideoElements();
+                loadCurrentVideo();
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Erro ao carregar vídeos:', error);
+                alert('Erro ao carregar vídeos');
+            }
+        }
+
+        // Criar elementos de vídeo
+        function createVideoElements() {
+            const container = document.getElementById('feed-container');
+            
+            videos.forEach((video, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'video-wrapper';
+                wrapper.id = `video-${index}`;
+                
+                const videoElement = document.createElement('video');
+                videoElement.id = `player-${index}`;
+                videoElement.loop = true;
+                videoElement.playsInline = true;
+                
+                wrapper.appendChild(videoElement);
+                container.appendChild(wrapper);
+            });
+        }
+
+        // Carregar vídeo atual
+        function loadCurrentVideo() {
+            const video = videos[currentIndex];
+            const videoElement = document.getElementById(`player-${currentIndex}`);
+            const wrapper = document.getElementById(`video-${currentIndex}`);
+
+            // Atualizar UI
+            updateUI(video);
+
+            // Ativar wrapper
+            document.querySelectorAll('.video-wrapper').forEach(w => w.classList.remove('active'));
+            wrapper.classList.add('active');
+
+            // Carregar vídeo
+            const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+            
+            if (videoUrl.includes('.m3u8')) {
+                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}`;
+                
+                if (Hls.isSupported()) {
+                    if (hlsInstances[currentIndex]) {
+                        hlsInstances[currentIndex].destroy();
+                    }
+                    hlsInstances[currentIndex] = new Hls();
+                    hlsInstances[currentIndex].loadSource(proxiedUrl);
+                    hlsInstances[currentIndex].attachMedia(videoElement);
+                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoElement.src = proxiedUrl;
+                }
+            } else {
+                videoElement.src = videoUrl;
+            }
+
+            videoElement.play();
+
+            // Registrar visualização após 3 segundos
+            setTimeout(() => {
+                registerView(video.source, video.id);
+            }, 3000);
+        }
+
+        // Atualizar UI
+        function updateUI(video) {
+            document.getElementById('model-avatar').src = video.model_avatar || '/default-avatar.png';
+            document.getElementById('model-name').textContent = '@' + (video.model_name || 'Desconhecido');
+            document.getElementById('video-title').textContent = video.title || '';
+            document.getElementById('like-count').textContent = video.like_count || 0;
+            document.getElementById('view-count').textContent = video.view_count || 0;
+
+            // Atualizar botão de seguir
+            const followBtn = document.getElementById('follow-btn');
+            const isFollowing = userFollows.has(`${video.source}:${video.model_id}`);
+            followBtn.textContent = isFollowing ? '✓ Seguindo' : 'Seguir';
+            followBtn.classList.toggle('following', isFollowing);
+        }
+
+        // Próximo vídeo
+        function nextVideo() {
+            pauseCurrentVideo();
+            currentIndex = (currentIndex + 1) % videos.length;
+            loadCurrentVideo();
+        }
+
+        // Vídeo anterior
+        function previousVideo() {
+            if (currentIndex === 0) return;
+            pauseCurrentVideo();
+            currentIndex--;
+            loadCurrentVideo();
+        }
+
+        // Pausar vídeo atual
+        function pauseCurrentVideo() {
+            const videoElement = document.getElementById(`player-${currentIndex}`);
+            if (videoElement) {
+                videoElement.pause();
+            }
+        }
+
+        // Voltar
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        // Ir para modelo
+        function goToModel() {
+            const video = videos[currentIndex];
+            window.location.href = `/?section=model-videos&source=${video.source}&id=${video.model_id}`;
+        }
+
+        // Toggle like
+        async function toggleLike() {
+            const video = videos[currentIndex];
+            try {
+                const response = await fetch('/api/analytics/like', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_source: video.source, video_id: video.id }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const likeBtn = document.getElementById('like-btn');
+                    likeBtn.classList.toggle('active');
+                    const currentCount = parseInt(document.getElementById('like-count').textContent);
+                    document.getElementById('like-count').textContent = currentCount + 1;
+                }
+            } catch (error) {
+                console.error('Erro ao curtir:', error);
+            }
+        }
+
+        // Toggle favorite
+        async function toggleFavorite() {
+            const video = videos[currentIndex];
+            const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
+            
+            try {
+                const url = isFavorite 
+                    ? `/api/favorites/${video.source}/${video.id}`
+                    : '/api/favorites';
+                
+                const response = await fetch(url, {
+                    method: isFavorite ? 'DELETE' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: isFavorite ? null : JSON.stringify({ video_source: video.source, video_id: video.id }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    if (isFavorite) {
+                        userFavorites.delete(`${video.source}:${video.id}`);
+                    } else {
+                        userFavorites.add(`${video.source}:${video.id}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao favoritar:', error);
+            }
+        }
+
+        // Toggle follow
+        async function toggleFollow() {
+            const video = videos[currentIndex];
+            const isFollowing = userFollows.has(`${video.source}:${video.model_id}`);
+            
+            try {
+                const url = isFollowing
+                    ? `/api/follows/${video.source}/${video.model_id}`
+                    : '/api/follows';
+                
+                const response = await fetch(url, {
+                    method: isFollowing ? 'DELETE' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: isFollowing ? null : JSON.stringify({ model_source: video.source, model_id: video.model_id }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    if (isFollowing) {
+                        userFollows.delete(`${video.source}:${video.model_id}`);
+                    } else {
+                        userFollows.add(`${video.source}:${video.model_id}`);
+                    }
+                    updateUI(video);
+                }
+            } catch (error) {
+                console.error('Erro ao seguir:', error);
+            }
+        }
+
+        // Compartilhar
+        function shareVideo() {
+            const video = videos[currentIndex];
+            const url = `${window.location.origin}/?video=${video.source}:${video.id}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: video.title,
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url);
+                alert('Link copiado!');
+            }
+        }
+
+        // Registrar visualização
+        async function registerView(videoSource, videoId) {
+            try {
+                await fetch('/api/analytics/view', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_source: videoSource, video_id: videoId }),
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Erro ao registrar visualização:', error);
+            }
+        }
+
+        // Carregar favoritos e follows
+        async function loadUserData() {
+            try {
+                const [favResponse, followResponse] = await Promise.all([
+                    fetch('/api/favorites', { credentials: 'include' }),
+                    fetch('/api/follows', { credentials: 'include' })
+                ]);
+
+                if (favResponse.ok) {
+                    const favData = await favResponse.json();
+                    userFavorites = new Set(favData.favorites.map(f => `${f.video_source}:${f.video_id}`));
+                }
+
+                if (followResponse.ok) {
+                    const followData = await followResponse.json();
+                    userFollows = new Set(followData.follows.map(f => `${f.model_source}:${f.model_id}`));
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados do usuário:', error);
+            }
+        }
+
+        // Navegação por teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') previousVideo();
+            if (e.key === 'ArrowDown') nextVideo();
+            if (e.key === 'Escape') goBack();
+        });
+
+        // Inicializar
+        (async () => {
+            const authenticated = await checkAuth();
+            if (authenticated) {
+                await loadUserData();
+                await loadVideos();
+            }
+        })();
     </script>
 </body>
 </html>
