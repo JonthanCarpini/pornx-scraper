@@ -275,6 +275,108 @@
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         }
 
+        /* MODEL HEADER */
+        .model-header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .model-header-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .model-header-info {
+            flex: 1;
+        }
+
+        .model-header-name {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .model-header-stats {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 15px;
+        }
+
+        .model-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .model-stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .model-stat-label {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .model-header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .follow-btn-large {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .follow-btn-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .follow-btn-large.following {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        @media (max-width: 768px) {
+            .model-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .model-header-stats {
+                justify-content: center;
+            }
+
+            .model-header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
         /* MODELS GRID */
         .models-grid {
             display: grid;
@@ -760,15 +862,37 @@
 
         <!-- MODEL VIDEOS SECTION -->
         <div id="model-videos-section" class="section">
-            <div style="display: flex; align-items: center; margin-bottom: 30px;">
-                <button onclick="showSection('home'); switchTab('models');" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-right: 20px;">
-                    ← Voltar
-                </button>
-                <div>
-                    <h2 style="margin: 0;" id="model-videos-title">🎬 Vídeos da Modelo</h2>
-                    <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.6);" id="model-videos-subtitle">0 vídeos</p>
+            <button onclick="showSection('home'); switchTab('models');" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-bottom: 20px;">
+                ← Voltar
+            </button>
+            
+            <!-- MODEL HEADER -->
+            <div class="model-header" id="model-header" style="display:none;">
+                <img id="model-header-avatar" class="model-header-avatar" src="/placeholder.jpg" alt="Modelo" onerror="this.src='/placeholder.jpg'">
+                <div class="model-header-info">
+                    <div class="model-header-name" id="model-header-name">Nome da Modelo</div>
+                    <div class="model-header-stats">
+                        <div class="model-stat">
+                            <div class="model-stat-value" id="model-stat-videos">0</div>
+                            <div class="model-stat-label">Vídeos</div>
+                        </div>
+                        <div class="model-stat">
+                            <div class="model-stat-value" id="model-stat-followers">0</div>
+                            <div class="model-stat-label">Seguidores</div>
+                        </div>
+                        <div class="model-stat" id="model-stat-views-container" style="display:none;">
+                            <div class="model-stat-value" id="model-stat-views">0</div>
+                            <div class="model-stat-label">Visualizações</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="model-header-actions">
+                    <button class="follow-btn-large" id="model-follow-btn" onclick="toggleModelFollow()">
+                        + Seguir
+                    </button>
                 </div>
             </div>
+
             <div id="model-videos-loading" class="loading">
                 <div class="loading-spinner"></div>
                 <p>Carregando vídeos...</p>
@@ -850,6 +974,7 @@
         let currentSection = 'home';
         let currentModelId = null;
         let currentModelSource = null;
+        let currentModelName = null;
 
         // VERIFICAR AUTENTICAÇÃO
         async function checkAuth() {
@@ -1556,10 +1681,96 @@
         function showModelVideos(source, modelId, modelName) {
             currentModelSource = source;
             currentModelId = modelId;
+            currentModelName = modelName;
             
-            document.getElementById('model-videos-title').textContent = `🎬 Vídeos de ${modelName}`;
             showSection('model-videos');
+            loadModelInfo();
             loadModelVideos(1);
+        }
+
+        // CARREGAR INFORMAÇÕES DA MODELO
+        async function loadModelInfo() {
+            try {
+                const response = await fetch(`/api/unified-models?source=${currentModelSource}&modelId=${currentModelSource}:${currentModelId}`);
+                const data = await response.json();
+                
+                if (data.models && data.models.length > 0) {
+                    const model = data.models[0];
+                    
+                    // Atualizar header
+                    document.getElementById('model-header-avatar').src = model.cover_url || model.avatar_url || '/placeholder.jpg';
+                    document.getElementById('model-header-name').textContent = model.name;
+                    document.getElementById('model-stat-videos').textContent = model.video_count || 0;
+                    document.getElementById('model-stat-followers').textContent = formatNumber(model.follower_count || 0);
+                    
+                    // Mostrar visualizações se disponível
+                    if (model.view_count) {
+                        document.getElementById('model-stat-views').textContent = formatNumber(model.view_count);
+                        document.getElementById('model-stat-views-container').style.display = 'flex';
+                    }
+                    
+                    // Atualizar botão de seguir
+                    const modelKey = `${currentModelSource}:${currentModelId}`;
+                    const isFollowing = userFollows.has(modelKey);
+                    const followBtn = document.getElementById('model-follow-btn');
+                    
+                    if (isFollowing) {
+                        followBtn.textContent = '✓ Seguindo';
+                        followBtn.classList.add('following');
+                    } else {
+                        followBtn.textContent = '+ Seguir';
+                        followBtn.classList.remove('following');
+                    }
+                    
+                    document.getElementById('model-header').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar informações da modelo:', error);
+            }
+        }
+
+        // TOGGLE FOLLOW DA MODELO (HEADER)
+        async function toggleModelFollow() {
+            const modelKey = `${currentModelSource}:${currentModelId}`;
+            const followBtn = document.getElementById('model-follow-btn');
+            
+            try {
+                if (userFollows.has(modelKey)) {
+                    // Deixar de seguir
+                    const response = await fetch(`/api/follows/model/${currentModelSource}/${currentModelId}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        userFollows.delete(modelKey);
+                        followBtn.textContent = '+ Seguir';
+                        followBtn.classList.remove('following');
+                        
+                        // Atualizar contador
+                        const currentCount = parseInt(document.getElementById('model-stat-followers').textContent);
+                        document.getElementById('model-stat-followers').textContent = Math.max(0, currentCount - 1);
+                    }
+                } else {
+                    // Seguir
+                    const response = await fetch('/api/follows', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model_source: currentModelSource, model_id: currentModelId }),
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        userFollows.add(modelKey);
+                        followBtn.textContent = '✓ Seguindo';
+                        followBtn.classList.add('following');
+                        
+                        // Atualizar contador
+                        const currentCount = parseInt(document.getElementById('model-stat-followers').textContent);
+                        document.getElementById('model-stat-followers').textContent = currentCount + 1;
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao seguir/deixar de seguir:', error);
+            }
         }
 
         // CARREGAR VÍDEOS DA MODELO
@@ -1569,7 +1780,7 @@
                 document.getElementById('model-videos-grid').style.display = 'none';
                 document.getElementById('model-videos-empty').style.display = 'none';
 
-                const response = await fetch(`/api/unified-videos?page=${page}&limit=20&source=${currentModelSource}&modelId=${currentModelSource}:${currentModelId}`);
+                const response = await fetch(`/api/unified-videos?page=${page}&limit=100&source=${currentModelSource}&modelId=${currentModelSource}:${currentModelId}`);
                 const data = await response.json();
 
                 document.getElementById('model-videos-loading').style.display = 'none';
@@ -1580,7 +1791,7 @@
                     return;
                 }
 
-                document.getElementById('model-videos-subtitle').textContent = `${data.pagination.total} vídeos`;
+                document.getElementById('model-stat-videos').textContent = data.pagination.total;
                 document.getElementById('model-videos-grid').style.display = 'grid';
                 renderModelVideos(data.videos);
                 updateModelVideosPagination(data.pagination);
