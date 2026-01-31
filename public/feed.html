@@ -57,6 +57,32 @@
             opacity: 0.3;
         }
 
+        /* FEEDBACK FAVORITO */
+        .favorite-heart {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 100px;
+            z-index: 50;
+            pointer-events: none;
+            animation: heartPop 0.6s ease-out;
+        }
+
+        @keyframes heartPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+        }
+
         /* BOTÃO FECHAR */
         .close-btn {
             position: fixed;
@@ -285,6 +311,10 @@
         </div>
 
         <div style="display: flex; flex-direction: column; align-items: center;">
+            <div class="action-count" id="favorite-count" style="font-size: 12px; margin-bottom: 5px;">0 favs</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: center;">
             <button class="action-btn" onclick="shareVideo()">📤</button>
             <div class="action-count">Compartilhar</div>
         </div>
@@ -480,6 +510,9 @@
             const isFollowing = userFollows.has(`${video.source}:${video.model_id}`);
             followBtn.textContent = isFollowing ? '✓ Seguindo' : 'Seguir';
             followBtn.classList.toggle('following', isFollowing);
+
+            // Atualizar contador de favoritos
+            updateFavoriteCount();
         }
 
         // Próximo vídeo
@@ -560,13 +593,33 @@
                 if (response.ok) {
                     if (isFavorite) {
                         userFavorites.delete(`${video.source}:${video.id}`);
+                        showFavoriteAnimation('💔');
                     } else {
                         userFavorites.add(`${video.source}:${video.id}`);
+                        showFavoriteAnimation('❤️');
                     }
+                    updateFavoriteCount();
                 }
             } catch (error) {
                 console.error('Erro ao favoritar:', error);
             }
+        }
+
+        // Mostrar animação de favorito
+        function showFavoriteAnimation(emoji) {
+            const heart = document.createElement('div');
+            heart.className = 'favorite-heart';
+            heart.textContent = emoji;
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 600);
+        }
+
+        // Atualizar contador de favoritos
+        function updateFavoriteCount() {
+            const video = videos[currentIndex];
+            const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
+            const count = isFavorite ? (video.view_count || 0) + 1 : (video.view_count || 0);
+            document.getElementById('favorite-count').textContent = count + ' favs';
         }
 
         // Toggle follow
@@ -685,7 +738,8 @@
             // Ignorar se tocou em botões ou links
             if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
                 e.target.closest('.close-btn') || e.target.closest('.model-avatar') || 
-                e.target.closest('.model-name')) {
+                e.target.closest('.model-name') || e.target.closest('.sidebar') || 
+                e.target.closest('.model-info')) {
                 return;
             }
             
@@ -738,7 +792,7 @@
                     }
                 }
             }
-            // Se não moveu e foi rápido, pode ser duplo toque
+            // Se não moveu e foi rápido, pode ser toque simples ou duplo
             else if (touchDuration < 300) {
                 const timeSinceLastTap = touchEndTime - lastTap;
                 
@@ -746,6 +800,16 @@
                     // Duplo toque - favoritar
                     toggleFavorite();
                     e.preventDefault();
+                } else {
+                    // Toque simples - pause/play
+                    const videoElement = document.getElementById(`player-${currentIndex}`);
+                    if (videoElement) {
+                        if (videoElement.paused) {
+                            videoElement.play();
+                        } else {
+                            videoElement.pause();
+                        }
+                    }
                 }
                 lastTap = touchEndTime;
             }
@@ -755,14 +819,41 @@
             hasMoved = false;
         }, { passive: false });
 
+        // Clique simples para pause/play (desktop)
+        let clickTimeout;
+        document.addEventListener('click', (e) => {
+            // Ignorar se clicou em botões
+            if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
+                e.target.closest('.close-btn') || e.target.closest('.model-avatar') || 
+                e.target.closest('.model-name') || e.target.closest('.sidebar') || 
+                e.target.closest('.model-info')) {
+                return;
+            }
+            
+            clearTimeout(clickTimeout);
+            clickTimeout = setTimeout(() => {
+                const videoElement = document.getElementById(`player-${currentIndex}`);
+                if (videoElement) {
+                    if (videoElement.paused) {
+                        videoElement.play();
+                    } else {
+                        videoElement.pause();
+                    }
+                }
+            }, 250);
+        });
+
         // Duplo clique para favoritar (desktop)
         document.addEventListener('dblclick', (e) => {
             // Ignorar se clicou em botões
             if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
                 e.target.closest('.close-btn') || e.target.closest('.model-avatar') || 
-                e.target.closest('.model-name')) {
+                e.target.closest('.model-name') || e.target.closest('.sidebar') || 
+                e.target.closest('.model-info')) {
                 return;
             }
+            
+            clearTimeout(clickTimeout);
             toggleFavorite();
         });
 
