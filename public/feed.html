@@ -190,37 +190,7 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        /* NAVEGAÇÃO */
-        .nav-arrow {
-            position: fixed;
-            right: 50%;
-            transform: translateX(50%);
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 0, 0, 0.5);
-            border: none;
-            border-radius: 50%;
-            color: #fff;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .nav-arrow:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .nav-arrow.up {
-            top: 20px;
-        }
-
-        .nav-arrow.down {
-            bottom: 20px;
-        }
+        /* NAVEGAÇÃO - REMOVIDO */
 
         /* LOADING */
         .loading {
@@ -297,10 +267,6 @@
         <!-- Botão Fechar -->
         <button class="close-btn" onclick="goBack()">✕</button>
 
-        <!-- Navegação -->
-        <button class="nav-arrow up" onclick="previousVideo()">▲</button>
-        <button class="nav-arrow down" onclick="nextVideo()">▼</button>
-
         <!-- Loading -->
         <div class="loading" id="loading">
             <div class="loading-spinner"></div>
@@ -319,7 +285,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column; align-items: center;">
-            <button class="action-btn" onclick="toggleFavorite()">⭐</button>
+            <button class="action-btn" id="favorite-btn" onclick="toggleFavorite()">🤍</button>
             <div class="action-count" id="view-count">0</div>
         </div>
 
@@ -458,6 +424,8 @@
             videoElement.addEventListener('error', () => {
                 wrapper.classList.remove('loading');
                 loadingSpinner.classList.remove('show');
+                console.error('Erro ao carregar vídeo, pulando para o próximo...');
+                setTimeout(() => nextVideo(), 1000);
             }, { once: true });
             
             if (videoUrl.includes('.m3u8')) {
@@ -517,6 +485,11 @@
             const isFollowing = userFollows.has(`${video.source}:${video.model_id}`);
             followBtn.textContent = isFollowing ? '✓ Seguindo' : 'Seguir';
             followBtn.classList.toggle('following', isFollowing);
+
+            // Atualizar botão de favorito
+            const favoriteBtn = document.getElementById('favorite-btn');
+            const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
+            favoriteBtn.textContent = isFavorite ? '❤️' : '🤍';
         }
 
         // Próximo vídeo
@@ -581,6 +554,7 @@
         async function toggleFavorite() {
             const video = videos[currentIndex];
             const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
+            const favoriteBtn = document.getElementById('favorite-btn');
             
             try {
                 const url = isFavorite 
@@ -597,8 +571,10 @@
                 if (response.ok) {
                     if (isFavorite) {
                         userFavorites.delete(`${video.source}:${video.id}`);
+                        favoriteBtn.textContent = '🤍';
                     } else {
                         userFavorites.add(`${video.source}:${video.id}`);
+                        favoriteBtn.textContent = '❤️';
                     }
                 }
             } catch (error) {
@@ -737,9 +713,10 @@
             const minSwipeDistance = 50;
 
             // Verificar se é swipe horizontal (para perfil)
+            // swipeDistanceX > 0 significa arrastar da direita para esquerda
             if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY) && Math.abs(swipeDistanceX) > minSwipeDistance) {
                 if (swipeDistanceX > 0) {
-                    // Swipe left - ir para perfil da modelo
+                    // Swipe da direita para esquerda - ir para perfil da modelo
                     goToModel();
                 }
             }
@@ -760,7 +737,7 @@
         document.addEventListener('dblclick', (e) => {
             // Ignorar se clicou em botões
             if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
-                e.target.closest('.close-btn') || e.target.closest('.nav-arrow')) {
+                e.target.closest('.close-btn')) {
                 return;
             }
             toggleFavorite();
@@ -774,7 +751,7 @@
             if (tapLength < 300 && tapLength > 0) {
                 // Ignorar se tocou em botões
                 if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
-                    e.target.closest('.close-btn') || e.target.closest('.nav-arrow') ||
+                    e.target.closest('.close-btn') ||
                     e.target.closest('.model-avatar') || e.target.closest('.model-name')) {
                     return;
                 }
