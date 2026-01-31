@@ -76,7 +76,7 @@
         }
 
         .video-wrapper video {
-            width: 100%;
+            
             height: 100%;
             object-fit: contain;
         }
@@ -466,6 +466,7 @@
                 width: 40px;
                 height: 40px;
                 font-size: 20px;
+                position: relative;
             }
 
             .action-btn {
@@ -739,13 +740,16 @@
                     const oldVideoElement = document.getElementById(`player-${index}`);
                     if (oldVideoElement) {
                         oldVideoElement.pause();
-                        // Cancelar requisições MP4
-                        oldVideoElement.src = '';
-                        oldVideoElement.load();
                         // Destruir instância HLS para cancelar requisições pendentes
                         if (hlsInstances[index]) {
                             hlsInstances[index].destroy();
                             delete hlsInstances[index];
+                        }
+                        // Limpar src apenas de vídeos muito distantes
+                        const distance = Math.abs(index - currentIndex);
+                        if (distance > 5) {
+                            oldVideoElement.src = '';
+                            oldVideoElement.load();
                         }
                     }
                 }
@@ -797,9 +801,6 @@
             const videoElement = document.getElementById(`player-${currentIndex}`);
             if (videoElement) {
                 videoElement.pause();
-                // Cancelar requisições MP4 também
-                videoElement.src = '';
-                videoElement.load();
             }
             
             // Destruir instância HLS do vídeo atual para cancelar requisições pendentes
