@@ -631,6 +631,11 @@
         // Carregar vídeo atual
         function loadCurrentVideo() {
             const video = videos[currentIndex];
+            if (!video) {
+                console.error('Vídeo não encontrado no índice:', currentIndex);
+                return;
+            }
+            
             const videoElement = document.getElementById(`player-${currentIndex}`);
             const wrapper = document.getElementById(`video-${currentIndex}`);
 
@@ -784,6 +789,11 @@
         // Ir para modelo
         async function goToModel() {
             const video = videos[currentIndex];
+            if (!video) {
+                console.error('Vídeo não encontrado no índice:', currentIndex);
+                return;
+            }
+            
             currentModelData = {
                 source: video.source,
                 model_id: video.model_id,
@@ -892,12 +902,22 @@
             // Fechar perfil e voltar ao feed
             closeProfile();
             
+            // Limpar instâncias HLS antigas
+            Object.values(hlsInstances).forEach(hls => {
+                if (hls) hls.destroy();
+            });
+            hlsInstances = {};
+            
             // Recriar elementos de vídeo
             const container = document.getElementById('feed-container');
             container.querySelectorAll('.video-wrapper').forEach(w => w.remove());
             
             createVideoElements();
-            loadCurrentVideo();
+            
+            // Aguardar um frame para garantir que os elementos foram criados
+            requestAnimationFrame(() => {
+                loadCurrentVideo();
+            });
         }
 
         // Toggle follow no perfil
