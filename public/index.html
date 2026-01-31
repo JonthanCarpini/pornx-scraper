@@ -1337,7 +1337,7 @@
                 document.getElementById('videos-loading').style.display = 'block';
                 document.getElementById('videos-grid').style.display = 'none';
 
-                const response = await fetch(`/api/unified-videos?page=${page}&limit=100&random=true`);
+                const response = await fetch(`/api/unified-videos?page=${page}&limit=50&random=true`);
                 const data = await response.json();
 
                 document.getElementById('videos-loading').style.display = 'none';
@@ -1412,7 +1412,7 @@
                 document.getElementById('models-loading').style.display = 'block';
                 document.getElementById('models-grid').style.display = 'none';
 
-                const response = await fetch(`/api/unified-models?page=${page}&limit=100`);
+                const response = await fetch(`/api/unified-models?page=${page}&limit=50`);
                 const data = await response.json();
 
                 document.getElementById('models-loading').style.display = 'none';
@@ -2105,7 +2105,7 @@
                 document.getElementById('model-videos-grid').style.display = 'none';
                 document.getElementById('model-videos-empty').style.display = 'none';
 
-                const response = await fetch(`/api/unified-videos?page=${page}&limit=100&source=${currentModelSource}&modelId=${currentModelSource}:${currentModelId}`);
+                const response = await fetch(`/api/unified-videos?page=${page}&limit=50&source=${currentModelSource}&modelId=${currentModelSource}:${currentModelId}`);
                 const data = await response.json();
 
                 document.getElementById('model-videos-loading').style.display = 'none';
