@@ -1038,7 +1038,7 @@
                 document.getElementById('videos-loading').style.display = 'block';
                 document.getElementById('videos-grid').style.display = 'none';
 
-                const response = await fetch(`/api/unified-videos?page=${page}&limit=20&random=true`);
+                const response = await fetch(`/api/unified-videos?page=${page}&limit=100&random=true`);
                 const data = await response.json();
 
                 document.getElementById('videos-loading').style.display = 'none';
@@ -1113,7 +1113,7 @@
                 document.getElementById('models-loading').style.display = 'block';
                 document.getElementById('models-grid').style.display = 'none';
 
-                const response = await fetch(`/api/unified-models?page=${page}&limit=20`);
+                const response = await fetch(`/api/unified-models?page=${page}&limit=100`);
                 const data = await response.json();
 
                 document.getElementById('models-loading').style.display = 'none';

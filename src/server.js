@@ -2658,6 +2658,7 @@ app.get('/api/unified-models', async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
         const source = req.query.source; // Filtro opcional por fonte
+        const modelId = req.query.modelId; // Filtro opcional por ID da modelo (formato: source:id)
         const sortBy = req.query.sortBy || 'videos'; // 'videos' ou 'recent'
         
         let whereClause = '';
@@ -2671,6 +2672,13 @@ app.get('/api/unified-models', async (req, res) => {
         if (source) {
             whereClause += (whereClause ? ' AND ' : 'WHERE ') + `source = $${whereParams.length + 1}`;
             whereParams.push(source);
+        }
+        
+        // Filtrar por modelo específica se modelId fornecido (formato: source:id)
+        if (modelId) {
+            const [modelSource, modelIdNum] = modelId.split(':');
+            whereClause += (whereClause ? ' AND ' : 'WHERE ') + `source = $${whereParams.length + 1} AND id = $${whereParams.length + 2}`;
+            whereParams.push(modelSource, parseInt(modelIdNum));
         }
         
         // Definir ordenação baseada no parâmetro sortBy
