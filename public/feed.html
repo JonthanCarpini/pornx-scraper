@@ -556,7 +556,7 @@
         let currentUser = null;
         let videos = [];
         let currentIndex = 0;
-        let hlsInstances = [];
+        let hlsInstances = {};
         let userFavorites = new Set();
         let userFollows = new Set();
         let currentModelData = null;
@@ -593,6 +593,9 @@
                     return;
                 }
 
+                // Resetar índice para 0
+                currentIndex = 0;
+                
                 createVideoElements();
                 loadCurrentVideo();
                 document.getElementById('loading').style.display = 'none';
@@ -759,17 +762,19 @@
 
         // Próximo vídeo
         function nextVideo() {
+            if (!videos || videos.length === 0) return;
             pauseCurrentVideo();
-            currentIndex = (currentIndex + 1) % videos.length;
+            currentIndex = ((currentIndex || 0) + 1) % videos.length;
             loadCurrentVideo();
             preloadNextVideo();
         }
 
         // Vídeo anterior
         function previousVideo() {
-            if (currentIndex === 0) return;
+            if (!videos || videos.length === 0) return;
+            if ((currentIndex || 0) === 0) return;
             pauseCurrentVideo();
-            currentIndex--;
+            currentIndex = (currentIndex || 0) - 1;
             loadCurrentVideo();
         }
 
