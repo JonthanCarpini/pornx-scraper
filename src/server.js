@@ -2766,14 +2766,21 @@ app.get('/api/unified-videos', async (req, res) => {
             // Se modelId contém ':', é no formato source:id
             if (modelId.includes(':')) {
                 const [modelSource, modelIdNum] = modelId.split(':');
-                whereClause += hasWhere ? ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}` : `WHERE source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
-                whereParams.push(modelSource, parseInt(modelIdNum));
+                const parsedId = parseInt(modelIdNum);
+                if (!isNaN(parsedId)) {
+                    whereClause += hasWhere ? ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}` : `WHERE source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
+                    whereParams.push(modelSource, parsedId);
+                    hasWhere = true;
+                }
             } else {
                 // Se não contém ':', é apenas o ID numérico (source já deve estar especificado)
-                whereClause += hasWhere ? ` AND model_id = $${whereParams.length + 1}` : `WHERE model_id = $${whereParams.length + 1}`;
-                whereParams.push(parseInt(modelId));
+                const parsedId = parseInt(modelId);
+                if (!isNaN(parsedId)) {
+                    whereClause += hasWhere ? ` AND model_id = $${whereParams.length + 1}` : `WHERE model_id = $${whereParams.length + 1}`;
+                    whereParams.push(parsedId);
+                    hasWhere = true;
+                }
             }
-            hasWhere = true;
         }
         
         // Parâmetros para a query principal (LIMIT e OFFSET no final)
