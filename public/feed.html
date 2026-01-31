@@ -285,21 +285,17 @@
         </div>
 
         <div style="display: flex; flex-direction: column; align-items: center;">
-            <button class="action-btn" id="favorite-btn" onclick="toggleFavorite()">🤍</button>
-            <div class="action-count" id="view-count">0</div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; align-items: center;">
             <button class="action-btn" onclick="shareVideo()">📤</button>
             <div class="action-count">Compartilhar</div>
         </div>
+
+        <button class="follow-btn" id="follow-btn" onclick="toggleFollow()">Seguir</button>
     </div>
 
     <!-- Info Modelo -->
     <div class="model-info" id="model-info">
         <div class="model-name" id="model-name" onclick="goToModel()">@modelo</div>
         <div class="video-title" id="video-title">Título do vídeo</div>
-        <button class="follow-btn" id="follow-btn" onclick="toggleFollow()">Seguir</button>
     </div>
 
     <script>
@@ -330,7 +326,7 @@
         // Carregar vídeos
         async function loadVideos() {
             try {
-                const response = await fetch('/api/unified-videos?page=1&limit=20&random=true');
+                const response = await fetch('/api/unified-videos?limit=500&random=true');
                 const data = await response.json();
                 videos = data.videos;
 
@@ -478,18 +474,12 @@
             document.getElementById('model-name').textContent = '@' + (video.model_name || 'Desconhecido');
             document.getElementById('video-title').textContent = video.title || '';
             document.getElementById('like-count').textContent = video.like_count || 0;
-            document.getElementById('view-count').textContent = video.view_count || 0;
 
             // Atualizar botão de seguir
             const followBtn = document.getElementById('follow-btn');
             const isFollowing = userFollows.has(`${video.source}:${video.model_id}`);
             followBtn.textContent = isFollowing ? '✓ Seguindo' : 'Seguir';
             followBtn.classList.toggle('following', isFollowing);
-
-            // Atualizar botão de favorito
-            const favoriteBtn = document.getElementById('favorite-btn');
-            const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
-            favoriteBtn.textContent = isFavorite ? '❤️' : '🤍';
         }
 
         // Próximo vídeo
@@ -554,7 +544,6 @@
         async function toggleFavorite() {
             const video = videos[currentIndex];
             const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
-            const favoriteBtn = document.getElementById('favorite-btn');
             
             try {
                 const url = isFavorite 
@@ -571,10 +560,8 @@
                 if (response.ok) {
                     if (isFavorite) {
                         userFavorites.delete(`${video.source}:${video.id}`);
-                        favoriteBtn.textContent = '🤍';
                     } else {
                         userFavorites.add(`${video.source}:${video.id}`);
-                        favoriteBtn.textContent = '❤️';
                     }
                 }
             } catch (error) {
