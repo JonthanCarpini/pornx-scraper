@@ -739,6 +739,9 @@
                     const oldVideoElement = document.getElementById(`player-${index}`);
                     if (oldVideoElement) {
                         oldVideoElement.pause();
+                        // Cancelar requisições MP4
+                        oldVideoElement.src = '';
+                        oldVideoElement.load();
                         // Destruir instância HLS para cancelar requisições pendentes
                         if (hlsInstances[index]) {
                             hlsInstances[index].destroy();
@@ -794,6 +797,9 @@
             const videoElement = document.getElementById(`player-${currentIndex}`);
             if (videoElement) {
                 videoElement.pause();
+                // Cancelar requisições MP4 também
+                videoElement.src = '';
+                videoElement.load();
             }
             
             // Destruir instância HLS do vídeo atual para cancelar requisições pendentes
@@ -978,20 +984,10 @@
             
             createVideoElements();
             
-            // Aguardar um frame para garantir que os elementos foram criados e iniciar autoplay
+            // Aguardar um frame para garantir que os elementos foram criados
             requestAnimationFrame(() => {
                 loadCurrentVideo();
-                
-                // Autoplay do vídeo
-                requestAnimationFrame(() => {
-                    const videoElement = document.getElementById(`player-${currentIndex}`);
-                    if (videoElement) {
-                        videoElement.muted = true;
-                        videoElement.play().catch(err => {
-                            console.log('Autoplay bloqueado:', err);
-                        });
-                    }
-                });
+                // loadCurrentVideo já faz o autoplay
             });
         }
 
