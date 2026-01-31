@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import pool from '../database/db.js';
 
@@ -163,6 +164,33 @@ router.post('/login', async (req, res) => {
         const token = generateToken(user.id, user.username, user.role);
         console.log('✅ Token gerado para:', username);
 
+        // Criar sessão para controle de usuários online
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 dias
+        const deviceInfo = req.headers['user-agent'] || 'Unknown';
+        const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown';
+
+        try {
+            // Invalidar sessões antigas do usuário
+            await pool.query(
+                'UPDATE user_sessions SET is_active = FALSE WHERE user_id = $1 AND is_active = TRUE',
+                [user.id]
+            );
+
+            // Criar nova sessão
+            await pool.query(
+                `INSERT INTO user_sessions 
+                 (user_id, session_token, device_info, ip_address, expires_at, last_heartbeat)
+                 VALUES ($1, $2, $3, $4, $5, NOW())`,
+                [user.id, sessionToken, deviceInfo, ipAddress, expiresAt]
+            );
+
+            console.log('✅ Sessão criada para:', username);
+        } catch (sessionError) {
+            console.error('⚠️ Erro ao criar sessão:', sessionError);
+            // Não bloquear login se falhar criação de sessão
+        }
+
         // Definir cookie
         const cookieName = user.role === 'admin' ? 'adminToken' : 'userToken';
         res.cookie(cookieName, token, {
@@ -185,6 +213,7 @@ router.post('/login', async (req, res) => {
             success: true,
             message: 'Login realizado com sucesso',
             token,
+            sessionToken, // Retornar session token para o mobile usar no heartbeat
             user: {
                 id: user.id,
                 username: user.username,
@@ -207,7 +236,20 @@ router.post('/login', async (req, res) => {
 });
 
 // ===== LOGOUT =====
-router.post('/logout', (req, res) => {
+router.post('/logout', authenticateToken, async (req, res) => {
+    try {
+        // Invalidar sessão do usuário
+        await pool.query(
+            'UPDATE user_sessions SET is_active = FALSE WHERE user_id = $1 AND is_active = TRUE',
+            [req.user.userId]
+        );
+        
+        console.log('✅ Sessão invalidada para usuário:', req.user.userId);
+    } catch (error) {
+        console.error('⚠️ Erro ao invalidar sessão:', error);
+        // Não bloquear logout se falhar
+    }
+
     res.clearCookie('userToken');
     res.clearCookie('adminToken');
     res.json({ 
