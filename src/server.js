@@ -2825,7 +2825,13 @@ app.get('/api/unified-videos', async (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao buscar vídeos unificados:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Query params:', { page, limit, offset, search, source, modelId, random });
+        console.error('Where clause:', whereClause);
+        console.error('Where params:', whereParams);
+        res.status(500).json({ 
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 

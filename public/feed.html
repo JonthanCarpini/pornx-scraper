@@ -647,7 +647,14 @@
             }
 
             videoElement.muted = true;
-            videoElement.play().catch(err => console.log('Autoplay bloqueado:', err));
+            
+            // Aguardar um frame antes de tentar reproduzir
+            requestAnimationFrame(() => {
+                if (!videoElement.paused) return;
+                videoElement.play().catch(err => {
+                    console.log('Autoplay bloqueado:', err);
+                });
+            });
 
             // Registrar visualização após 3 segundos
             setTimeout(() => {
