@@ -151,4 +151,30 @@ router.post('/cleanup', async (req, res) => {
   }
 });
 
+// Listar usuários online
+router.get('/online-users', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        us.user_id,
+        us.device_info,
+        us.last_heartbeat,
+        us.created_at as session_started
+       FROM user_sessions us
+       WHERE us.is_active = TRUE
+       AND us.last_heartbeat > NOW() - INTERVAL '5 minutes'
+       ORDER BY us.last_heartbeat DESC`
+    );
+
+    res.json({
+      success: true,
+      online_users: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('Erro ao listar usuários online:', error);
+    res.status(500).json({ error: 'Erro ao listar usuários online' });
+  }
+});
+
 export default router;

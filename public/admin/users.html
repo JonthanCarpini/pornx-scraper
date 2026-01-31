@@ -384,6 +384,7 @@
                             <th>Nome</th>
                             <th>Tipo</th>
                             <th>Status</th>
+                            <th>Online</th>
                             <th>Assinatura</th>
                             <th>Criado em</th>
                             <th>Ações</th>
@@ -505,6 +506,34 @@
         let currentPage = 1;
         let totalPages = 1;
         let searchTimeout;
+        let onlineUsers = new Set();
+        let onlineCheckInterval;
+
+        async function loadOnlineUsers() {
+            try {
+                const response = await fetch('/api/session/online-users');
+                if (response.ok) {
+                    const data = await response.json();
+                    onlineUsers = new Set(data.online_users.map(u => u.user_id));
+                    updateOnlineStatus();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuários online:', error);
+            }
+        }
+
+        function updateOnlineStatus() {
+            const rows = document.querySelectorAll('#users-tbody tr');
+            rows.forEach(row => {
+                const userId = parseInt(row.cells[0].textContent);
+                const onlineCell = row.cells[6];
+                if (onlineUsers.has(userId)) {
+                    onlineCell.innerHTML = '<span class="badge badge-success">🟢 Online</span>';
+                } else {
+                    onlineCell.innerHTML = '<span class="badge">⚫ Offline</span>';
+                }
+            });
+        }
 
         async function loadUsers(page = 1) {
             try {
@@ -542,6 +571,9 @@
 
                 renderUsers(data.users);
                 updatePagination(data.pagination);
+                
+                // Carregar status online após renderizar usuários
+                await loadOnlineUsers();
 
             } catch (error) {
                 console.error('Erro:', error);
@@ -581,6 +613,7 @@
                     <td>${user.full_name || '-'}</td>
                     <td>${roleBadge}</td>
                     <td>${statusBadge}</td>
+                    <td><span class="badge">⚫ Offline</span></td>
                     <td>${subscriptionBadge}</td>
                     <td>${createdAt}</td>
                     <td>
@@ -838,7 +871,18 @@
         }
 
         // Carregar usuários ao iniciar
-        window.addEventListener('load', () => loadUsers());
+        window.addEventListener('load', () => {
+            loadUsers();
+            // Atualizar status online a cada 10 segundos
+            onlineCheckInterval = setInterval(loadOnlineUsers, 10000);
+        });
+
+        // Limpar intervalo ao sair da página
+        window.addEventListener('beforeunload', () => {
+            if (onlineCheckInterval) {
+                clearInterval(onlineCheckInterval);
+            }
+        });
     </script>
 </body>
 </html>
