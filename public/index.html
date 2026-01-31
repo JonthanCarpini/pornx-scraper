@@ -377,6 +377,52 @@
             font-weight: bold;
         }
 
+        /* PAGINAÇÃO NUMERADA */
+        .pagination-numbered {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+
+        .pagination-numbered button {
+            min-width: 44px;
+            height: 44px;
+            padding: 0 12px;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            color: #999;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .pagination-numbered button:hover:not(:disabled):not(.active) {
+            background: #3a3a3a;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .pagination-numbered button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .pagination-numbered button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pagination-numbered .ellipsis {
+            color: #666;
+            padding: 0 8px;
+            font-weight: bold;
+        }
+
         /* LOADING */
         .loading {
             text-align: center;
@@ -658,11 +704,7 @@
                 <p>Carregando vídeos...</p>
             </div>
             <div id="videos-grid" class="videos-grid"></div>
-            <div id="videos-pagination" class="pagination" style="display:none;">
-                <button onclick="changeVideosPage(currentVideosPage - 1)" id="videos-prev">← Anterior</button>
-                <span id="videos-page-info"></span>
-                <button onclick="changeVideosPage(currentVideosPage + 1)" id="videos-next">Próxima →</button>
-            </div>
+            <div id="videos-pagination" class="pagination" style="display:none;"></div>
         </div>
 
         <!-- MODELS TAB -->
@@ -672,11 +714,7 @@
                 <p>Carregando modelos...</p>
             </div>
             <div id="models-grid" class="models-grid"></div>
-            <div id="models-pagination" class="pagination" style="display:none;">
-                <button onclick="changeModelsPage(currentModelsPage - 1)" id="models-prev">← Anterior</button>
-                <span id="models-page-info"></span>
-                <button onclick="changeModelsPage(currentModelsPage + 1)" id="models-next">Próxima →</button>
-            </div>
+            <div id="models-pagination" class="pagination" style="display:none;"></div>
         </div>
 
         <!-- FAVORITES SECTION -->
@@ -692,11 +730,7 @@
                 <p>Comece a favoritar vídeos para vê-los aqui!</p>
             </div>
             <div id="favorites-grid" class="videos-grid"></div>
-            <div id="favorites-pagination" class="pagination" style="display:none;">
-                <button onclick="changeFavoritesPage(currentFavoritesPage - 1)" id="favorites-prev">← Anterior</button>
-                <span id="favorites-page-info"></span>
-                <button onclick="changeFavoritesPage(currentFavoritesPage + 1)" id="favorites-next">Próxima →</button>
-            </div>
+            <div id="favorites-pagination" class="pagination" style="display:none;"></div>
         </div>
 
         <!-- MODEL VIDEOS SECTION -->
@@ -720,11 +754,7 @@
                 <p>Esta modelo ainda não possui vídeos.</p>
             </div>
             <div id="model-videos-grid" class="videos-grid"></div>
-            <div id="model-videos-pagination" class="pagination" style="display:none;">
-                <button onclick="changeModelVideosPage(currentModelVideosPage - 1)" id="model-videos-prev">← Anterior</button>
-                <span id="model-videos-page-info"></span>
-                <button onclick="changeModelVideosPage(currentModelVideosPage + 1)" id="model-videos-next">Próxima →</button>
-            </div>
+            <div id="model-videos-pagination" class="pagination" style="display:none;"></div>
         </div>
 
         <!-- FOLLOWING SECTION -->
@@ -740,11 +770,7 @@
                 <p>Comece a seguir modelos para vê-las aqui!</p>
             </div>
             <div id="following-grid" class="models-grid"></div>
-            <div id="following-pagination" class="pagination" style="display:none;">
-                <button onclick="changeFollowingPage(currentFollowingPage - 1)" id="following-prev">← Anterior</button>
-                <span id="following-page-info"></span>
-                <button onclick="changeFollowingPage(currentFollowingPage + 1)" id="following-next">Próxima →</button>
-            </div>
+            <div id="following-pagination" class="pagination" style="display:none;"></div>
         </div>
 
         <!-- PROFILE SECTION -->
@@ -775,8 +801,8 @@
     <!-- VIDEO MODAL -->
     <div id="video-modal" class="modal">
         <div class="modal-content">
-            <button class="close-modal" onclick="closeVideoModal()">×</button>
-            <video id="video-player" class="video-player" controls></video>
+            <button class="close-modal" onclick="closeVideoModal()">✕ Fechar</button>
+            <video id="video-player" controls autoplay></video>
         </div>
     </div>
 
@@ -899,7 +925,7 @@
                          onerror="this.src='/placeholder.jpg'">
                     <div class="video-info">
                         <div class="video-title">${video.title || 'Sem título'}</div>
-                        <div class="video-meta">
+                        <div class="video-meta model-link" onclick="event.stopPropagation(); showModelVideos('${video.source}', ${video.model_id}, '${(video.model_name || 'Desconhecido').replace(/'/g, "\\'")}');" style="cursor: pointer;">
                             ${video.model_avatar ? `
                                 <img src="${video.model_avatar}" 
                                      alt="${video.model_name}" 
@@ -916,7 +942,7 @@
                 `;
 
                 card.onclick = (e) => {
-                    if (!e.target.closest('.favorite-btn')) {
+                    if (!e.target.closest('.favorite-btn') && !e.target.closest('.model-link')) {
                         const videoUrl = video.video_source_url || video.video_url || video.sd_url;
                         if (!videoUrl) {
                             console.error('Vídeo sem URL válida (Home - Vídeos):', video);
@@ -1160,23 +1186,13 @@
         function updateVideosPagination(pagination) {
             currentVideosPage = pagination.page;
             totalVideosPages = pagination.totalPages;
-
-            document.getElementById('videos-page-info').textContent = 
-                `Página ${pagination.page} de ${pagination.totalPages}`;
-            document.getElementById('videos-prev').disabled = pagination.page === 1;
-            document.getElementById('videos-next').disabled = pagination.page === pagination.totalPages;
-            document.getElementById('videos-pagination').style.display = 'flex';
+            createNumberedPagination('videos-pagination', pagination.page, pagination.totalPages, changeVideosPage);
         }
 
         function updateModelsPagination(pagination) {
             currentModelsPage = pagination.page;
             totalModelsPages = pagination.totalPages;
-
-            document.getElementById('models-page-info').textContent = 
-                `Página ${pagination.page} de ${pagination.totalPages}`;
-            document.getElementById('models-prev').disabled = pagination.page === 1;
-            document.getElementById('models-next').disabled = pagination.page === pagination.totalPages;
-            document.getElementById('models-pagination').style.display = 'flex';
+            createNumberedPagination('models-pagination', pagination.page, pagination.totalPages, changeModelsPage);
         }
 
         // UTILS
@@ -1351,7 +1367,7 @@
                          onerror="this.src='/placeholder.jpg'">
                     <div class="video-info">
                         <div class="video-title">${video.title || 'Sem título'}</div>
-                        <div class="video-meta">
+                        <div class="video-meta model-link" onclick="event.stopPropagation(); showModelVideos('${fav.video_source}', ${video.model_id}, '${(video.model_name || 'Desconhecido').replace(/'/g, "\\'")}');" style="cursor: pointer;">
                             ${video.model_avatar ? `
                                 <img src="${video.model_avatar}" 
                                      alt="${video.model_name}" 
@@ -1369,7 +1385,7 @@
 
                 // Adicionar onclick para abrir player
                 card.onclick = (e) => {
-                    if (!e.target.closest('.favorite-btn')) {
+                    if (!e.target.closest('.favorite-btn') && !e.target.closest('.model-link')) {
                         // Priorizar video_source_url (M3U8) para ClubAdulto, depois video_url, depois sd_url
                         const videoUrl = video.video_source_url || video.sd_url || video.video_url;
                         if (!videoUrl) {
@@ -1412,12 +1428,7 @@
         function updateFavoritesPagination(pagination) {
             currentFavoritesPage = pagination.page;
             totalFavoritesPages = pagination.totalPages;
-
-            document.getElementById('favorites-page-info').textContent = 
-                `Página ${pagination.page} de ${pagination.totalPages}`;
-            document.getElementById('favorites-prev').disabled = pagination.page === 1;
-            document.getElementById('favorites-next').disabled = pagination.page === pagination.totalPages;
-            document.getElementById('favorites-pagination').style.display = 'flex';
+            createNumberedPagination('favorites-pagination', pagination.page, pagination.totalPages, changeFavoritesPage);
         }
 
         // CARREGAR MODELOS SEGUIDAS
@@ -1513,12 +1524,7 @@
         function updateFollowingPagination(pagination) {
             currentFollowingPage = pagination.page;
             totalFollowingPages = pagination.totalPages;
-
-            document.getElementById('following-page-info').textContent = 
-                `Página ${pagination.page} de ${pagination.totalPages}`;
-            document.getElementById('following-prev').disabled = pagination.page === 1;
-            document.getElementById('following-next').disabled = pagination.page === pagination.totalPages;
-            document.getElementById('following-pagination').style.display = 'flex';
+            createNumberedPagination('following-pagination', pagination.page, pagination.totalPages, changeFollowingPage);
         }
 
         // MOSTRAR VÍDEOS DA MODELO
@@ -1623,12 +1629,7 @@
         function updateModelVideosPagination(pagination) {
             currentModelVideosPage = pagination.page;
             totalModelVideosPages = pagination.totalPages;
-
-            document.getElementById('model-videos-page-info').textContent = 
-                `Página ${pagination.page} de ${pagination.totalPages}`;
-            document.getElementById('model-videos-prev').disabled = pagination.page === 1;
-            document.getElementById('model-videos-next').disabled = pagination.page === pagination.totalPages;
-            document.getElementById('model-videos-pagination').style.display = 'flex';
+            createNumberedPagination('model-videos-pagination', pagination.page, pagination.totalPages, changeModelVideosPage);
         }
 
         // CARREGAR PERFIL
@@ -1675,6 +1676,89 @@
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
             }
+        }
+
+        // PAGINAÇÃO NUMERADA
+        function createNumberedPagination(containerId, currentPage, totalPages, changePageFunction) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (totalPages <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            container.className = 'pagination-numbered';
+            container.innerHTML = '';
+
+            // Botão Anterior
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '← Anterior';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => changePageFunction(currentPage - 1);
+            container.appendChild(prevBtn);
+
+            // Lógica de páginas a mostrar
+            const maxButtons = 7;
+            let startPage = Math.max(1, currentPage - 3);
+            let endPage = Math.min(totalPages, currentPage + 3);
+
+            // Ajustar se estiver no início ou fim
+            if (currentPage <= 4) {
+                endPage = Math.min(maxButtons, totalPages);
+            }
+            if (currentPage >= totalPages - 3) {
+                startPage = Math.max(1, totalPages - maxButtons + 1);
+            }
+
+            // Primeira página
+            if (startPage > 1) {
+                const btn = document.createElement('button');
+                btn.textContent = '1';
+                btn.onclick = () => changePageFunction(1);
+                container.appendChild(btn);
+
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'ellipsis';
+                    ellipsis.textContent = '...';
+                    container.appendChild(ellipsis);
+                }
+            }
+
+            // Páginas do meio
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                if (i === currentPage) {
+                    btn.className = 'active';
+                }
+                btn.onclick = () => changePageFunction(i);
+                container.appendChild(btn);
+            }
+
+            // Última página
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'ellipsis';
+                    ellipsis.textContent = '...';
+                    container.appendChild(ellipsis);
+                }
+
+                const btn = document.createElement('button');
+                btn.textContent = totalPages;
+                btn.onclick = () => changePageFunction(totalPages);
+                container.appendChild(btn);
+            }
+
+            // Botão Próxima
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Próxima →';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => changePageFunction(currentPage + 1);
+            container.appendChild(nextBtn);
         }
 
         // INICIALIZAR
