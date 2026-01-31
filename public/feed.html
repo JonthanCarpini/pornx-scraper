@@ -251,7 +251,7 @@
         .loading {
             position: fixed;
             top: 50%;
-            left: 50%;
+            left: 20%;
             transform: translate(-50%, -50%);
             z-index: 5;
         }
@@ -456,7 +456,7 @@
             .model-info {
                 position: absolute;
                 left: 10px;
-                bottom: 100px;
+                bottom: 70px;
                 max-width: 250px;
             }
 
@@ -560,6 +560,7 @@
         let videos = [];
         let originalVideos = []; // Feed original
         let currentIndex = 0;
+        let originalIndex = 0; // Índice do feed original
         let hlsInstances = {};
         let userFavorites = new Set();
         let userFollows = new Set();
@@ -812,6 +813,11 @@
                 return;
             }
             
+            // Salvar índice atual do feed original
+            if (!isModelFeedMode) {
+                originalIndex = currentIndex;
+            }
+            
             currentModelData = {
                 source: video.source,
                 model_id: video.model_id,
@@ -847,7 +853,7 @@
         // Restaurar feed original
         function restoreOriginalFeed() {
             videos = [...originalVideos];
-            currentIndex = 0;
+            currentIndex = originalIndex; // Restaurar índice salvo
             isModelFeedMode = false;
             
             // Limpar instâncias HLS antigas
@@ -963,9 +969,20 @@
             
             createVideoElements();
             
-            // Aguardar um frame para garantir que os elementos foram criados
+            // Aguardar um frame para garantir que os elementos foram criados e iniciar autoplay
             requestAnimationFrame(() => {
                 loadCurrentVideo();
+                
+                // Autoplay do vídeo
+                requestAnimationFrame(() => {
+                    const videoElement = document.getElementById(`player-${currentIndex}`);
+                    if (videoElement) {
+                        videoElement.muted = true;
+                        videoElement.play().catch(err => {
+                            console.log('Autoplay bloqueado:', err);
+                        });
+                    }
+                });
             });
         }
 
