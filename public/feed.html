@@ -251,7 +251,7 @@
         .loading {
             position: fixed;
             top: 50%;
-            left: 20%;
+            left: 25%;
             transform: translate(-50%, -50%);
             z-index: 5;
         }
@@ -699,11 +699,11 @@
                 loadingSpinner.classList.remove('show');
             }, { once: true });
             
-            videoElement.addEventListener('error', () => {
+            videoElement.addEventListener('error', (e) => {
                 wrapper.classList.remove('loading');
                 loadingSpinner.classList.remove('show');
-                console.error('Erro ao carregar vídeo, pulando para o próximo...');
-                setTimeout(() => nextVideo(), 1000);
+                console.error('Erro ao carregar vídeo:', e);
+                // Não pula mais automaticamente para evitar múltiplas requisições
             }, { once: true });
             
             if (videoUrl.includes('.m3u8')) {
@@ -733,14 +733,17 @@
             const nextIndex = (currentIndex + 1) % videos.length;
             const nextVideoElement = document.getElementById(`player-${nextIndex}`);
             
-            // Limpar vídeos antigos para economizar recursos
+            // Limpar vídeos antigos para economizar recursos e cancelar requisições
             videos.forEach((_, index) => {
                 if (index !== currentIndex && index !== nextIndex) {
                     const oldVideoElement = document.getElementById(`player-${index}`);
-                    if (oldVideoElement && (oldVideoElement.src || hlsInstances[index])) {
-                        // Não limpar para permitir navegação para trás suave
-                        // Mas pausar para economizar recursos
-                        if (oldVideoElement) oldVideoElement.pause();
+                    if (oldVideoElement) {
+                        oldVideoElement.pause();
+                        // Destruir instância HLS para cancelar requisições pendentes
+                        if (hlsInstances[index]) {
+                            hlsInstances[index].destroy();
+                            delete hlsInstances[index];
+                        }
                     }
                 }
             });
@@ -791,6 +794,12 @@
             const videoElement = document.getElementById(`player-${currentIndex}`);
             if (videoElement) {
                 videoElement.pause();
+            }
+            
+            // Destruir instância HLS do vídeo atual para cancelar requisições pendentes
+            if (hlsInstances[currentIndex]) {
+                hlsInstances[currentIndex].destroy();
+                delete hlsInstances[currentIndex];
             }
         }
 
