@@ -45,8 +45,10 @@
             width: 100vw;
             height: 100vh;
             overflow-y: auto;
+            overflow-x: hidden;
             flex-shrink: 0;
             background: #0a0a0a;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* VÍDEO CONTAINER */
@@ -363,17 +365,22 @@
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 2px;
             padding: 2px;
+            min-height: 100vh;
         }
 
         .profile-video-card {
             position: relative;
-            aspect-ratio: 9/16;
+            width: 100%;
+            padding-bottom: 177.78%;
             background: #1a1a1a;
             cursor: pointer;
             overflow: hidden;
         }
 
         .profile-video-card img {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -398,6 +405,24 @@
         @media (max-width: 768px) {
             .profile-videos-grid {
                 grid-template-columns: repeat(3, 1fr);
+                gap: 1px;
+            }
+            
+            .profile-header {
+                padding: 50px 15px 15px;
+            }
+            
+            .profile-info {
+                gap: 15px;
+            }
+            
+            .profile-avatar {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .profile-details h2 {
+                font-size: 20px;
             }
         }
 
@@ -574,6 +599,7 @@
                 videoElement.id = `player-${index}`;
                 videoElement.loop = true;
                 videoElement.playsInline = true;
+                videoElement.muted = true;
                 
                 const loadingSpinner = document.createElement('div');
                 loadingSpinner.className = 'video-loading';
@@ -604,7 +630,8 @@
                 loadVideoSource(currentIndex);
             }
 
-            videoElement.play();
+            videoElement.muted = true;
+            videoElement.play().catch(err => console.log('Autoplay bloqueado:', err));
 
             // Registrar visualização após 3 segundos
             setTimeout(() => {
@@ -770,12 +797,23 @@
                 
                 // Carregar vídeos da modelo
                 const response = await fetch(`/api/unified-videos?source=${source}&modelId=${model_id}&limit=100`);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
-                modelVideos = data.videos;
+                modelVideos = data.videos || [];
+                
+                if (modelVideos.length === 0) {
+                    console.warn('Nenhum vídeo encontrado para esta modelo');
+                    document.getElementById('profile-videos-grid').innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">Nenhum vídeo disponível</p>';
+                    return;
+                }
                 
                 // Atualizar estatísticas
                 document.getElementById('profile-video-count').textContent = modelVideos.length;
-                document.getElementById('profile-follower-count').textContent = data.videos[0]?.follower_count || 0;
+                document.getElementById('profile-follower-count').textContent = modelVideos[0]?.follower_count || 0;
                 
                 // Atualizar botão seguir
                 const isFollowing = userFollows.has(`${source}:${model_id}`);
@@ -787,6 +825,13 @@
                 renderProfileVideos();
             } catch (error) {
                 console.error('Erro ao carregar perfil:', error);
+                document.getElementById('profile-videos-grid').innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: #999; grid-column: 1 / -1;">
+                        <p style="font-size: 48px; margin-bottom: 10px;">😞</p>
+                        <p>Erro ao carregar vídeos</p>
+                        <p style="font-size: 14px; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
             }
         }
 
