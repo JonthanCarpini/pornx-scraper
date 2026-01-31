@@ -139,8 +139,9 @@
         /* SIDEBAR DIREITA */
         .sidebar {
             position: fixed;
-            right: 20px;
-            bottom: 120px;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
             z-index: 10;
             display: flex;
             flex-direction: column;
@@ -197,7 +198,7 @@
         .model-info {
             position: fixed;
             left: 20px;
-            bottom: 20px;
+            bottom: 80px;
             z-index: 10;
             max-width: 350px;
         }
@@ -446,15 +447,16 @@
             
             .sidebar {
                 position: absolute;
-                right: 10px;
-                bottom: 100px;
+                right: 5px;
+                top: 50%;
+                transform: translateY(-50%);
                 gap: 15px;
             }
 
             .model-info {
                 position: absolute;
                 left: 10px;
-                bottom: 20px;
+                bottom: 100px;
                 max-width: 250px;
             }
 
