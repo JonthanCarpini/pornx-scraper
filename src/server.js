@@ -11,6 +11,7 @@ import adminUsersRoutes from './routes/admin-users.js';
 import favoritesRoutes from './routes/favorites.js';
 import followsRoutes from './routes/follows.js';
 import commentsRoutes from './routes/comments.js';
+import sessionRoutes from './routes/session.js';
 import { authenticateToken } from './middleware/auth.js';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use('/api/admin', adminUsersRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/follows', followsRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/api/session', sessionRoutes);
 
 const ADMIN_DB_ALLOWED_TABLES = [
     'xxxfollow_models',
