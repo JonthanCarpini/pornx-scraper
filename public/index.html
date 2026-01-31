@@ -1398,7 +1398,7 @@
                             alert('Este vídeo não possui URL de reprodução disponível');
                             return;
                         }
-                        openVideo(videoUrl);
+                        openVideo(videoUrl, video.source, video.id);
                     }
                 };
 
@@ -1542,12 +1542,16 @@
 
         // ABRIR VÍDEO
         let hlsInstance = null;
+        let currentVideoInfo = null; // Armazena info do vídeo atual
 
-        function openVideo(videoUrl) {
+        function openVideo(videoUrl, videoSource = null, videoId = null) {
             if (!videoUrl) {
                 console.error('URL do vídeo não fornecida');
                 return;
             }
+
+            // Armazenar informações do vídeo para registrar visualização
+            currentVideoInfo = { source: videoSource, id: videoId };
 
             const modal = document.getElementById('video-modal');
             const player = document.getElementById('video-player');
@@ -1580,6 +1584,28 @@
 
             modal.classList.add('active');
             player.play();
+
+            // Registrar visualização após 3 segundos de reprodução
+            if (videoSource && videoId) {
+                setTimeout(() => {
+                    registerView(videoSource, videoId);
+                }, 3000);
+            }
+        }
+
+        // Registrar visualização de vídeo
+        async function registerView(videoSource, videoId) {
+            try {
+                await fetch('/api/analytics/view', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_source: videoSource, video_id: videoId }),
+                    credentials: 'include'
+                });
+                console.log(`✅ Visualização registrada: ${videoSource}:${videoId}`);
+            } catch (error) {
+                console.error('Erro ao registrar visualização:', error);
+            }
         }
 
         function closeVideoModal() {
@@ -1843,7 +1869,7 @@
                             return;
                         }
                         console.log('🎬 Abrindo vídeo (Favoritos):', { source: fav.video_source, videoUrl });
-                        openVideo(videoUrl);
+                        openVideo(videoUrl, fav.video_source, fav.video_id);
                     }
                 };
 
@@ -2146,7 +2172,7 @@
                             alert('Este vídeo não possui URL de reprodução disponível');
                             return;
                         }
-                        openVideo(videoUrl);
+                        openVideo(videoUrl, video.source, video.id);
                     }
                 };
 
