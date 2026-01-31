@@ -53,6 +53,10 @@
             object-fit: contain;
         }
 
+        .video-wrapper.loading video {
+            opacity: 0.3;
+        }
+
         /* BOTÃO FECHAR */
         .close-btn {
             position: fixed;
@@ -236,6 +240,19 @@
             animation: spin 1s linear infinite;
         }
 
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            display: none;
+        }
+
+        .video-loading.show {
+            display: block;
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -380,7 +397,13 @@
                 videoElement.loop = true;
                 videoElement.playsInline = true;
                 
+                const loadingSpinner = document.createElement('div');
+                loadingSpinner.className = 'video-loading';
+                loadingSpinner.innerHTML = '<div class="loading-spinner"></div>';
+                loadingSpinner.id = `loading-${index}`;
+                
                 wrapper.appendChild(videoElement);
+                wrapper.appendChild(loadingSpinner);
                 container.appendChild(wrapper);
             });
         }
@@ -418,7 +441,24 @@
         function loadVideoSource(index) {
             const video = videos[index];
             const videoElement = document.getElementById(`player-${index}`);
+            const wrapper = document.getElementById(`video-${index}`);
+            const loadingSpinner = document.getElementById(`loading-${index}`);
             const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+            
+            // Mostrar loading
+            wrapper.classList.add('loading');
+            loadingSpinner.classList.add('show');
+            
+            // Eventos de carregamento
+            videoElement.addEventListener('loadeddata', () => {
+                wrapper.classList.remove('loading');
+                loadingSpinner.classList.remove('show');
+            }, { once: true });
+            
+            videoElement.addEventListener('error', () => {
+                wrapper.classList.remove('loading');
+                loadingSpinner.classList.remove('show');
+            }, { once: true });
             
             if (videoUrl.includes('.m3u8')) {
                 const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}`;
@@ -427,7 +467,11 @@
                     if (hlsInstances[index]) {
                         hlsInstances[index].destroy();
                     }
-                    hlsInstances[index] = new Hls();
+                    hlsInstances[index] = new Hls({
+                        maxBufferLength: 10,
+                        maxMaxBufferLength: 20,
+                        maxBufferSize: 10 * 1000 * 1000
+                    });
                     hlsInstances[index].loadSource(proxiedUrl);
                     hlsInstances[index].attachMedia(videoElement);
                 } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
@@ -438,10 +482,22 @@
             }
         }
 
-        // Pré-carregar próximo vídeo
+        // Pré-carregar próximo vídeo (apenas 1 por vez)
         function preloadNextVideo() {
             const nextIndex = (currentIndex + 1) % videos.length;
             const nextVideoElement = document.getElementById(`player-${nextIndex}`);
+            
+            // Limpar vídeos antigos para economizar recursos
+            videos.forEach((_, index) => {
+                if (index !== currentIndex && index !== nextIndex) {
+                    const oldVideoElement = document.getElementById(`player-${index}`);
+                    if (oldVideoElement && (oldVideoElement.src || hlsInstances[index])) {
+                        // Não limpar para permitir navegação para trás suave
+                        // Mas pausar para economizar recursos
+                        if (oldVideoElement) oldVideoElement.pause();
+                    }
+                }
+            });
             
             if (nextVideoElement && !nextVideoElement.src && !hlsInstances[nextIndex]) {
                 loadVideoSource(nextIndex);
@@ -656,27 +712,40 @@
         // Navegação por swipe/touch (mobile)
         let touchStartY = 0;
         let touchEndY = 0;
+        let touchStartX = 0;
+        let touchEndX = 0;
         let isDragging = false;
 
         document.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
             isDragging = true;
         }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
             touchEndY = e.touches[0].clientY;
+            touchEndX = e.touches[0].clientX;
         }, { passive: true });
 
         document.addEventListener('touchend', () => {
             if (!isDragging) return;
             isDragging = false;
             
-            const swipeDistance = touchStartY - touchEndY;
+            const swipeDistanceY = touchStartY - touchEndY;
+            const swipeDistanceX = touchStartX - touchEndX;
             const minSwipeDistance = 50;
 
-            if (Math.abs(swipeDistance) > minSwipeDistance) {
-                if (swipeDistance > 0) {
+            // Verificar se é swipe horizontal (para perfil)
+            if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY) && Math.abs(swipeDistanceX) > minSwipeDistance) {
+                if (swipeDistanceX > 0) {
+                    // Swipe left - ir para perfil da modelo
+                    goToModel();
+                }
+            }
+            // Swipe vertical (trocar vídeo)
+            else if (Math.abs(swipeDistanceY) > minSwipeDistance) {
+                if (swipeDistanceY > 0) {
                     // Swipe up - próximo vídeo
                     nextVideo();
                 } else {
@@ -685,6 +754,35 @@
                 }
             }
         }, { passive: true });
+
+        // Duplo clique para favoritar
+        let lastTap = 0;
+        document.addEventListener('dblclick', (e) => {
+            // Ignorar se clicou em botões
+            if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
+                e.target.closest('.close-btn') || e.target.closest('.nav-arrow')) {
+                return;
+            }
+            toggleFavorite();
+        });
+
+        // Duplo toque mobile para favoritar
+        document.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            if (tapLength < 300 && tapLength > 0) {
+                // Ignorar se tocou em botões
+                if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
+                    e.target.closest('.close-btn') || e.target.closest('.nav-arrow') ||
+                    e.target.closest('.model-avatar') || e.target.closest('.model-name')) {
+                    return;
+                }
+                toggleFavorite();
+                e.preventDefault();
+            }
+            lastTap = currentTime;
+        });
 
         // Inicializar
         (async () => {
