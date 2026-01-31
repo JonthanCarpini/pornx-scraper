@@ -2902,6 +2902,96 @@ app.post('/api/admin/sync-video-counts', authenticateToken, async (req, res) => 
 });
 
 // ========================================
+// ANALYTICS - Visualizações e Curtidas
+// ========================================
+
+// Registrar visualização de vídeo
+app.post('/api/analytics/view', authenticateToken, async (req, res) => {
+    try {
+        const { video_source, video_id } = req.body;
+        const userId = req.user.userId;
+
+        if (!video_source || !video_id) {
+            return res.status(400).json({ error: 'video_source e video_id são obrigatórios' });
+        }
+
+        // Inserir ou atualizar visualização (ON CONFLICT para evitar duplicatas)
+        await pool.query(`
+            INSERT INTO video_views (user_id, video_source, video_id, viewed_at)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, video_source, video_id) 
+            DO UPDATE SET viewed_at = CURRENT_TIMESTAMP
+        `, [userId, video_source, video_id]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao registrar visualização:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Curtir vídeo
+app.post('/api/analytics/like', authenticateToken, async (req, res) => {
+    try {
+        const { video_source, video_id } = req.body;
+        const userId = req.user.userId;
+
+        if (!video_source || !video_id) {
+            return res.status(400).json({ error: 'video_source e video_id são obrigatórios' });
+        }
+
+        // Inserir curtida
+        await pool.query(`
+            INSERT INTO video_likes (user_id, video_source, video_id)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, video_source, video_id) DO NOTHING
+        `, [userId, video_source, video_id]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao curtir vídeo:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Descurtir vídeo
+app.delete('/api/analytics/like/:source/:videoId', authenticateToken, async (req, res) => {
+    try {
+        const { source, videoId } = req.params;
+        const userId = req.user.userId;
+
+        await pool.query(`
+            DELETE FROM video_likes 
+            WHERE user_id = $1 AND video_source = $2 AND video_id = $3
+        `, [userId, source, parseInt(videoId)]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao descurtir vídeo:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Obter curtidas do usuário
+app.get('/api/analytics/likes', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const result = await pool.query(`
+            SELECT video_source, video_id 
+            FROM video_likes 
+            WHERE user_id = $1
+        `, [userId]);
+
+        const likes = result.rows.map(row => `${row.video_source}:${row.video_id}`);
+        res.json({ likes });
+    } catch (error) {
+        console.error('Erro ao buscar curtidas:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ========================================
 // ADMIN - Limpar Banco
 // ========================================
 

@@ -786,6 +786,305 @@
                 flex-wrap: wrap;
             }
         }
+
+        /* ========================================
+           RESPONSIVIDADE MOBILE COMPLETA
+           ======================================== */
+        
+        @media (max-width: 768px) {
+            /* Navbar */
+            .navbar {
+                padding: 15px;
+            }
+
+            .navbar-brand {
+                font-size: 1.2em;
+            }
+
+            .navbar-menu {
+                gap: 10px;
+            }
+
+            .nav-link {
+                font-size: 0.85em;
+                padding: 8px 12px;
+            }
+
+            /* Container */
+            .container {
+                padding: 15px 10px;
+            }
+
+            /* Tabs */
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab {
+                padding: 10px 16px;
+                font-size: 0.9em;
+                white-space: nowrap;
+            }
+
+            /* Videos Grid */
+            .videos-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 12px;
+            }
+
+            .video-card {
+                border-radius: 8px;
+            }
+
+            .video-title {
+                font-size: 0.85em;
+                -webkit-line-clamp: 2;
+            }
+
+            .video-meta {
+                font-size: 0.75em;
+            }
+
+            .model-avatar {
+                width: 24px;
+                height: 24px;
+            }
+
+            .video-stats {
+                font-size: 0.7em;
+            }
+
+            .favorite-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 1em;
+            }
+
+            .source-badge {
+                font-size: 0.65em;
+                padding: 4px 8px;
+            }
+
+            /* Models Grid */
+            .models-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 12px;
+            }
+
+            .model-card {
+                border-radius: 8px;
+            }
+
+            .model-name-title {
+                font-size: 0.9em;
+            }
+
+            .model-stats {
+                font-size: 0.75em;
+            }
+
+            .follow-btn {
+                padding: 6px 12px;
+                font-size: 0.8em;
+            }
+
+            /* Model Header */
+            .model-header {
+                flex-direction: column;
+                padding: 20px 15px;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .model-header-avatar {
+                width: 100px;
+                height: 100px;
+            }
+
+            .model-header-name {
+                font-size: 1.5em;
+            }
+
+            .model-header-stats {
+                justify-content: center;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            .model-stat-value {
+                font-size: 1.2em;
+            }
+
+            .model-stat-label {
+                font-size: 0.8em;
+            }
+
+            .model-header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .follow-btn-large {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            /* Pagination */
+            .pagination-numbered {
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+
+            .pagination-numbered button {
+                min-width: 36px;
+                height: 36px;
+                padding: 0 8px;
+                font-size: 0.85em;
+            }
+
+            /* Search */
+            #search-input {
+                font-size: 0.9em;
+                padding: 12px 15px;
+            }
+
+            .search-filters {
+                flex-wrap: wrap;
+            }
+
+            .filter-btn {
+                flex: 1;
+                min-width: 80px;
+                font-size: 0.85em;
+            }
+
+            /* Profile */
+            .profile-header {
+                padding: 25px 15px;
+            }
+
+            .profile-avatar-large {
+                width: 80px;
+                height: 80px;
+                font-size: 2em;
+            }
+
+            .profile-username {
+                font-size: 1.5em;
+            }
+
+            .profile-email {
+                font-size: 0.9em;
+            }
+
+            .subscription-badge {
+                font-size: 0.85em;
+                padding: 8px 16px;
+            }
+
+            .profile-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-number {
+                font-size: 1.8em;
+            }
+
+            .stat-label {
+                font-size: 0.85em;
+            }
+
+            /* Favorites Empty */
+            .favorites-empty {
+                padding: 40px 20px;
+            }
+
+            .favorites-empty-icon {
+                font-size: 3em;
+            }
+
+            .favorites-empty h3 {
+                font-size: 1.3em;
+            }
+
+            /* User Menu */
+            .user-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9em;
+            }
+
+            .dropdown {
+                right: 0;
+                min-width: 180px;
+            }
+
+            /* Loading */
+            .loading {
+                padding: 40px 15px;
+            }
+
+            .loading-spinner {
+                width: 35px;
+                height: 35px;
+            }
+
+            /* Section Titles */
+            h2 {
+                font-size: 1.5em;
+            }
+
+            h3 {
+                font-size: 1.2em;
+            }
+        }
+
+        /* Mobile pequeno (< 480px) */
+        @media (max-width: 480px) {
+            .navbar-brand {
+                font-size: 1em;
+            }
+
+            .nav-link {
+                font-size: 0.75em;
+                padding: 6px 8px;
+            }
+
+            .videos-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .models-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .video-title {
+                font-size: 0.8em;
+            }
+
+            .model-header-name {
+                font-size: 1.2em;
+            }
+
+            .pagination-numbered button {
+                min-width: 32px;
+                height: 32px;
+                font-size: 0.75em;
+            }
+
+            .tab {
+                padding: 8px 12px;
+                font-size: 0.85em;
+            }
+        }
     </style>
 </head>
 <body>
