@@ -94,8 +94,45 @@
 - post_count (integer, default 0)
 ```
 
-### ❌ nsfw247_videos - NÃO EXISTE
-### ❌ nsfw247_models - NÃO EXISTE
+### ✅ videos (NSFW247)
+```sql
+- id (PK)
+- model_id (FK -> models.id)
+- title (varchar(500), NOT NULL)
+- video_url (text, NOT NULL, UNIQUE)
+- thumbnail_url (text)
+- poster_url (text)
+- video_source_url (text) -- URL M3U8
+- created_at (timestamp, default CURRENT_TIMESTAMP)
+- updated_at (timestamp, default CURRENT_TIMESTAMP)
+- status (varchar(20), default 'active')
+- duration (integer)
+- view_count (integer, default 0)
+- like_count (integer, default 0)
+- comment_count (integer, default 0)
+```
+
+### ✅ models (NSFW247)
+```sql
+- id (PK)
+- name (varchar(255), NOT NULL)
+- profile_url (text, NOT NULL, UNIQUE)
+- cover_url (text)
+- created_at (timestamp, default CURRENT_TIMESTAMP)
+- updated_at (timestamp, default CURRENT_TIMESTAMP)
+- video_count (integer, default 0)
+- videos_scraped (boolean, default false)
+- videos_scraped_at (timestamp)
+- details_scraped (boolean, default false)
+- details_scraped_at (timestamp)
+- status (varchar(20), default 'active')
+- gender (varchar(10))
+- bio (text)
+- follower_count (integer, default 0)
+- like_count (integer, default 0)
+- view_count (integer, default 0)
+- post_count (integer, default 0)
+```
 
 ---
 
@@ -221,44 +258,47 @@ FROM clubeadulto_models m;
 
 ## Diferenças Importantes Entre Tabelas
 
-### xxxfollow_models vs clubeadulto_models
+### Comparação de Models
 
-| Campo | xxxfollow_models | clubeadulto_models |
-|-------|------------------|-------------------|
-| Nome | `username` | `name` |
-| Avatar | `avatar_url` | `image_url` |
-| Banner | `cover_url` | `cover_url` |
-| Profile URL | ❌ Não existe | ✅ `profile_url` |
+| Campo | xxxfollow_models | clubeadulto_models | models (NSFW247) |
+|-------|------------------|-------------------|------------------|
+| Nome | `username` | `name` | `name` |
+| Avatar | `avatar_url` | `image_url` | `cover_url` |
+| Banner | `cover_url` | `cover_url` | ❌ Não existe |
+| Profile URL | ❌ Não existe | ✅ `profile_url` | ✅ `profile_url` |
 
-### xxxfollow_videos vs clubeadulto_videos
+### Comparação de Videos
 
-| Campo | xxxfollow_videos | clubeadulto_videos |
-|-------|------------------|-------------------|
-| Video Source | ❌ Não existe | ✅ `m3u8_url` |
-| SD URL | ✅ `sd_url` | ❌ Não existe |
-| Description | ✅ `description` | ❌ Não existe |
+| Campo | xxxfollow_videos | clubeadulto_videos | videos (NSFW247) |
+|-------|------------------|-------------------|------------------|
+| Video Source | ❌ Não existe | ✅ `m3u8_url` | ✅ `video_source_url` |
+| SD URL | ✅ `sd_url` | ❌ Não existe | ❌ Não existe |
+| Description | ✅ `description` | ❌ Não existe | ❌ Não existe |
+| Thumbnail | `thumbnail_url` | `thumbnail_url` | `thumbnail_url` |
 
 ---
 
 ## ⚠️ IMPORTANTE
 
-1. **NSFW247 NÃO EXISTE** - Não criar queries com nsfw247
+1. **NSFW247 usa tabelas `models` e `videos`** (sem prefixo nsfw247_)
 2. **xxxfollow usa `username`** - Não usar `name`
 3. **clubeadulto usa `name`** - Não usar `username`
 4. **clubeadulto usa `image_url`** - Não usar `avatar_url`
-5. **Sempre usar LEFT JOIN** para evitar perder registros
-6. **Sempre usar COALESCE** para valores nulos
+5. **NSFW247 usa `name`** - Não usar `username`
+6. **NSFW247 usa `cover_url`** como avatar - Não tem banner separado
+7. **Sempre usar LEFT JOIN** para evitar perder registros
+8. **Sempre usar COALESCE** para valores nulos
 
 ---
 
 ## Endpoints da API
 
 ### GET /api/unified-videos
-- Retorna vídeos de xxxfollow e clubeadulto
+- Retorna vídeos de xxxfollow, clubeadulto e nsfw247
 - Parâmetros: page, limit, random, source, modelId
 
 ### GET /api/unified-models  
-- Retorna modelos de xxxfollow e clubeadulto
+- Retorna modelos de xxxfollow, clubeadulto e nsfw247
 - Parâmetros: page, limit, source, modelId, search
 
 ### POST /api/analytics/view
