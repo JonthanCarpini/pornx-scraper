@@ -67,12 +67,22 @@
             justify-content: center;
             background: #000;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transform: scale(0.95) translateY(20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
 
         .video-wrapper.active {
             opacity: 1;
+            transform: scale(1) translateY(0);
             z-index: 1;
+        }
+        
+        .video-wrapper.slide-up {
+            transform: scale(0.95) translateY(-20px);
+        }
+        
+        .video-wrapper.slide-down {
+            transform: scale(0.95) translateY(20px);
         }
 
         .video-wrapper video {
@@ -810,19 +820,47 @@
         // Próximo vídeo
         function nextVideo() {
             if (!videos || videos.length === 0) return;
+            
+            // Adicionar classe de slide para animação
+            const currentWrapper = document.getElementById(`video-${currentIndex}`);
+            if (currentWrapper) {
+                currentWrapper.classList.add('slide-up');
+            }
+            
             pauseCurrentVideo();
             currentIndex = ((currentIndex || 0) + 1) % videos.length;
             loadCurrentVideo();
             preloadNextVideo();
+            
+            // Remover classe após animação
+            setTimeout(() => {
+                if (currentWrapper) {
+                    currentWrapper.classList.remove('slide-up');
+                }
+            }, 400);
         }
 
         // Vídeo anterior
         function previousVideo() {
             if (!videos || videos.length === 0) return;
             if ((currentIndex || 0) === 0) return;
+            
+            // Adicionar classe de slide para animação
+            const currentWrapper = document.getElementById(`video-${currentIndex}`);
+            if (currentWrapper) {
+                currentWrapper.classList.add('slide-down');
+            }
+            
             pauseCurrentVideo();
             currentIndex = (currentIndex || 0) - 1;
             loadCurrentVideo();
+            
+            // Remover classe após animação
+            setTimeout(() => {
+                if (currentWrapper) {
+                    currentWrapper.classList.remove('slide-down');
+                }
+            }, 400);
         }
 
         // Pausar vídeo atual
