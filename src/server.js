@@ -2781,11 +2781,12 @@ app.get('/api/unified-videos', async (req, res) => {
                 model_avatar,
                 title,
                 thumbnail_url,
-                poster_url,
                 duration,
                 view_count,
                 like_count,
                 video_source_url,
+                video_url,
+                sd_url,
                 created_at
             FROM unified_videos
             ${whereClause}
