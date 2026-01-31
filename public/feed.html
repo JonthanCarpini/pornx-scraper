@@ -554,6 +554,7 @@
     <script>
         let currentUser = null;
         let videos = [];
+        let originalVideos = []; // Feed original
         let currentIndex = 0;
         let hlsInstances = {};
         let userFavorites = new Set();
@@ -561,6 +562,7 @@
         let currentModelData = null;
         let modelVideos = [];
         let isProfileMode = false;
+        let isModelFeedMode = false; // Se está vendo feed da modelo
 
         // Verificar autenticação
         async function checkAuth() {
@@ -585,6 +587,7 @@
                 const response = await fetch('/api/unified-videos?limit=500&random=true');
                 const data = await response.json();
                 videos = data.videos;
+                originalVideos = [...data.videos]; // Salvar feed original
 
                 if (videos.length === 0) {
                     alert('Nenhum vídeo disponível');
@@ -594,6 +597,7 @@
 
                 // Resetar índice para 0
                 currentIndex = 0;
+                isModelFeedMode = false;
                 
                 createVideoElements();
                 loadCurrentVideo();
@@ -787,7 +791,13 @@
 
         // Voltar
         function goBack() {
-            window.location.href = '/';
+            // Se está em feed da modelo, volta para o perfil
+            if (isModelFeedMode) {
+                restoreOriginalFeed();
+                showProfile();
+            } else {
+                window.location.href = '/';
+            }
         }
 
         // Ir para modelo
@@ -820,8 +830,37 @@
         function closeProfile() {
             document.getElementById('main-wrapper').classList.remove('show-profile');
             isProfileMode = false;
+            
+            // Se estava em feed da modelo, restaura feed original
+            if (isModelFeedMode) {
+                restoreOriginalFeed();
+            }
+            
             const videoElement = document.getElementById(`player-${currentIndex}`);
             if (videoElement) videoElement.play();
+        }
+        
+        // Restaurar feed original
+        function restoreOriginalFeed() {
+            videos = [...originalVideos];
+            currentIndex = 0;
+            isModelFeedMode = false;
+            
+            // Limpar instâncias HLS antigas
+            Object.values(hlsInstances).forEach(hls => {
+                if (hls) hls.destroy();
+            });
+            hlsInstances = {};
+            
+            // Recriar elementos de vídeo
+            const container = document.getElementById('feed-container');
+            container.querySelectorAll('.video-wrapper').forEach(w => w.remove());
+            
+            createVideoElements();
+            
+            requestAnimationFrame(() => {
+                loadCurrentVideo();
+            });
         }
 
         // Carregar perfil da modelo
@@ -902,9 +941,11 @@
             // Substituir vídeos atuais pelos da modelo
             videos = [...modelVideos];
             currentIndex = index;
+            isModelFeedMode = true; // Marca que está em feed da modelo
             
             // Fechar perfil e voltar ao feed
-            closeProfile();
+            document.getElementById('main-wrapper').classList.remove('show-profile');
+            isProfileMode = false;
             
             // Limpar instâncias HLS antigas
             Object.values(hlsInstances).forEach(hls => {
