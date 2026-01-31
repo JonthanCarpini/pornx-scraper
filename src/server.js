@@ -2763,9 +2763,16 @@ app.get('/api/unified-videos', async (req, res) => {
         }
         
         if (modelId) {
-            const [modelSource, modelIdNum] = modelId.split(':');
-            whereClause += hasWhere ? ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}` : `WHERE source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
-            whereParams.push(modelSource, parseInt(modelIdNum));
+            // Se modelId contém ':', é no formato source:id
+            if (modelId.includes(':')) {
+                const [modelSource, modelIdNum] = modelId.split(':');
+                whereClause += hasWhere ? ` AND source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}` : `WHERE source = $${whereParams.length + 1} AND model_id = $${whereParams.length + 2}`;
+                whereParams.push(modelSource, parseInt(modelIdNum));
+            } else {
+                // Se não contém ':', é apenas o ID numérico (source já deve estar especificado)
+                whereClause += hasWhere ? ` AND model_id = $${whereParams.length + 1}` : `WHERE model_id = $${whereParams.length + 1}`;
+                whereParams.push(parseInt(modelId));
+            }
             hasWhere = true;
         }
         
