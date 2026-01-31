@@ -20,11 +20,33 @@
         }
 
         /* CONTAINER PRINCIPAL */
+        .main-wrapper {
+            position: relative;
+            width: 200vw;
+            height: 100vh;
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .main-wrapper.show-profile {
+            transform: translateX(-100vw);
+        }
+
         .feed-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .profile-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+            background: #0a0a0a;
         }
 
         /* VÍDEO CONTAINER */
@@ -253,6 +275,132 @@
             to { transform: rotate(360deg); }
         }
 
+        /* PERFIL DA MODELO */
+        .profile-header {
+            position: relative;
+            padding: 60px 20px 20px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .profile-back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #667eea;
+        }
+
+        .profile-details h2 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .profile-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-stat strong {
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .profile-follow-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .profile-follow-btn.following {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 2px;
+            padding: 2px;
+        }
+
+        .profile-video-card {
+            position: relative;
+            aspect-ratio: 9/16;
+            background: #1a1a1a;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .profile-video-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-video-card .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            font-size: 12px;
+        }
+
+        .profile-video-card .video-views {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .profile-videos-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
         /* MOBILE */
         @media (max-width: 768px) {
             .sidebar {
@@ -289,7 +437,9 @@
     </style>
 </head>
 <body>
-    <div class="feed-container" id="feed-container">
+    <div class="main-wrapper" id="main-wrapper">
+        <!-- FEED PRINCIPAL -->
+        <div class="feed-container" id="feed-container">
         <!-- Botão Fechar -->
         <button class="close-btn" onclick="goBack()">✕</button>
 
@@ -322,10 +472,43 @@
         <button class="follow-btn" id="follow-btn" onclick="toggleFollow()">Seguir</button>
     </div>
 
-    <!-- Info Modelo -->
-    <div class="model-info" id="model-info">
-        <div class="model-name" id="model-name" onclick="goToModel()">@modelo</div>
-        <div class="video-title" id="video-title">Título do vídeo</div>
+        <!-- Info Modelo -->
+        <div class="model-info" id="model-info">
+            <div class="model-name" id="model-name" onclick="goToModel()">@modelo</div>
+            <div class="video-title" id="video-title">Título do vídeo</div>
+        </div>
+    </div>
+
+    <!-- PERFIL DA MODELO -->
+    <div class="profile-container" id="profile-container">
+        <button class="profile-back-btn" onclick="closeProfile()">←</button>
+        
+        <div class="profile-header">
+            <div class="profile-info">
+                <img id="profile-avatar" class="profile-avatar" src="" alt="Modelo">
+                <div class="profile-details">
+                    <h2 id="profile-name">@modelo</h2>
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <strong id="profile-video-count">0</strong>
+                            <span>vídeos</span>
+                        </div>
+                        <div class="profile-stat">
+                            <strong id="profile-follower-count">0</strong>
+                            <span>seguidores</span>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button class="profile-follow-btn" id="profile-follow-btn" onclick="toggleFollowProfile()">Seguir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-videos-grid" id="profile-videos-grid">
+            <!-- Vídeos da modelo serão inseridos aqui -->
+        </div>
+    </div>
     </div>
 
     <script>
@@ -335,6 +518,9 @@
         let hlsInstances = [];
         let userFavorites = new Set();
         let userFollows = new Set();
+        let currentModelData = null;
+        let modelVideos = [];
+        let isProfileMode = false;
 
         // Verificar autenticação
         async function checkAuth() {
@@ -545,10 +731,143 @@
         }
 
         // Ir para modelo
-        function goToModel() {
+        async function goToModel() {
             const video = videos[currentIndex];
-            const modelKey = `${video.source}:${video.model_id}`;
-            window.location.href = `/?model=${modelKey}`;
+            currentModelData = {
+                source: video.source,
+                model_id: video.model_id,
+                model_name: video.model_name,
+                model_avatar: video.model_avatar
+            };
+            
+            await loadModelProfile();
+            showProfile();
+        }
+
+        // Mostrar perfil
+        function showProfile() {
+            document.getElementById('main-wrapper').classList.add('show-profile');
+            isProfileMode = true;
+            pauseCurrentVideo();
+        }
+
+        // Fechar perfil
+        function closeProfile() {
+            document.getElementById('main-wrapper').classList.remove('show-profile');
+            isProfileMode = false;
+            const videoElement = document.getElementById(`player-${currentIndex}`);
+            if (videoElement) videoElement.play();
+        }
+
+        // Carregar perfil da modelo
+        async function loadModelProfile() {
+            try {
+                const { source, model_id, model_name, model_avatar } = currentModelData;
+                
+                // Atualizar header do perfil
+                document.getElementById('profile-avatar').src = model_avatar || '/default-avatar.png';
+                document.getElementById('profile-name').textContent = '@' + (model_name || 'Desconhecido');
+                
+                // Carregar vídeos da modelo
+                const response = await fetch(`/api/unified-videos?source=${source}&modelId=${model_id}&limit=100`);
+                const data = await response.json();
+                modelVideos = data.videos;
+                
+                // Atualizar estatísticas
+                document.getElementById('profile-video-count').textContent = modelVideos.length;
+                document.getElementById('profile-follower-count').textContent = data.videos[0]?.follower_count || 0;
+                
+                // Atualizar botão seguir
+                const isFollowing = userFollows.has(`${source}:${model_id}`);
+                const followBtn = document.getElementById('profile-follow-btn');
+                followBtn.textContent = isFollowing ? '✓ Seguindo' : 'Seguir';
+                followBtn.classList.toggle('following', isFollowing);
+                
+                // Renderizar grid de vídeos
+                renderProfileVideos();
+            } catch (error) {
+                console.error('Erro ao carregar perfil:', error);
+            }
+        }
+
+        // Renderizar vídeos do perfil
+        function renderProfileVideos() {
+            const grid = document.getElementById('profile-videos-grid');
+            grid.innerHTML = '';
+            
+            modelVideos.forEach((video, index) => {
+                const card = document.createElement('div');
+                card.className = 'profile-video-card';
+                card.onclick = () => openModelVideo(index);
+                
+                const thumbnail = video.thumbnail_url || video.model_avatar || '/default-thumb.png';
+                
+                card.innerHTML = `
+                    <img src="${thumbnail}" alt="${video.title || 'Vídeo'}">
+                    <div class="video-overlay">
+                        <div class="video-views">👁️ ${video.view_count || 0}</div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Abrir vídeo da modelo no modo feed
+        function openModelVideo(index) {
+            // Substituir vídeos atuais pelos da modelo
+            videos = [...modelVideos];
+            currentIndex = index;
+            
+            // Fechar perfil e voltar ao feed
+            closeProfile();
+            
+            // Recriar elementos de vídeo
+            const container = document.getElementById('feed-container');
+            container.querySelectorAll('.video-wrapper').forEach(w => w.remove());
+            
+            createVideoElements();
+            loadCurrentVideo();
+        }
+
+        // Toggle follow no perfil
+        async function toggleFollowProfile() {
+            if (!currentModelData) return;
+            
+            const { source, model_id } = currentModelData;
+            const isFollowing = userFollows.has(`${source}:${model_id}`);
+            
+            try {
+                const url = isFollowing
+                    ? `/api/follows/${source}/${model_id}`
+                    : '/api/follows';
+                
+                const response = await fetch(url, {
+                    method: isFollowing ? 'DELETE' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: isFollowing ? null : JSON.stringify({ model_source: source, model_id: model_id }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    if (isFollowing) {
+                        userFollows.delete(`${source}:${model_id}`);
+                    } else {
+                        userFollows.add(`${source}:${model_id}`);
+                    }
+                    
+                    const followBtn = document.getElementById('profile-follow-btn');
+                    followBtn.textContent = !isFollowing ? '✓ Seguindo' : 'Seguir';
+                    followBtn.classList.toggle('following', !isFollowing);
+                    
+                    // Atualizar também o botão do feed
+                    const feedFollowBtn = document.getElementById('follow-btn');
+                    feedFollowBtn.textContent = !isFollowing ? '✓ Seguindo' : 'Seguir';
+                    feedFollowBtn.classList.toggle('following', !isFollowing);
+                }
+            } catch (error) {
+                console.error('Erro ao seguir:', error);
+            }
         }
 
         // Toggle like
@@ -776,9 +1095,12 @@
 
                 // Verificar se é swipe horizontal (para perfil)
                 if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY) && Math.abs(swipeDistanceX) > minSwipeDistance) {
-                    if (swipeDistanceX > 0) {
+                    if (swipeDistanceX > 0 && !isProfileMode) {
                         // Swipe da direita para esquerda - ir para perfil da modelo
                         goToModel();
+                    } else if (swipeDistanceX < 0 && isProfileMode) {
+                        // Swipe da esquerda para direita - voltar ao feed
+                        closeProfile();
                     }
                 }
                 // Swipe vertical (trocar vídeo)
