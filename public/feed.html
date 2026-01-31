@@ -76,9 +76,27 @@
         }
 
         .video-wrapper video {
-            
+            width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+        
+        /* BARRA DE PROGRESSO */
+        .video-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 2;
+        }
+        
+        .video-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.1s linear;
         }
 
         .video-wrapper.loading video {
@@ -630,12 +648,20 @@
                 videoElement.muted = true;
                 
                 const loadingSpinner = document.createElement('div');
-                loadingSpinner.className = 'video-loading';
-                loadingSpinner.innerHTML = '<div class="loading-spinner"></div>';
+                loadingSpinner.className = 'loading-spinner';
                 loadingSpinner.id = `loading-${index}`;
+                
+                // Barra de progresso
+                const progressContainer = document.createElement('div');
+                progressContainer.className = 'video-progress';
+                const progressBar = document.createElement('div');
+                progressBar.className = 'video-progress-bar';
+                progressBar.id = `progress-${index}`;
+                progressContainer.appendChild(progressBar);
                 
                 wrapper.appendChild(videoElement);
                 wrapper.appendChild(loadingSpinner);
+                wrapper.appendChild(progressContainer);
                 container.appendChild(wrapper);
             });
         }
@@ -672,6 +698,9 @@
                     console.log('Autoplay bloqueado:', err);
                 });
             });
+            
+            // Atualizar barra de progresso
+            updateProgressBar(currentIndex);
 
             // Registrar visualização após 3 segundos
             setTimeout(() => {
@@ -988,7 +1017,17 @@
             // Aguardar um frame para garantir que os elementos foram criados
             requestAnimationFrame(() => {
                 loadCurrentVideo();
-                // loadCurrentVideo já faz o autoplay
+                
+                // Forçar autoplay após carregar
+                setTimeout(() => {
+                    const videoElement = document.getElementById(`player-${currentIndex}`);
+                    if (videoElement && videoElement.paused) {
+                        videoElement.muted = true;
+                        videoElement.play().catch(err => {
+                            console.log('Autoplay bloqueado:', err);
+                        });
+                    }
+                }, 500);
             });
         }
 
@@ -1101,6 +1140,31 @@
             const isFavorite = userFavorites.has(`${video.source}:${video.id}`);
             const count = isFavorite ? (video.view_count || 0) + 1 : (video.view_count || 0);
             document.getElementById('favorite-count').textContent = count + ' favs';
+        }
+
+        // Atualizar barra de progresso
+        function updateProgressBar(index) {
+            const videoElement = document.getElementById(`player-${index}`);
+            const progressBar = document.getElementById(`progress-${index}`);
+            
+            if (!videoElement || !progressBar) return;
+            
+            // Remover listeners antigos
+            videoElement.ontimeupdate = null;
+            videoElement.onended = null;
+            
+            // Atualizar progresso durante reprodução
+            videoElement.ontimeupdate = () => {
+                if (videoElement.duration) {
+                    const progress = (videoElement.currentTime / videoElement.duration) * 100;
+                    progressBar.style.width = progress + '%';
+                }
+            };
+            
+            // Resetar ao terminar
+            videoElement.onended = () => {
+                progressBar.style.width = '0%';
+            };
         }
 
         // Toggle follow
