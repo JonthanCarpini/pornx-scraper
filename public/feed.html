@@ -82,7 +82,7 @@
         .sidebar {
             position: fixed;
             right: 20px;
-            bottom: 100px;
+            bottom: 120px;
             z-index: 10;
             display: flex;
             flex-direction: column;
@@ -139,7 +139,7 @@
         .model-info {
             position: fixed;
             left: 20px;
-            bottom: 100px;
+            bottom: 20px;
             z-index: 10;
             max-width: 350px;
         }
@@ -244,13 +244,13 @@
         @media (max-width: 768px) {
             .sidebar {
                 right: 10px;
-                bottom: 80px;
+                bottom: 100px;
                 gap: 15px;
             }
 
             .model-info {
                 left: 10px;
-                bottom: 80px;
+                bottom: 15px;
                 max-width: 250px;
             }
 
@@ -398,24 +398,9 @@
             document.querySelectorAll('.video-wrapper').forEach(w => w.classList.remove('active'));
             wrapper.classList.add('active');
 
-            // Carregar vídeo
-            const videoUrl = video.video_source_url || video.video_url || video.sd_url;
-            
-            if (videoUrl.includes('.m3u8')) {
-                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}`;
-                
-                if (Hls.isSupported()) {
-                    if (hlsInstances[currentIndex]) {
-                        hlsInstances[currentIndex].destroy();
-                    }
-                    hlsInstances[currentIndex] = new Hls();
-                    hlsInstances[currentIndex].loadSource(proxiedUrl);
-                    hlsInstances[currentIndex].attachMedia(videoElement);
-                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                    videoElement.src = proxiedUrl;
-                }
-            } else {
-                videoElement.src = videoUrl;
+            // Carregar vídeo se ainda não foi carregado
+            if (!videoElement.src && !hlsInstances[currentIndex]) {
+                loadVideoSource(currentIndex);
             }
 
             videoElement.play();
@@ -424,6 +409,43 @@
             setTimeout(() => {
                 registerView(video.source, video.id);
             }, 3000);
+
+            // Pré-carregar próximo vídeo
+            preloadNextVideo();
+        }
+
+        // Carregar fonte do vídeo
+        function loadVideoSource(index) {
+            const video = videos[index];
+            const videoElement = document.getElementById(`player-${index}`);
+            const videoUrl = video.video_source_url || video.video_url || video.sd_url;
+            
+            if (videoUrl.includes('.m3u8')) {
+                const proxiedUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}`;
+                
+                if (Hls.isSupported()) {
+                    if (hlsInstances[index]) {
+                        hlsInstances[index].destroy();
+                    }
+                    hlsInstances[index] = new Hls();
+                    hlsInstances[index].loadSource(proxiedUrl);
+                    hlsInstances[index].attachMedia(videoElement);
+                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoElement.src = proxiedUrl;
+                }
+            } else {
+                videoElement.src = videoUrl;
+            }
+        }
+
+        // Pré-carregar próximo vídeo
+        function preloadNextVideo() {
+            const nextIndex = (currentIndex + 1) % videos.length;
+            const nextVideoElement = document.getElementById(`player-${nextIndex}`);
+            
+            if (nextVideoElement && !nextVideoElement.src && !hlsInstances[nextIndex]) {
+                loadVideoSource(nextIndex);
+            }
         }
 
         // Atualizar UI
@@ -446,6 +468,7 @@
             pauseCurrentVideo();
             currentIndex = (currentIndex + 1) % videos.length;
             loadCurrentVideo();
+            preloadNextVideo();
         }
 
         // Vídeo anterior
@@ -472,7 +495,8 @@
         // Ir para modelo
         function goToModel() {
             const video = videos[currentIndex];
-            window.location.href = `/?section=model-videos&source=${video.source}&id=${video.model_id}`;
+            const modelKey = `${video.source}:${video.model_id}`;
+            window.location.href = `/?model=${modelKey}`;
         }
 
         // Toggle like
@@ -614,6 +638,53 @@
             if (e.key === 'ArrowDown') nextVideo();
             if (e.key === 'Escape') goBack();
         });
+
+        // Navegação por scroll do mouse
+        let scrollTimeout;
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                if (e.deltaY > 0) {
+                    nextVideo();
+                } else if (e.deltaY < 0) {
+                    previousVideo();
+                }
+            }, 100);
+        }, { passive: false });
+
+        // Navegação por swipe/touch (mobile)
+        let touchStartY = 0;
+        let touchEndY = 0;
+        let isDragging = false;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            isDragging = true;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            touchEndY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            const swipeDistance = touchStartY - touchEndY;
+            const minSwipeDistance = 50;
+
+            if (Math.abs(swipeDistance) > minSwipeDistance) {
+                if (swipeDistance > 0) {
+                    // Swipe up - próximo vídeo
+                    nextVideo();
+                } else {
+                    // Swipe down - vídeo anterior
+                    previousVideo();
+                }
+            }
+        }, { passive: true });
 
         // Inicializar
         (async () => {

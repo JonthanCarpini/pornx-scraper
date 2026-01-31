@@ -2379,6 +2379,19 @@
             if (authenticated) {
                 await loadUserFavorites();
                 await loadUserFollows();
+                
+                // Verificar se há parâmetro model na URL (vindo do feed)
+                const urlParams = new URLSearchParams(window.location.search);
+                const modelParam = urlParams.get('model');
+                
+                if (modelParam) {
+                    const [source, id] = modelParam.split(':');
+                    if (source && id) {
+                        showModelVideos(source, parseInt(id));
+                        return;
+                    }
+                }
+                
                 showSection('home');
             }
         });
