@@ -677,75 +677,93 @@
         let touchEndY = 0;
         let touchStartX = 0;
         let touchEndX = 0;
-        let isDragging = false;
+        let touchStartTime = 0;
+        let hasMoved = false;
+        let lastTap = 0;
 
         document.addEventListener('touchstart', (e) => {
+            // Ignorar se tocou em botões ou links
+            if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
+                e.target.closest('.close-btn') || e.target.closest('.model-avatar') || 
+                e.target.closest('.model-name')) {
+                return;
+            }
+            
             touchStartY = e.touches[0].clientY;
             touchStartX = e.touches[0].clientX;
-            isDragging = true;
+            touchStartTime = new Date().getTime();
+            hasMoved = false;
         }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
+            if (touchStartTime === 0) return;
             touchEndY = e.touches[0].clientY;
             touchEndX = e.touches[0].clientX;
-        }, { passive: true });
-
-        document.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
             
-            const swipeDistanceY = touchStartY - touchEndY;
-            const swipeDistanceX = touchStartX - touchEndX;
-            const minSwipeDistance = 50;
-
-            // Verificar se é swipe horizontal (para perfil)
-            // swipeDistanceX > 0 significa arrastar da direita para esquerda
-            if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY) && Math.abs(swipeDistanceX) > minSwipeDistance) {
-                if (swipeDistanceX > 0) {
-                    // Swipe da direita para esquerda - ir para perfil da modelo
-                    goToModel();
-                }
-            }
-            // Swipe vertical (trocar vídeo)
-            else if (Math.abs(swipeDistanceY) > minSwipeDistance) {
-                if (swipeDistanceY > 0) {
-                    // Swipe up - próximo vídeo
-                    nextVideo();
-                } else {
-                    // Swipe down - vídeo anterior
-                    previousVideo();
-                }
+            const moveY = Math.abs(touchStartY - touchEndY);
+            const moveX = Math.abs(touchStartX - touchEndX);
+            
+            if (moveY > 10 || moveX > 10) {
+                hasMoved = true;
             }
         }, { passive: true });
 
-        // Duplo clique para favoritar
-        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            if (touchStartTime === 0) return;
+            
+            const touchEndTime = new Date().getTime();
+            const touchDuration = touchEndTime - touchStartTime;
+            
+            // Se moveu, é swipe
+            if (hasMoved) {
+                const swipeDistanceY = touchStartY - touchEndY;
+                const swipeDistanceX = touchStartX - touchEndX;
+                const minSwipeDistance = 50;
+
+                // Verificar se é swipe horizontal (para perfil)
+                if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY) && Math.abs(swipeDistanceX) > minSwipeDistance) {
+                    if (swipeDistanceX > 0) {
+                        // Swipe da direita para esquerda - ir para perfil da modelo
+                        goToModel();
+                    }
+                }
+                // Swipe vertical (trocar vídeo)
+                else if (Math.abs(swipeDistanceY) > minSwipeDistance) {
+                    if (swipeDistanceY > 0) {
+                        // Swipe up - próximo vídeo
+                        nextVideo();
+                    } else {
+                        // Swipe down - vídeo anterior
+                        previousVideo();
+                    }
+                }
+            }
+            // Se não moveu e foi rápido, pode ser duplo toque
+            else if (touchDuration < 300) {
+                const timeSinceLastTap = touchEndTime - lastTap;
+                
+                if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+                    // Duplo toque - favoritar
+                    toggleFavorite();
+                    e.preventDefault();
+                }
+                lastTap = touchEndTime;
+            }
+            
+            // Reset
+            touchStartTime = 0;
+            hasMoved = false;
+        }, { passive: false });
+
+        // Duplo clique para favoritar (desktop)
         document.addEventListener('dblclick', (e) => {
             // Ignorar se clicou em botões
             if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
-                e.target.closest('.close-btn')) {
+                e.target.closest('.close-btn') || e.target.closest('.model-avatar') || 
+                e.target.closest('.model-name')) {
                 return;
             }
             toggleFavorite();
-        });
-
-        // Duplo toque mobile para favoritar
-        document.addEventListener('touchend', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            
-            if (tapLength < 300 && tapLength > 0) {
-                // Ignorar se tocou em botões
-                if (e.target.closest('.action-btn') || e.target.closest('.follow-btn') || 
-                    e.target.closest('.close-btn') ||
-                    e.target.closest('.model-avatar') || e.target.closest('.model-name')) {
-                    return;
-                }
-                toggleFavorite();
-                e.preventDefault();
-            }
-            lastTap = currentTime;
         });
 
         // Inicializar
