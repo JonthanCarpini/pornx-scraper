@@ -820,8 +820,8 @@
                 document.getElementById('profile-avatar').src = avatarUrl;
                 document.getElementById('profile-name').textContent = '@' + (model_name || 'Desconhecido');
                 
-                // Carregar vídeos da modelo
-                const response = await fetch(`/api/unified-videos?source=${source}&modelId=${model_id}&limit=100`);
+                // Carregar vídeos da modelo (usar formato source:id igual à index.html)
+                const response = await fetch(`/api/unified-videos?source=${source}&modelId=${source}:${model_id}&limit=100`);
                 
                 if (!response.ok) {
                     throw new Error(`Erro ${response.status}: ${response.statusText}`);
