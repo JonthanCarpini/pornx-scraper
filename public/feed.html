@@ -481,44 +481,43 @@
     <div class="main-wrapper" id="main-wrapper">
         <!-- FEED PRINCIPAL -->
         <div class="feed-container" id="feed-container">
-        <!-- Botão Fechar -->
-        <button class="close-btn" onclick="goBack()">✕</button>
+            <!-- Botão Fechar -->
+            <button class="close-btn" onclick="goBack()">✕</button>
 
-        <!-- Loading -->
-        <div class="loading" id="loading">
-            <div class="loading-spinner"></div>
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+            </div>
+
+            <!-- Vídeos serão inseridos aqui -->
+
+            <!-- Sidebar Direita -->
+            <div class="sidebar" id="sidebar">
+                <img id="model-avatar" class="model-avatar" src="" alt="Modelo" onclick="goToModel()">
+                
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <button class="action-btn" id="like-btn" onclick="toggleLike()">❤️</button>
+                    <div class="action-count" id="like-count">0</div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="action-count" id="favorite-count" style="font-size: 12px; margin-bottom: 5px;">0 favs</div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <button class="action-btn" onclick="shareVideo()">📤</button>
+                    <div class="action-count">Compartilhar</div>
+                </div>
+
+                <button class="follow-btn" id="follow-btn" onclick="toggleFollow()">Seguir</button>
+            </div>
+
+            <!-- Info Modelo -->
+            <div class="model-info" id="model-info">
+                <div class="model-name" id="model-name" onclick="goToModel()">@modelo</div>
+                <div class="video-title" id="video-title">Título do vídeo</div>
+            </div>
         </div>
-
-        <!-- Vídeos serão inseridos aqui -->
-    </div>
-
-    <!-- Sidebar Direita -->
-    <div class="sidebar" id="sidebar">
-        <img id="model-avatar" class="model-avatar" src="" alt="Modelo" onclick="goToModel()">
-        
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <button class="action-btn" id="like-btn" onclick="toggleLike()">❤️</button>
-            <div class="action-count" id="like-count">0</div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <div class="action-count" id="favorite-count" style="font-size: 12px; margin-bottom: 5px;">0 favs</div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <button class="action-btn" onclick="shareVideo()">📤</button>
-            <div class="action-count">Compartilhar</div>
-        </div>
-
-        <button class="follow-btn" id="follow-btn" onclick="toggleFollow()">Seguir</button>
-    </div>
-
-        <!-- Info Modelo -->
-        <div class="model-info" id="model-info">
-            <div class="model-name" id="model-name" onclick="goToModel()">@modelo</div>
-            <div class="video-title" id="video-title">Título do vídeo</div>
-        </div>
-    </div>
 
     <!-- PERFIL DA MODELO -->
     <div class="profile-container" id="profile-container">
