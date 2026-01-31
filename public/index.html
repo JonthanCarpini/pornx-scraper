@@ -153,6 +153,37 @@
             display: block;
         }
 
+        /* FILTER BUTTONS */
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 10px 24px;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 8px;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+            color: #fff;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: #fff;
+        }
+
         /* VIDEOS GRID */
         .videos-grid {
             display: grid;
@@ -1135,6 +1166,10 @@
 
         <!-- MODELS TAB -->
         <div id="models-tab" class="tab-content">
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterModels('videos')">🎬 Mais Vídeos</button>
+                <button class="filter-btn" onclick="filterModels('recent')">🕒 Recentes</button>
+            </div>
             <div id="models-loading" class="loading">
                 <div class="loading-spinner"></div>
                 <p>Carregando modelos...</p>
@@ -1274,6 +1309,7 @@
         let currentModelId = null;
         let currentModelSource = null;
         let currentModelName = null;
+        let currentModelsSortBy = 'videos'; // 'videos' ou 'recent'
 
         // VERIFICAR AUTENTICAÇÃO
         async function checkAuth() {
@@ -1406,13 +1442,27 @@
             });
         }
 
+        // FILTRAR MODELOS
+        function filterModels(sortBy) {
+            currentModelsSortBy = sortBy;
+            currentModelsPage = 1;
+            
+            // Atualizar botões ativos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadModels(1);
+        }
+
         // CARREGAR MODELOS
         async function loadModels(page = 1) {
             try {
                 document.getElementById('models-loading').style.display = 'block';
                 document.getElementById('models-grid').style.display = 'none';
 
-                const response = await fetch(`/api/unified-models?page=${page}&limit=52`);
+                const response = await fetch(`/api/unified-models?page=${page}&limit=52&sortBy=${currentModelsSortBy}`);
                 const data = await response.json();
 
                 document.getElementById('models-loading').style.display = 'none';
