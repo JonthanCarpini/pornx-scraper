@@ -556,8 +556,8 @@
 
         async function editUser(userId) {
             try {
-                // Carregar dados do usuário
-                const response = await fetch(`/api/admin/users/${userId}`, {
+                // Carregar dados do usuário da lista atual
+                const response = await fetch(`/api/admin/users?limit=1000`, {
                     credentials: 'include'
                 });
 
@@ -566,7 +566,13 @@
                     return;
                 }
 
-                const user = await response.json();
+                const data = await response.json();
+                const user = data.users.find(u => u.id === userId);
+                
+                if (!user) {
+                    adminCore.showNotification('Usuário não encontrado', 'error');
+                    return;
+                }
 
                 // Preencher formulário
                 document.getElementById('edit-user-id').value = user.id;

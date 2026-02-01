@@ -160,18 +160,53 @@
 
             <!-- Container de Conteúdo -->
             <div class="content-container">
-                <!-- Stats Cards -->
+                <!-- Stats Cards - Usuários -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Total de Usuários</div>
+                            <div class="stat-card-icon primary">👥</div>
+                        </div>
+                        <div class="stat-card-value" id="totalUsers">-</div>
+                        <div class="stat-card-change" id="totalUsersChange"></div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Usuários Ativos</div>
+                            <div class="stat-card-icon success">✅</div>
+                        </div>
+                        <div class="stat-card-value" id="activeUsers">-</div>
+                        <div class="stat-card-change" id="activeUsersChange"></div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Assinaturas Ativas</div>
+                            <div class="stat-card-icon success">💎</div>
+                        </div>
+                        <div class="stat-card-value" id="activeSubscriptions">-</div>
+                        <div class="stat-card-change" id="activeSubscriptionsChange"></div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Assinaturas Vencidas</div>
+                            <div class="stat-card-icon warning">⏰</div>
+                        </div>
+                        <div class="stat-card-value" id="expiredSubscriptions">-</div>
+                        <div class="stat-card-change" id="expiredSubscriptionsChange"></div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards - Conteúdo -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-card-header">
                             <div class="stat-card-title">Total de Modelos</div>
-                            <div class="stat-card-icon primary">👥</div>
+                            <div class="stat-card-icon primary">👤</div>
                         </div>
                         <div class="stat-card-value" id="totalModels">-</div>
-                        <div class="stat-card-change positive">
-                            <span>↑</span>
-                            <span>12% vs mês anterior</span>
-                        </div>
                     </div>
 
                     <div class="stat-card">
@@ -180,34 +215,22 @@
                             <div class="stat-card-icon success">🎬</div>
                         </div>
                         <div class="stat-card-value" id="totalVideos">-</div>
-                        <div class="stat-card-change positive">
-                            <span>↑</span>
-                            <span>8% vs mês anterior</span>
-                        </div>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-card-header">
-                            <div class="stat-card-title">Vídeos com Source</div>
-                            <div class="stat-card-icon success">✅</div>
+                            <div class="stat-card-title">Sessões Ativas</div>
+                            <div class="stat-card-icon success">🔐</div>
                         </div>
-                        <div class="stat-card-value" id="videosWithSource">-</div>
-                        <div class="stat-card-change positive">
-                            <span>↑</span>
-                            <span>15% vs mês anterior</span>
-                        </div>
+                        <div class="stat-card-value" id="activeSessions">-</div>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-card-header">
-                            <div class="stat-card-title">Vídeos sem Source</div>
-                            <div class="stat-card-icon warning">⏳</div>
+                            <div class="stat-card-title">Usuários Online</div>
+                            <div class="stat-card-icon success">🟢</div>
                         </div>
-                        <div class="stat-card-value" id="videosWithoutSource">-</div>
-                        <div class="stat-card-change negative">
-                            <span>↓</span>
-                            <span>5% vs mês anterior</span>
-                        </div>
+                        <div class="stat-card-value" id="onlineUsers">-</div>
                     </div>
                 </div>
 
@@ -345,21 +368,54 @@
     <script>
         async function loadStats() {
             try {
-                const response = await fetch('/api/xxxfollow/stats', {
+                // Carregar estatísticas de usuários
+                const usersResponse = await fetch('/api/admin/users?limit=1000', {
                     credentials: 'include'
                 });
 
-                if (response.ok) {
-                    const stats = await response.json();
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    const users = usersData.users || [];
                     
+                    const totalUsers = users.length;
+                    const activeUsers = users.filter(u => u.is_active).length;
+                    const activeSubscriptions = users.filter(u => u.subscription_valid).length;
+                    const expiredSubscriptions = users.filter(u => !u.subscription_valid && u.end_date).length;
+                    
+                    document.getElementById('totalUsers').textContent = adminCore.formatNumber(totalUsers);
+                    document.getElementById('activeUsers').textContent = adminCore.formatNumber(activeUsers);
+                    document.getElementById('activeSubscriptions').textContent = adminCore.formatNumber(activeSubscriptions);
+                    document.getElementById('expiredSubscriptions').textContent = adminCore.formatNumber(expiredSubscriptions);
+                }
+
+                // Carregar estatísticas de conteúdo
+                const contentResponse = await fetch('/api/xxxfollow/stats', {
+                    credentials: 'include'
+                });
+
+                if (contentResponse.ok) {
+                    const stats = await contentResponse.json();
                     document.getElementById('totalModels').textContent = adminCore.formatNumber(stats.totalModels || 0);
                     document.getElementById('totalVideos').textContent = adminCore.formatNumber(stats.totalVideos || 0);
-                    document.getElementById('videosWithSource').textContent = adminCore.formatNumber(stats.videosWithSource || 0);
-                    document.getElementById('videosWithoutSource').textContent = adminCore.formatNumber(stats.videosWithoutSource || 0);
-                    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
-
-                    adminCore.showNotification('Estatísticas atualizadas com sucesso!', 'success');
                 }
+
+                // Carregar sessões ativas
+                const sessionsResponse = await fetch('/api/session/active-sessions', {
+                    credentials: 'include'
+                });
+
+                if (sessionsResponse.ok) {
+                    const sessionsData = await sessionsResponse.json();
+                    const sessions = sessionsData.sessions || [];
+                    const activeSessions = sessions.length;
+                    const onlineUsers = sessions.filter(s => s.is_online).length;
+                    
+                    document.getElementById('activeSessions').textContent = adminCore.formatNumber(activeSessions);
+                    document.getElementById('onlineUsers').textContent = adminCore.formatNumber(onlineUsers);
+                }
+
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
+                adminCore.showNotification('Estatísticas atualizadas com sucesso!', 'success');
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
                 adminCore.showNotification('Erro ao carregar estatísticas', 'error');

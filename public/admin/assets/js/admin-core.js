@@ -220,13 +220,13 @@ class AdminCore {
             }
 
             // Total de usuários
-            const usersResponse = await fetch('/api/users', {
+            const usersResponse = await fetch('/api/admin/users?limit=1000', {
                 credentials: 'include'
             });
             if (usersResponse.ok) {
                 const usersData = await usersResponse.json();
                 const totalEl = document.getElementById('totalUsers');
-                if (totalEl) totalEl.textContent = usersData.length || 0;
+                if (totalEl) totalEl.textContent = usersData.pagination?.total || usersData.users?.length || 0;
             }
 
             // Sessões ativas
