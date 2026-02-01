@@ -83,12 +83,12 @@ async function scrapeVideos() {
                 
                 for (const video of videos) {
                     try {
-                        const checkQuery = 'SELECT id FROM nsfw247_videos WHERE video_url = $1';
+                        const checkQuery = 'SELECT id FROM videos WHERE video_url = $1';
                         const checkResult = await pool.query(checkQuery, [video.videoUrl]);
                         
                         if (checkResult.rows.length === 0) {
                             const insertQuery = `
-                                INSERT INTO nsfw247_videos (model_id, title, video_url, thumbnail_url)
+                                INSERT INTO videos (model_id, title, video_url, thumbnail_url)
                                 VALUES ($1, $2, $3, $4)
                             `;
                             
@@ -107,7 +107,7 @@ async function scrapeVideos() {
                 }
                 
                 await pool.query(
-                    'UPDATE nsfw247_models SET video_count = $1 WHERE id = $2',
+                    'UPDATE models SET video_count = $1 WHERE id = $2',
                     [videos.length, model.id]
                 );
                 
