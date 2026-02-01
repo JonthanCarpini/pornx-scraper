@@ -291,17 +291,21 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    const count = data.modelsScraped || data.totalModels || 0;
-                    addLog(`✓ ${count} modelos coletados com sucesso!`, 'success');
-                    adminCore.showNotification('Modelos coletados com sucesso!', 'success');
+                    addLog(`✓ Scraping de modelos iniciado!`, 'success');
+                    adminCore.showNotification('Scraping de modelos iniciado!', 'success');
+                    
+                    // Iniciar polling de progresso
+                    startProgressPolling('models');
                 } else {
                     addLog(`✗ Erro: ${data.error || 'Erro desconhecido'}`, 'error');
                     adminCore.showNotification('Erro ao coletar modelos', 'error');
+                    isRunning = false;
+                    updateButtons(false);
+                    hideProgress();
                 }
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
                 adminCore.showNotification(error.message, 'error');
-            } finally {
                 isRunning = false;
                 updateButtons(false);
                 hideProgress();
@@ -367,17 +371,22 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    const count = data.videosScraped || data.totalVideos || 0;
-                    addLog(`✓ ${count} vídeos coletados com sucesso!`, 'success');
-                    adminCore.showNotification('Vídeos coletados com sucesso!', 'success');
+                    const modelsCount = data.modelsCount || 0;
+                    addLog(`✓ Scraping iniciado! Processando ${modelsCount} modelos...`, 'success');
+                    adminCore.showNotification('Scraping de vídeos iniciado!', 'success');
+                    
+                    // Iniciar polling de progresso
+                    startProgressPolling('videos');
                 } else {
                     addLog(`✗ Erro: ${data.error || 'Erro desconhecido'}`, 'error');
                     adminCore.showNotification('Erro ao coletar vídeos', 'error');
+                    isRunning = false;
+                    updateButtons(false);
+                    hideProgress();
                 }
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
                 adminCore.showNotification(error.message, 'error');
-            } finally {
                 isRunning = false;
                 updateButtons(false);
                 hideProgress();
@@ -443,17 +452,21 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    const count = data.videosUpdated || data.successCount || 0;
-                    addLog(`✓ ${count} vídeos atualizados com sucesso!`, 'success');
-                    adminCore.showNotification('Detalhes coletados com sucesso!', 'success');
+                    addLog(`✓ Scraping de detalhes iniciado!`, 'success');
+                    adminCore.showNotification('Scraping de detalhes iniciado!', 'success');
+                    
+                    // Iniciar polling de progresso
+                    startProgressPolling('video-details');
                 } else {
                     addLog(`✗ Erro: ${data.error || 'Erro desconhecido'}`, 'error');
                     adminCore.showNotification('Erro ao coletar detalhes', 'error');
+                    isRunning = false;
+                    updateButtons(false);
+                    hideProgress();
                 }
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
                 adminCore.showNotification(error.message, 'error');
-            } finally {
                 isRunning = false;
                 updateButtons(false);
                 hideProgress();
@@ -495,6 +508,57 @@
             entry.textContent = `[${timestamp}] ${message}`;
             logs.appendChild(entry);
             logs.scrollTop = logs.scrollHeight;
+        }
+
+        let progressInterval = null;
+
+        async function startProgressPolling(type) {
+            // Limpar polling anterior se existir
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+
+            // Polling a cada 2 segundos
+            progressInterval = setInterval(async () => {
+                try {
+                    const statusEndpoint = currentSite === 'clubeadulto' 
+                        ? `/api/clubeadulto/scraping/${type}/status`
+                        : `/api/nsfw247/scraping/${type}/status`;
+
+                    const response = await fetch(statusEndpoint, {
+                        credentials: 'include'
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const status = data.status;
+
+                        if (status.isRunning) {
+                            // Atualizar progresso
+                            const progress = Math.round((status.processed / status.total) * 100) || 0;
+                            showProgress(progress);
+                            
+                            if (status.currentModel) {
+                                addLog(`📍 Processando: ${status.currentModel} [${status.processed}/${status.total}]`, 'info');
+                            }
+                        } else {
+                            // Scraping concluído
+                            clearInterval(progressInterval);
+                            progressInterval = null;
+                            
+                            const totalVideos = status.totalVideos || 0;
+                            addLog(`✅ Scraping concluído! ${totalVideos} vídeos coletados no total.`, 'success');
+                            adminCore.showNotification(`Scraping concluído! ${totalVideos} vídeos coletados.`, 'success');
+                            
+                            isRunning = false;
+                            updateButtons(false);
+                            hideProgress();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro no polling:', error);
+                }
+            }, 2000);
         }
 
         // Adicionar log inicial
