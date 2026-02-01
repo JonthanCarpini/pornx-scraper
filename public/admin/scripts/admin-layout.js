@@ -3,7 +3,6 @@
 
 class AdminLayout {
     constructor() {
-        this.token = localStorage.getItem('adminToken');
         this.currentPage = this.getCurrentPage();
         this.init();
     }
@@ -20,16 +19,9 @@ class AdminLayout {
     }
 
     init() {
-        this.checkAuth();
         this.renderSidebar();
         this.updateSidebarStats();
         this.startStatsInterval();
-    }
-
-    checkAuth() {
-        if (!this.token && !window.location.pathname.includes('login.html')) {
-            window.location.href = '/admin/login.html';
-        }
     }
 
     renderSidebar() {
@@ -164,7 +156,7 @@ class AdminLayout {
         try {
             // Buscar usuários online
             const onlineResponse = await fetch('https://agenciavirtual.site/api/session/online-users', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
+                credentials: 'include'
             });
             if (onlineResponse.ok) {
                 const onlineData = await onlineResponse.json();
@@ -174,7 +166,7 @@ class AdminLayout {
 
             // Buscar total de usuários
             const usersResponse = await fetch('https://agenciavirtual.site/api/users', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
+                credentials: 'include'
             });
             if (usersResponse.ok) {
                 const usersData = await usersResponse.json();
@@ -184,7 +176,7 @@ class AdminLayout {
 
             // Buscar sessões ativas
             const sessionsResponse = await fetch('https://agenciavirtual.site/api/session/active-sessions', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
+                credentials: 'include'
             });
             if (sessionsResponse.ok) {
                 const sessionsData = await sessionsResponse.json();
@@ -197,15 +189,19 @@ class AdminLayout {
     }
 
     startStatsInterval() {
-        if (this.token) {
-            setInterval(() => this.updateSidebarStats(), 10000);
-        }
+        setInterval(() => this.updateSidebarStats(), 10000);
     }
 
-    logout() {
+    async logout() {
         if (confirm('Deseja realmente sair?')) {
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminUser');
+            try {
+                await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+            }
             window.location.href = '/admin/login.html';
         }
     }
