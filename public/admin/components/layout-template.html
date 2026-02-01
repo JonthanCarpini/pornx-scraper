@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{PAGE_TITLE}} - Admin Panel</title>
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <!-- Logo -->
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">🔥</div>
+                <h1>OnlySuper</h1>
+            </div>
+            <p class="sidebar-subtitle">Painel Administrativo</p>
+        </div>
+
+        <!-- User Info Card -->
+        <div class="user-info-card">
+            <div class="user-info-header">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div class="user-details">
+                    <h3 id="userName">Admin</h3>
+                    <p id="userRole">Administrador</p>
+                </div>
+            </div>
+            <div class="user-stats">
+                <div class="user-stat">
+                    <div class="user-stat-value" id="onlineUsers">0</div>
+                    <div class="user-stat-label">Online</div>
+                </div>
+                <div class="user-stat">
+                    <div class="user-stat-value" id="totalUsers">0</div>
+                    <div class="user-stat-label">Usuários</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            <!-- Dashboard -->
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="dashboard.html" class="nav-link" data-page="dashboard">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Gestão de Usuários -->
+            <div class="nav-section">
+                <div class="nav-section-title">Gestão de Usuários</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="users.html" class="nav-link" data-page="users">
+                            <span class="nav-icon">👥</span>
+                            <span class="nav-text">Usuários</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="sessions.html" class="nav-link" data-page="sessions">
+                            <span class="nav-icon">🔐</span>
+                            <span class="nav-text">Sessões Ativas</span>
+                            <span class="nav-badge" id="sessionsCount">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Conteúdo -->
+            <div class="nav-section">
+                <div class="nav-section-title">Conteúdo</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="content.html" class="nav-link" data-page="content">
+                            <span class="nav-icon">🎬</span>
+                            <span class="nav-text">Vídeos</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="clubeadulto.html" class="nav-link" data-page="clubeadulto">
+                            <span class="nav-icon">🌟</span>
+                            <span class="nav-text">Clube Adulto</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Ferramentas -->
+            <div class="nav-section">
+                <div class="nav-section-title">Ferramentas</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="scraper.html" class="nav-link" data-page="scraper">
+                            <span class="nav-icon">🤖</span>
+                            <span class="nav-text">Scraper</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Logout -->
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="logout()">
+                <span>🚪</span>
+                <span>Sair</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">{{PAGE_TITLE}}</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-search">
+                    <span class="header-search-icon">🔍</span>
+                    <input type="text" placeholder="Buscar...">
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" title="Notificações">
+                        <span>🔔</span>
+                        <span class="header-btn-badge"></span>
+                    </button>
+                    <button class="header-btn" title="Configurações">
+                        <span>⚙️</span>
+                    </button>
+                    <button class="header-btn" onclick="location.reload()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Container -->
+        <div class="content-container">
+            {{PAGE_CONTENT}}
+        </div>
+    </main>
+
+    <script>
+        // Marcar página ativa na sidebar
+        const currentPage = '{{CURRENT_PAGE}}';
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.dataset.page === currentPage) {
+                link.classList.add('active');
+            }
+        });
+
+        // Função de logout
+        function logout() {
+            if (confirm('Deseja realmente sair?')) {
+                localStorage.removeItem('adminToken');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Verificar autenticação
+        const token = localStorage.getItem('adminToken');
+        if (!token && !window.location.pathname.includes('login.html')) {
+            window.location.href = 'login.html';
+        }
+
+        // Atualizar stats da sidebar
+        async function updateSidebarStats() {
+            try {
+                // Buscar usuários online
+                const onlineResponse = await fetch('https://agenciavirtual.site/api/session/online-users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (onlineResponse.ok) {
+                    const onlineData = await onlineResponse.json();
+                    document.getElementById('onlineUsers').textContent = onlineData.count || 0;
+                }
+
+                // Buscar total de usuários
+                const usersResponse = await fetch('https://agenciavirtual.site/api/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    document.getElementById('totalUsers').textContent = usersData.length || 0;
+                }
+
+                // Buscar sessões ativas
+                const sessionsResponse = await fetch('https://agenciavirtual.site/api/session/active-sessions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (sessionsResponse.ok) {
+                    const sessionsData = await sessionsResponse.json();
+                    document.getElementById('sessionsCount').textContent = sessionsData.count || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar stats:', error);
+            }
+        }
+
+        // Atualizar stats a cada 10 segundos
+        if (token) {
+            updateSidebarStats();
+            setInterval(updateSidebarStats, 10000);
+        }
+
+        // Atualizar info do usuário
+        const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+        if (adminUser.username) {
+            document.getElementById('userName').textContent = adminUser.username;
+            document.getElementById('userAvatar').textContent = adminUser.username.charAt(0).toUpperCase();
+        }
+    </script>
+</body>
+</html>
