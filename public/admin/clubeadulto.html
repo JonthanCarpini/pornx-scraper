@@ -239,11 +239,30 @@
             }
 
             if (isRunning) {
-                adminCore.showNotification('Já existe um scraping em andamento', 'warning');
+                adminCore.showNotification('Já existe um scraping em andamento nesta página', 'warning');
                 return;
             }
 
             try {
+                // Verificar status antes de iniciar
+                const statusEndpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scraping/models/status'
+                    : '/api/nsfw247/scraping/models/status';
+
+                const statusResponse = await fetch(statusEndpoint, {
+                    credentials: 'include'
+                });
+
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData.status?.isRunning) {
+                        addLog('⚠️ Scraping de modelos já está em execução no servidor', 'info');
+                        addLog(`Progresso: ${statusData.status.progress || 0}%`, 'info');
+                        adminCore.showNotification('Scraping já está em execução. Aguarde a conclusão.', 'warning');
+                        return;
+                    }
+                }
+
                 isRunning = true;
                 updateButtons(true);
                 showProgress(0);
@@ -258,6 +277,17 @@
                     credentials: 'include'
                 });
 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch {
+                        throw new Error(`Erro ${response.status}: ${errorText}`);
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Erro desconhecido');
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
@@ -270,7 +300,7 @@
                 }
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
-                adminCore.showNotification('Erro ao conectar com o servidor', 'error');
+                adminCore.showNotification(error.message, 'error');
             } finally {
                 isRunning = false;
                 updateButtons(false);
@@ -285,11 +315,30 @@
             }
 
             if (isRunning) {
-                adminCore.showNotification('Já existe um scraping em andamento', 'warning');
+                adminCore.showNotification('Já existe um scraping em andamento nesta página', 'warning');
                 return;
             }
 
             try {
+                // Verificar status antes de iniciar
+                const statusEndpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scraping/videos/status'
+                    : '/api/nsfw247/scraping/videos/status';
+
+                const statusResponse = await fetch(statusEndpoint, {
+                    credentials: 'include'
+                });
+
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData.status?.isRunning) {
+                        addLog('⚠️ Scraping de vídeos já está em execução no servidor', 'info');
+                        addLog(`Progresso: ${statusData.status.progress || 0}%`, 'info');
+                        adminCore.showNotification('Scraping já está em execução. Aguarde a conclusão.', 'warning');
+                        return;
+                    }
+                }
+
                 isRunning = true;
                 updateButtons(true);
                 showProgress(0);
@@ -304,6 +353,17 @@
                     credentials: 'include'
                 });
 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch {
+                        throw new Error(`Erro ${response.status}: ${errorText}`);
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Erro desconhecido');
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
@@ -316,7 +376,7 @@
                 }
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
-                adminCore.showNotification('Erro ao conectar com o servidor', 'error');
+                adminCore.showNotification(error.message, 'error');
             } finally {
                 isRunning = false;
                 updateButtons(false);
@@ -331,11 +391,30 @@
             }
 
             if (isRunning) {
-                adminCore.showNotification('Já existe um scraping em andamento', 'warning');
+                adminCore.showNotification('Já existe um scraping em andamento nesta página', 'warning');
                 return;
             }
 
             try {
+                // Verificar status antes de iniciar
+                const statusEndpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scraping/video-details/status'
+                    : '/api/nsfw247/scraping/video-details/status';
+
+                const statusResponse = await fetch(statusEndpoint, {
+                    credentials: 'include'
+                });
+
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData.status?.isRunning) {
+                        addLog('⚠️ Scraping de detalhes já está em execução no servidor', 'info');
+                        addLog(`Progresso: ${statusData.status.progress || 0}%`, 'info');
+                        adminCore.showNotification('Scraping já está em execução. Aguarde a conclusão.', 'warning');
+                        return;
+                    }
+                }
+
                 isRunning = true;
                 updateButtons(true);
                 showProgress(0);
@@ -350,6 +429,17 @@
                     credentials: 'include'
                 });
 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch {
+                        throw new Error(`Erro ${response.status}: ${errorText}`);
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Erro desconhecido');
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
@@ -362,7 +452,7 @@
                 }
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
-                adminCore.showNotification('Erro ao conectar com o servidor', 'error');
+                adminCore.showNotification(error.message, 'error');
             } finally {
                 isRunning = false;
                 updateButtons(false);
