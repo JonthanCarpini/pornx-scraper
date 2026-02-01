@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Painel Administrativo OnlySuper">
+    <title>{{PAGE_TITLE}} - OnlySuper Admin</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="/admin/assets/css/main.css">
+    
+    <!-- CSS Específico da Página -->
+    {{PAGE_CSS}}
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar será injetada via JavaScript -->
+        
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <span>☰</span>
+                    </button>
+                    <div>
+                        <h1 class="page-title">{{PAGE_TITLE}}</h1>
+                        <p class="page-subtitle">{{PAGE_SUBTITLE}}</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-search">
+                        <span class="header-search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            class="header-search-input" 
+                            placeholder="Buscar..."
+                            id="globalSearch"
+                        >
+                    </div>
+                    <div class="header-actions">
+                        <button class="header-btn" title="Notificações">
+                            <span>🔔</span>
+                            <span class="header-btn-badge">3</span>
+                        </button>
+                        <button class="header-btn" title="Configurações">
+                            <span>⚙️</span>
+                        </button>
+                        <button class="header-btn" onclick="location.reload()" title="Atualizar">
+                            <span>🔄</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Container de Conteúdo -->
+            <div class="content-container">
+                {{PAGE_CONTENT}}
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript Core -->
+    <script src="/admin/assets/js/admin-core.js"></script>
+    
+    <!-- JavaScript Específico da Página -->
+    {{PAGE_JS}}
+</body>
+</html>
