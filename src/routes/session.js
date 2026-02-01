@@ -42,13 +42,18 @@ router.post('/create', async (req, res) => {
     // Expiração: 30 dias
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    // Invalidar todas as sessões ativas anteriores deste usuário
-    await pool.query(
-      `UPDATE user_sessions 
-       SET is_active = FALSE 
-       WHERE user_id = $1 AND is_active = TRUE`,
+    // DELETAR todas as sessões ativas anteriores deste usuário
+    // Isso força logout imediato no dispositivo anterior
+    const deletedSessions = await pool.query(
+      `DELETE FROM user_sessions 
+       WHERE user_id = $1 AND is_active = TRUE
+       RETURNING id, device_info`,
       [userId]
     );
+    
+    if (deletedSessions.rows.length > 0) {
+      console.log(`${deletedSessions.rows.length} sessão(ões) anterior(es) deletada(s) para usuário ${userId}`);
+    }
 
     // Criar nova sessão
     const result = await pool.query(
