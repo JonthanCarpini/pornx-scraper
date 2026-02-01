@@ -3,51 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sessões Ativas - Admin</title>
-    <link rel="stylesheet" href="../styles.css">
+    <title>Sessões Ativas - Admin Panel</title>
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .sessions-container {
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .sessions-table {
-            width: 100%;
-            background: #1a1a1a;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .sessions-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .sessions-table th {
-            background: #2a2a2a;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .sessions-table td {
-            padding: 15px;
-            border-bottom: 1px solid #2a2a2a;
-            color: #ccc;
-        }
-
-        .sessions-table tr:hover {
-            background: #222;
-        }
+        /* Estilos específicos da página de sessões */
 
         .badge {
             padding: 5px 10px;
@@ -138,32 +100,50 @@
     </style>
 </head>
 <body>
-    <div class="sessions-container">
-        <div class="header">
-            <div>
-                <h1>Sessões Ativas</h1>
-                <p style="color: #999;">Gerencie as sessões ativas dos usuários</p>
+    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">🔐 Sessões Ativas</h1>
             </div>
-            <button class="refresh-btn" onclick="loadSessions()">🔄 Atualizar</button>
-        </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="loadSessions()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
+            </div>
+        </header>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-value" id="total-sessions">0</div>
-                <div class="stat-label">Total de Sessões</div>
+        <div class="content-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Total de Sessões</div>
+                        <div class="stat-card-icon primary">📊</div>
+                    </div>
+                    <div class="stat-card-value" id="total-sessions">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Usuários Online</div>
+                        <div class="stat-card-icon success">🟢</div>
+                    </div>
+                    <div class="stat-card-value" id="online-sessions">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Sessões Inativas</div>
+                        <div class="stat-card-icon warning">⚫</div>
+                    </div>
+                    <div class="stat-card-value" id="offline-sessions">0</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="online-sessions">0</div>
-                <div class="stat-label">Usuários Online</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="offline-sessions">0</div>
-                <div class="stat-label">Sessões Inativas</div>
-            </div>
-        </div>
 
-        <div class="sessions-table">
-            <table>
+            <div class="content-card">
+                <div class="table-container">
+                    <table>
                 <thead>
                     <tr>
                         <th>Usuário</th>
@@ -182,9 +162,11 @@
                         </td>
                     </tr>
                 </tbody>
-            </table>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 
     <script>
         let autoRefreshInterval;
@@ -329,5 +311,8 @@
             }
         });
     </script>
+    
+    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
+    <script src="scripts/admin-layout.js"></script>
 </body>
 </html>
