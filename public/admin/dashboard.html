@@ -3,282 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - XXXFollow Scraper</title>
+    <title>Dashboard - Admin Panel</title>
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-            color: #333;
-        }
-
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 260px;
-            height: 100vh;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
-
-        .sidebar-header {
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-            margin-bottom: 30px;
-        }
-
-        .sidebar-header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .sidebar-header p {
-            font-size: 13px;
-            opacity: 0.8;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-
-        .user-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-right: 12px;
-        }
-
-        .user-details h3 {
-            font-size: 15px;
-            margin-bottom: 3px;
-        }
-
-        .user-details p {
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        .nav-menu {
-            list-style: none;
-        }
-
-        .nav-item {
-            margin-bottom: 5px;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .nav-link:hover {
-            background: rgba(255,255,255,0.15);
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background: rgba(255,255,255,0.2);
-        }
-
-        .nav-link span:first-child {
-            font-size: 20px;
-            margin-right: 12px;
-            width: 25px;
-        }
-
-        .logout-btn {
-            margin-top: 30px;
-            width: 100%;
-            padding: 12px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        .main-content {
-            margin-left: 260px;
-            padding: 30px;
-            min-height: 100vh;
-        }
-
-        .top-bar {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .page-title h2 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .page-title p {
-            color: #888;
-            font-size: 14px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-
-        .stat-icon.purple {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .stat-icon.green {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-
-        .stat-icon.orange {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .stat-icon.blue {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #888;
-            font-size: 14px;
-        }
-
-        .content-card {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .card-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
-        }
-
         .loading-spinner {
             display: inline-block;
             width: 16px;
@@ -288,193 +18,102 @@
             border-top-color: white;
             animation: spin 0.8s linear infinite;
         }
-
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
-    <link rel="stylesheet" href="/admin/styles/admin.css">
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h1>🎯 Admin Panel</h1>
-            <p>XXXFollow Scraper</p>
-        </div>
-
-        <div class="user-info">
-            <div class="user-avatar">👤</div>
-            <div class="user-details">
-                <h3 id="username">Admin</h3>
-                <p>Administrador</p>
+    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">Dashboard</h1>
             </div>
-        </div>
-
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a href="/admin/dashboard.html" class="nav-link active">
-                    <span>📊</span>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/users.html" class="nav-link">
-                    <span>👥</span>
-                    <span>Gerenciar Usuários</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/scraper.html" class="nav-link">
-                    <span>🎬</span>
-                    <span>XXXFollow Scraper</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/clubeadulto.html" class="nav-link">
-                    <span>🔞</span>
-                    <span>Clube Adulto & NSFW247</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/todos-videos.html" class="nav-link">
-                    <span>🎬</span>
-                    <span>Todos os Vídeos</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/all-models.html" class="nav-link">
-                    <span>🌟</span>
-                    <span>Todas as Modelos</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/xxxfollow-models.html" class="nav-link">
-                    <span>�</span>
-                    <span>Modelos XXXFollow</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/content.html" class="nav-link">
-                    <span>🗂️</span>
-                    <span>Modelos & Vídeos (CRUD)</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <span>⚙️</span>
-                    <span>Configurações</span>
-                </a>
-            </li>
-        </ul>
-
-        <button class="logout-btn" onclick="logout()">
-            🚪 Sair
-        </button>
-    </div>
-
-    <div class="main-content">
-        <div class="top-bar">
-            <div class="page-title">
-                <h2>Dashboard</h2>
-                <p>Visão geral do sistema de scraping</p>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="loadStats()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
             </div>
-            <button class="btn btn-primary" onclick="loadStats()">
-                <span>🔄</span>
-                <span>Atualizar</span>
-            </button>
-        </div>
+        </header>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="totalModels">-</div>
-                        <div class="stat-label">Total de Modelos</div>
+        <div class="content-container">
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Total de Modelos</div>
+                        <div class="stat-card-icon primary">👥</div>
                     </div>
-                    <div class="stat-icon purple">👥</div>
+                    <div class="stat-card-value" id="totalModels">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Total de Vídeos</div>
+                        <div class="stat-card-icon success">🎬</div>
+                    </div>
+                    <div class="stat-card-value" id="totalVideos">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Vídeos com Source</div>
+                        <div class="stat-card-icon success">✅</div>
+                    </div>
+                    <div class="stat-card-value" id="videosWithSource">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Vídeos sem Source</div>
+                        <div class="stat-card-icon warning">⏳</div>
+                    </div>
+                    <div class="stat-card-value" id="videosWithoutSource">-</div>
                 </div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="totalVideos">-</div>
-                        <div class="stat-label">Total de Vídeos</div>
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h3 class="content-card-title">🚀 Ações Rápidas</h3>
+                </div>
+                <div class="content-card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <button class="btn btn-primary" onclick="window.location.href='/admin/scraper.html'">
+                            <span>🎬</span>
+                            <span>Scraper XXXFollow</span>
+                        </button>
+                        <button class="btn btn-success" onclick="window.location.href='/xxxfollow-models.html'">
+                            <span>👥</span>
+                            <span>Ver Modelos</span>
+                        </button>
+                        <button class="btn btn-primary" onclick="loadStats()">
+                            <span>📊</span>
+                            <span>Atualizar Stats</span>
+                        </button>
+                        <button class="btn btn-success" onclick="syncVideoCounts()" id="syncBtn">
+                            <span>🔄</span>
+                            <span>Sincronizar Video Counts</span>
+                        </button>
                     </div>
-                    <div class="stat-icon green">🎬</div>
                 </div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="videosWithSource">-</div>
-                        <div class="stat-label">Vídeos com Source</div>
-                    </div>
-                    <div class="stat-icon orange">✅</div>
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h3 class="content-card-title">📋 Informações do Sistema</h3>
                 </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="videosWithoutSource">-</div>
-                        <div class="stat-label">Vídeos sem Source</div>
-                    </div>
-                    <div class="stat-icon blue">⏳</div>
+                <div class="content-card-body">
+                    <p><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
+                    <p><strong>Última atualização:</strong> <span id="lastUpdate">-</span></p>
+                    <p><strong>Versão:</strong> 1.0.0</p>
                 </div>
             </div>
         </div>
-
-        <div class="content-card">
-            <div class="card-header">
-                <h3 class="card-title">🚀 Ações Rápidas</h3>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <button class="btn btn-primary" onclick="window.location.href='/admin/scraper.html'">
-                    <span>🎬</span>
-                    <span>Scraper XXXFollow</span>
-                </button>
-                <button class="btn btn-success" onclick="window.location.href='/xxxfollow-models.html'">
-                    <span>👥</span>
-                    <span>Ver Modelos</span>
-                </button>
-                <button class="btn btn-primary" onclick="loadStats()">
-                    <span>📊</span>
-                    <span>Atualizar Stats</span>
-                </button>
-                <button class="btn btn-success" onclick="syncVideoCounts()" id="syncBtn">
-                    <span>🔄</span>
-                    <span>Sincronizar Video Counts</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="content-card">
-            <div class="card-header">
-                <h3 class="card-title">📋 Informações do Sistema</h3>
-            </div>
-            <div style="color: #666; line-height: 1.8;">
-                <p><strong>Status:</strong> <span style="color: #38ef7d;">● Online</span></p>
-                <p><strong>Última atualização:</strong> <span id="lastUpdate">-</span></p>
-                <p><strong>Versão:</strong> 1.0.0</p>
-            </div>
-        </div>
-    </div>
+    </main>
 
     <script>
         // Verificar autenticação
@@ -551,23 +190,12 @@
             }
         }
 
-        // Logout
-        async function logout() {
-            try {
-                await fetch('/api/admin/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                window.location.href = '/admin/login.html';
-            } catch (error) {
-                console.error('Erro ao fazer logout:', error);
-                window.location.href = '/admin/login.html';
-            }
-        }
-
         // Inicializar
         checkAuth();
         loadStats();
     </script>
+    
+    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
+    <script src="scripts/admin-layout.js"></script>
 </body>
 </html>
