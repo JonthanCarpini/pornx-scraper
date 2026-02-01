@@ -216,16 +216,17 @@ router.get('/active-sessions', async (req, res) => {
   }
 });
 
-// Encerrar sessão de um usuário específico (admin)
+// Encerrar sessão de um usuário específico (admin) - FORÇA LOGOUT NO DISPOSITIVO
 router.post('/terminate/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
 
+    // Deletar a sessão completamente (não apenas marcar como inativa)
+    // Isso força o usuário a fazer login novamente no dispositivo
     const result = await pool.query(
-      `UPDATE user_sessions 
-       SET is_active = FALSE 
+      `DELETE FROM user_sessions 
        WHERE id = $1
-       RETURNING user_id, device_info`,
+       RETURNING user_id, device_info, device_name`,
       [sessionId]
     );
 
@@ -235,7 +236,7 @@ router.post('/terminate/:sessionId', async (req, res) => {
 
     res.json({ 
       success: true,
-      message: 'Sessão encerrada com sucesso',
+      message: 'Sessão encerrada e usuário deslogado do dispositivo',
       session: result.rows[0]
     });
   } catch (error) {
