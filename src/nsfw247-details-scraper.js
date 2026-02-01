@@ -91,7 +91,7 @@ async function scrapeDetails() {
                 
                 if (details.posterUrl || details.m3u8Url) {
                     await pool.query(
-                        'UPDATE nsfw247_videos SET poster_url = $1, m3u8_url = $2 WHERE id = $3',
+                        'UPDATE videos SET poster_url = $1, video_source_url = $2 WHERE id = $3',
                         [details.posterUrl, details.m3u8Url, video.id]
                     );
                     
