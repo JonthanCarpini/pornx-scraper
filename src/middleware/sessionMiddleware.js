@@ -3,10 +3,14 @@ import pool from '../database/db.js';
 // Middleware para verificar se a sessão do usuário é válida
 export const validateSession = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    // Aceitar session_token do body ou do header Authorization
+    const token = req.body?.session_token || req.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
-      return res.status(401).json({ error: 'Token não fornecido' });
+      return res.status(401).json({ 
+        error: 'Token não fornecido',
+        code: 'TOKEN_MISSING'
+      });
     }
 
     // Verificar se a sessão existe e está ativa
