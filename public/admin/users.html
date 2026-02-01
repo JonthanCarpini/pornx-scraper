@@ -420,8 +420,9 @@
                     <small>3-50 caracteres, apenas letras, números e underscore</small>
                 </div>
                 <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" required>
+                    <label>Telefone *</label>
+                    <input type="tel" name="phone" id="phone-input" required placeholder="(00) 00000-0000">
+                    <small>Formato: (00) 00000-0000</small>
                 </div>
                 <div class="form-group">
                     <label>Nome Completo</label>
@@ -437,6 +438,17 @@
                     <select name="role">
                         <option value="user">Usuário</option>
                         <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Plano de Assinatura</label>
+                    <select name="subscription_plan" id="subscription-plan">
+                        <option value="">Sem assinatura</option>
+                        <option value="trial">Teste Grátis (1 dia)</option>
+                        <option value="1">Premium - 1 Mês</option>
+                        <option value="3">Premium - 3 Meses</option>
+                        <option value="6">Premium - 6 Meses</option>
+                        <option value="12">Premium - 12 Meses</option>
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Criar Usuário</button>
@@ -499,6 +511,54 @@
                 </div>
                 <button type="submit" class="btn btn-success" style="width: 100%;">Ativar Assinatura</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Dados de Acesso -->
+    <div id="access-data-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✅ Usuário Criado com Sucesso!</h2>
+                <button class="close-modal" onclick="closeModal('access-data-modal')">×</button>
+            </div>
+            <div style="padding: 20px;">
+                <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; color: #667eea;">📋 Dados de Acesso</h3>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Username:</strong>
+                        <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 5px; font-family: monospace; font-size: 16px;">
+                            <span id="access-username"></span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Senha:</strong>
+                        <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 5px; font-family: monospace; font-size: 16px;">
+                            <span id="access-password"></span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Telefone:</strong>
+                        <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 5px; font-family: monospace; font-size: 16px;">
+                            <span id="access-phone"></span>
+                        </div>
+                    </div>
+                </div>
+                <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; color: #10b981;">📅 Assinatura</h3>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Plano:</strong>
+                        <span id="access-plan" style="margin-left: 10px; padding: 5px 10px; background: white; border-radius: 4px; font-weight: 600;"></span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Data de Vencimento:</strong>
+                        <span id="access-expiry" style="margin-left: 10px; padding: 5px 10px; background: white; border-radius: 4px; font-weight: 600;"></span>
+                    </div>
+                </div>
+                <div style="background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+                    <strong>⚠️ Importante:</strong> Copie estes dados antes de fechar esta janela!
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="copyAccessData()">📋 Copiar Dados</button>
+            </div>
         </div>
     </div>
 
@@ -703,11 +763,35 @@
             }
         }
 
+        // Máscara de telefone
+        function phoneMask(value) {
+            return value
+                .replace(/\D/g, '')
+                .replace(/(\d{2})(\d)/, '($1) $2')
+                .replace(/(\d{5})(\d)/, '$1-$2')
+                .replace(/(-\d{4})\d+?$/, '$1');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const phoneInput = document.getElementById('phone-input');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', (e) => {
+                    e.target.value = phoneMask(e.target.value);
+                });
+            }
+        });
+
         async function createUser(event) {
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
+
+            // Guardar senha antes de enviar
+            const plainPassword = data.password;
+            const username = data.username;
+            const phone = data.phone;
+            const subscriptionPlan = data.subscription_plan;
 
             try {
                 const response = await fetch('/api/admin/users', {
@@ -720,8 +804,36 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    showAlert('Usuário criado com sucesso!', 'success');
                     closeModal('create-modal');
+                    
+                    // Calcular data de vencimento
+                    let planText = 'Sem assinatura';
+                    let expiryDate = '-';
+                    
+                    if (subscriptionPlan) {
+                        const now = new Date();
+                        if (subscriptionPlan === 'trial') {
+                            planText = '🎁 Teste Grátis';
+                            const expiry = new Date(now);
+                            expiry.setDate(expiry.getDate() + 1);
+                            expiryDate = expiry.toLocaleDateString('pt-BR');
+                        } else {
+                            const months = parseInt(subscriptionPlan);
+                            planText = `⭐ Premium - ${months} ${months === 1 ? 'Mês' : 'Meses'}`;
+                            const expiry = new Date(now);
+                            expiry.setMonth(expiry.getMonth() + months);
+                            expiryDate = expiry.toLocaleDateString('pt-BR');
+                        }
+                    }
+                    
+                    // Mostrar modal com dados de acesso
+                    document.getElementById('access-username').textContent = username;
+                    document.getElementById('access-password').textContent = plainPassword;
+                    document.getElementById('access-phone').textContent = phone;
+                    document.getElementById('access-plan').textContent = planText;
+                    document.getElementById('access-expiry').textContent = expiryDate;
+                    document.getElementById('access-data-modal').classList.add('active');
+                    
                     loadUsers(currentPage);
                 } else {
                     showAlert(result.error || 'Erro ao criar usuário', 'error');
@@ -729,6 +841,28 @@
             } catch (error) {
                 showAlert('Erro ao conectar com o servidor', 'error');
             }
+        }
+
+        function copyAccessData() {
+            const username = document.getElementById('access-username').textContent;
+            const password = document.getElementById('access-password').textContent;
+            const phone = document.getElementById('access-phone').textContent;
+            const plan = document.getElementById('access-plan').textContent;
+            const expiry = document.getElementById('access-expiry').textContent;
+            
+            const text = `📱 DADOS DE ACESSO\n\n` +
+                        `Username: ${username}\n` +
+                        `Senha: ${password}\n` +
+                        `Telefone: ${phone}\n\n` +
+                        `📅 ASSINATURA\n` +
+                        `Plano: ${plan}\n` +
+                        `Vencimento: ${expiry}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Dados copiados para a área de transferência!', 'success');
+            }).catch(() => {
+                showAlert('Erro ao copiar dados', 'error');
+            });
         }
 
         async function updateUser(event) {

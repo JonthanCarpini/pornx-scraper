@@ -177,4 +177,71 @@ router.get('/online-users', async (req, res) => {
   }
 });
 
+// Listar todas as sessões ativas com detalhes completos
+router.get('/active-sessions', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        us.id as session_id,
+        us.user_id,
+        u.username,
+        u.full_name,
+        us.device_info,
+        us.device_name,
+        us.device_model,
+        us.os_version,
+        us.device_token,
+        us.ip_address,
+        us.last_heartbeat,
+        us.created_at as session_started,
+        us.expires_at,
+        CASE 
+          WHEN us.last_heartbeat > NOW() - INTERVAL '5 minutes' THEN true
+          ELSE false
+        END as is_online
+       FROM user_sessions us
+       JOIN users u ON us.user_id = u.id
+       WHERE us.is_active = TRUE
+       ORDER BY us.last_heartbeat DESC`
+    );
+
+    res.json({
+      success: true,
+      sessions: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('Erro ao listar sessões ativas:', error);
+    res.status(500).json({ error: 'Erro ao listar sessões ativas' });
+  }
+});
+
+// Encerrar sessão de um usuário específico (admin)
+router.post('/terminate/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const result = await pool.query(
+      `UPDATE user_sessions 
+       SET is_active = FALSE 
+       WHERE id = $1
+       RETURNING user_id, device_info`,
+      [sessionId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Sessão não encontrada' });
+    }
+
+    res.json({ 
+      success: true,
+      message: 'Sessão encerrada com sucesso',
+      session: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Erro ao encerrar sessão:', error);
+    res.status(500).json({ error: 'Erro ao encerrar sessão' });
+  }
+});
+
 export default router;
