@@ -81,6 +81,7 @@ async function scrapeVideos() {
                 console.log(`📹 Vídeos encontrados: ${videos.length}`);
                 
                 let savedCount = 0;
+                let skippedCount = 0;
                 
                 for (const video of videos) {
                     try {
@@ -101,6 +102,9 @@ async function scrapeVideos() {
                             ]);
                             
                             savedCount++;
+                        } else {
+                            skippedCount++;
+                            console.log(`   ⏭️  Vídeo já existe: ${video.title.substring(0, 50)}...`);
                         }
                     } catch (error) {
                         console.error(`   ✗ Erro ao salvar vídeo: ${error.message}`);
@@ -112,7 +116,12 @@ async function scrapeVideos() {
                     [videos.length, model.id]
                 );
                 
-                console.log(`✅ ${savedCount} novos vídeos salvos`);
+                if (savedCount > 0) {
+                    console.log(`✅ ${savedCount} novos vídeos salvos`);
+                }
+                if (skippedCount > 0) {
+                    console.log(`⏭️  ${skippedCount} vídeos já existiam no banco`);
+                }
                 totalVideos += savedCount;
                 
                 await page.close();
