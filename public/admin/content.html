@@ -4,81 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conteúdo - Admin Panel</title>
-    <link rel="stylesheet" href="/admin/styles/admin.css">
-    <!-- 
-        NOTA: Esta página usa as tabelas individuais (xxxfollow_models, clubeadulto_videos, etc)
-        para permitir edição direta dos dados. As páginas públicas (all-models.html, model-videos.html)
-        usam as VIEWs unificadas (unified_models, unified_videos) para consumo padronizado.
-    -->
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h1>🎯 Admin Panel</h1>
-            <p>XXXFollow Scraper</p>
-        </div>
-
-        <div class="user-info">
-            <div class="user-avatar">👤</div>
-            <div class="user-details">
-                <h3 id="username">Admin</h3>
-                <p>Administrador</p>
+    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">🎬 Gerenciar Conteúdo</h1>
             </div>
-        </div>
-
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a href="/admin/dashboard.html" class="nav-link">
-                    <span>📊</span>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/scraper.html" class="nav-link">
-                    <span>🎬</span>
-                    <span>XXXFollow Scraper</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/clubeadulto.html" class="nav-link">
-                    <span>🔞</span>
-                    <span>Clube Adulto & NSFW247</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin/content.html" class="nav-link active">
-                    <span>🗂️</span>
-                    <span>Modelos & Vídeos (CRUD)</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/todos-videos.html" class="nav-link">
-                    <span>🎬</span>
-                    <span>Todos os Vídeos</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/all-models.html" class="nav-link">
-                    <span>🌟</span>
-                    <span>Todas as Modelos</span>
-                </a>
-            </li>
-        </ul>
-
-        <button class="logout-btn" onclick="logout()">
-            🚪 Sair
-        </button>
-    </div>
-
-    <div class="main-content">
-        <div class="top-bar">
-            <div class="page-title">
-                <h2>Modelos & Vídeos (CRUD)</h2>
-                <p>Edite e mantenha seus dados com segurança</p>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="location.reload()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
             </div>
-        </div>
+        </header>
 
-        <div class="content-card">
+        <div class="content-container">
+            <div class="content-card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
                 <h3 class="card-title">📁 Fonte de dados</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
@@ -816,5 +765,8 @@
         updateTableSelect();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
+    <script src="scripts/admin-layout.js"></script>
 </body>
 </html>
