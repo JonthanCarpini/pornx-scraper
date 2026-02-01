@@ -14,6 +14,28 @@ router.post('/create', async (req, res) => {
       return res.status(400).json({ error: 'userId é obrigatório' });
     }
 
+    // Verificar se já existe sessão ativa recente (últimos 10 segundos)
+    const recentSession = await pool.query(
+      `SELECT id, session_token, expires_at 
+       FROM user_sessions 
+       WHERE user_id = $1 
+       AND is_active = TRUE 
+       AND created_at > NOW() - INTERVAL '10 seconds'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+
+    // Se já existe sessão recente, retornar ela ao invés de criar nova
+    if (recentSession.rows.length > 0) {
+      console.log(`Sessão recente encontrada para usuário ${userId}, reutilizando`);
+      return res.json({
+        success: true,
+        session: recentSession.rows[0],
+        message: 'Sessão ativa reutilizada.'
+      });
+    }
+
     // Gerar token único para a sessão
     const sessionToken = crypto.randomBytes(32).toString('hex');
     
