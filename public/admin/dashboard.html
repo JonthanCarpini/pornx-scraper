@@ -3,136 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Admin Panel</title>
-    <link rel="stylesheet" href="styles/modern-admin.css">
+    <meta name="description" content="Dashboard - Painel Administrativo OnlySuper">
+    <title>Dashboard - OnlySuper Admin</title>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="/admin/assets/css/main.css">
+    
     <style>
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 0.8s linear infinite;
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+            margin-top: var(--space-6);
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+
+        .quick-action-card {
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-align: center;
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-300);
+        }
+
+        .quick-action-icon {
+            font-size: 48px;
+            margin-bottom: var(--space-3);
+        }
+
+        .quick-action-title {
+            font-size: var(--text-base);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .quick-action-desc {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+
+        .chart-container {
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            transition: background-color var(--transition-fast);
+        }
+
+        .activity-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-lg);
+            flex-shrink: 0;
+        }
+
+        .activity-icon.success {
+            background: var(--success-50);
+        }
+
+        .activity-icon.warning {
+            background: var(--warning-50);
+        }
+
+        .activity-icon.info {
+            background: var(--info-50);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: var(--text-sm);
+            font-weight: var(--font-medium);
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .activity-time {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
-    
-    <main class="main-content">
-        <header class="main-header">
-            <div class="header-left">
-                <h1 class="page-title">Dashboard</h1>
-            </div>
-            <div class="header-right">
-                <div class="header-actions">
-                    <button class="header-btn" onclick="loadStats()" title="Atualizar">
-                        <span>🔄</span>
+    <div class="admin-wrapper">
+        <!-- Sidebar será injetada via JavaScript -->
+        
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <span>☰</span>
                     </button>
-                </div>
-            </div>
-        </header>
-
-        <div class="content-container">
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-card-title">Total de Modelos</div>
-                        <div class="stat-card-icon primary">👥</div>
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">Visão geral do sistema</p>
                     </div>
-                    <div class="stat-card-value" id="totalModels">-</div>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-card-title">Total de Vídeos</div>
-                        <div class="stat-card-icon success">🎬</div>
+                <div class="header-right">
+                    <div class="header-search">
+                        <span class="header-search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            class="header-search-input" 
+                            placeholder="Buscar..."
+                            id="globalSearch"
+                        >
                     </div>
-                    <div class="stat-card-value" id="totalVideos">-</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-card-title">Vídeos com Source</div>
-                        <div class="stat-card-icon success">✅</div>
-                    </div>
-                    <div class="stat-card-value" id="videosWithSource">-</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-card-title">Vídeos sem Source</div>
-                        <div class="stat-card-icon warning">⏳</div>
-                    </div>
-                    <div class="stat-card-value" id="videosWithoutSource">-</div>
-                </div>
-            </div>
-
-            <div class="content-card">
-                <div class="content-card-header">
-                    <h3 class="content-card-title">🚀 Ações Rápidas</h3>
-                </div>
-                <div class="content-card-body">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <button class="btn btn-primary" onclick="window.location.href='/admin/scraper.html'">
-                            <span>🎬</span>
-                            <span>Scraper XXXFollow</span>
+                    <div class="header-actions">
+                        <button class="header-btn" title="Notificações">
+                            <span>🔔</span>
+                            <span class="header-btn-badge">3</span>
                         </button>
-                        <button class="btn btn-success" onclick="window.location.href='/xxxfollow-models.html'">
-                            <span>👥</span>
-                            <span>Ver Modelos</span>
+                        <button class="header-btn" title="Configurações">
+                            <span>⚙️</span>
                         </button>
-                        <button class="btn btn-primary" onclick="loadStats()">
-                            <span>📊</span>
-                            <span>Atualizar Stats</span>
-                        </button>
-                        <button class="btn btn-success" onclick="syncVideoCounts()" id="syncBtn">
+                        <button class="header-btn" onclick="location.reload()" title="Atualizar">
                             <span>🔄</span>
-                            <span>Sincronizar Video Counts</span>
                         </button>
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <div class="content-card">
-                <div class="content-card-header">
-                    <h3 class="content-card-title">📋 Informações do Sistema</h3>
+            <!-- Container de Conteúdo -->
+            <div class="content-container">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Total de Modelos</div>
+                            <div class="stat-card-icon primary">👥</div>
+                        </div>
+                        <div class="stat-card-value" id="totalModels">-</div>
+                        <div class="stat-card-change positive">
+                            <span>↑</span>
+                            <span>12% vs mês anterior</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Total de Vídeos</div>
+                            <div class="stat-card-icon success">🎬</div>
+                        </div>
+                        <div class="stat-card-value" id="totalVideos">-</div>
+                        <div class="stat-card-change positive">
+                            <span>↑</span>
+                            <span>8% vs mês anterior</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Vídeos com Source</div>
+                            <div class="stat-card-icon success">✅</div>
+                        </div>
+                        <div class="stat-card-value" id="videosWithSource">-</div>
+                        <div class="stat-card-change positive">
+                            <span>↑</span>
+                            <span>15% vs mês anterior</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Vídeos sem Source</div>
+                            <div class="stat-card-icon warning">⏳</div>
+                        </div>
+                        <div class="stat-card-value" id="videosWithoutSource">-</div>
+                        <div class="stat-card-change negative">
+                            <span>↓</span>
+                            <span>5% vs mês anterior</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="content-card-body">
-                    <p><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
-                    <p><strong>Última atualização:</strong> <span id="lastUpdate">-</span></p>
-                    <p><strong>Versão:</strong> 1.0.0</p>
+
+                <!-- Ações Rápidas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🚀 Ações Rápidas</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-actions">
+                            <div class="quick-action-card" onclick="window.location.href='/admin/scraper.html'">
+                                <div class="quick-action-icon">🤖</div>
+                                <div class="quick-action-title">Scraper XXXFollow</div>
+                                <div class="quick-action-desc">Coletar modelos e vídeos</div>
+                            </div>
+
+                            <div class="quick-action-card" onclick="window.location.href='/admin/users.html'">
+                                <div class="quick-action-icon">👥</div>
+                                <div class="quick-action-title">Gerenciar Usuários</div>
+                                <div class="quick-action-desc">Criar e editar usuários</div>
+                            </div>
+
+                            <div class="quick-action-card" onclick="window.location.href='/admin/sessions.html'">
+                                <div class="quick-action-icon">🔐</div>
+                                <div class="quick-action-title">Sessões Ativas</div>
+                                <div class="quick-action-desc">Monitorar sessões</div>
+                            </div>
+
+                            <div class="quick-action-card" onclick="window.location.href='/admin/content.html'">
+                                <div class="quick-action-icon">🗂️</div>
+                                <div class="quick-action-title">Gerenciar Conteúdo</div>
+                                <div class="quick-action-desc">CRUD de modelos e vídeos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid de 2 Colunas -->
+                <div class="content-grid grid-2">
+                    <!-- Atividade Recente -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 Atividade Recente</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="activityList">
+                                <div class="activity-item">
+                                    <div class="activity-icon success">✅</div>
+                                    <div class="activity-content">
+                                        <div class="activity-title">Novo usuário cadastrado</div>
+                                        <div class="activity-time">Há 5 minutos</div>
+                                    </div>
+                                </div>
+
+                                <div class="activity-item">
+                                    <div class="activity-icon info">🎬</div>
+                                    <div class="activity-content">
+                                        <div class="activity-title">50 novos vídeos coletados</div>
+                                        <div class="activity-time">Há 15 minutos</div>
+                                    </div>
+                                </div>
+
+                                <div class="activity-item">
+                                    <div class="activity-icon warning">⚠️</div>
+                                    <div class="activity-content">
+                                        <div class="activity-title">Sessão encerrada pelo admin</div>
+                                        <div class="activity-time">Há 30 minutos</div>
+                                    </div>
+                                </div>
+
+                                <div class="activity-item">
+                                    <div class="activity-icon success">👥</div>
+                                    <div class="activity-content">
+                                        <div class="activity-title">10 novas modelos adicionadas</div>
+                                        <div class="activity-time">Há 1 hora</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações do Sistema -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">💻 Informações do Sistema</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-2);">
+                                        <span style="font-size: var(--text-sm); color: var(--text-secondary);">Status</span>
+                                        <span class="badge badge-success">🟢 Online</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-2);">
+                                        <span style="font-size: var(--text-sm); color: var(--text-secondary);">Última atualização</span>
+                                        <span style="font-size: var(--text-sm); font-weight: var(--font-medium);" id="lastUpdate">-</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-2);">
+                                        <span style="font-size: var(--text-sm); color: var(--text-secondary);">Versão</span>
+                                        <span style="font-size: var(--text-sm); font-weight: var(--font-medium);">2.0.0</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-2);">
+                                        <span style="font-size: var(--text-sm); color: var(--text-secondary);">Ambiente</span>
+                                        <span class="badge badge-info">Production</span>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: var(--space-4);">
+                                    <button class="btn btn-primary w-full" onclick="loadStats()">
+                                        <span>🔄</span>
+                                        <span>Atualizar Estatísticas</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
+    <!-- JavaScript Core -->
+    <script src="/admin/assets/js/admin-core.js"></script>
+    
+    <!-- JavaScript da Página -->
     <script>
-        // Verificar autenticação
-        async function checkAuth() {
-            try {
-                const response = await fetch('/api/admin/verify', {
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    window.location.href = '/admin/login.html';
-                }
-            } catch (error) {
-                console.error('Erro ao verificar autenticação:', error);
-                window.location.href = '/admin/login.html';
-            }
-        }
-
-        // Carregar estatísticas
         async function loadStats() {
             try {
                 const response = await fetch('/api/xxxfollow/stats', {
@@ -142,60 +352,24 @@
                 if (response.ok) {
                     const stats = await response.json();
                     
-                    document.getElementById('totalModels').textContent = stats.totalModels || 0;
-                    document.getElementById('totalVideos').textContent = stats.totalVideos || 0;
-                    document.getElementById('videosWithSource').textContent = stats.videosWithSource || 0;
-                    document.getElementById('videosWithoutSource').textContent = stats.videosWithoutSource || 0;
+                    document.getElementById('totalModels').textContent = adminCore.formatNumber(stats.totalModels || 0);
+                    document.getElementById('totalVideos').textContent = adminCore.formatNumber(stats.totalVideos || 0);
+                    document.getElementById('videosWithSource').textContent = adminCore.formatNumber(stats.videosWithSource || 0);
+                    document.getElementById('videosWithoutSource').textContent = adminCore.formatNumber(stats.videosWithoutSource || 0);
                     document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
+
+                    adminCore.showNotification('Estatísticas atualizadas com sucesso!', 'success');
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
+                adminCore.showNotification('Erro ao carregar estatísticas', 'error');
             }
         }
 
-        // Sincronizar video counts
-        async function syncVideoCounts() {
-            const btn = document.getElementById('syncBtn');
-            const originalHTML = btn.innerHTML;
-            
-            try {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="loading-spinner"></span><span>Sincronizando...</span>';
-                
-                const response = await fetch('/api/admin/sync-video-counts', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert(`✅ Sincronização concluída!\n\n` +
-                          `XXXFollow: ${data.updated.xxxfollow} modelos\n` +
-                          `Clube Adulto: ${data.updated.clubeadulto} modelos\n` +
-                          `NSFW247: ${data.updated.nsfw247} modelos\n\n` +
-                          `Total de vídeos: ${data.stats.reduce((sum, s) => sum + parseInt(s.total_videos || 0), 0)}`);
-                    
-                    // Recarregar estatísticas
-                    loadStats();
-                } else {
-                    alert('❌ Erro ao sincronizar: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Erro ao sincronizar video counts:', error);
-                alert('❌ Erro ao sincronizar video counts');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-            }
-        }
-
-        // Inicializar
-        checkAuth();
-        loadStats();
+        // Carregar stats ao iniciar
+        window.addEventListener('load', () => {
+            loadStats();
+        });
     </script>
-    
-    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
-    <script src="scripts/admin-layout.js"></script>
 </body>
 </html>

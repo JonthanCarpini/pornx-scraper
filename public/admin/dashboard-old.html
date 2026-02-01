@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Admin Panel</title>
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="loadStats()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-container">
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Total de Modelos</div>
+                        <div class="stat-card-icon primary">👥</div>
+                    </div>
+                    <div class="stat-card-value" id="totalModels">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Total de Vídeos</div>
+                        <div class="stat-card-icon success">🎬</div>
+                    </div>
+                    <div class="stat-card-value" id="totalVideos">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Vídeos com Source</div>
+                        <div class="stat-card-icon success">✅</div>
+                    </div>
+                    <div class="stat-card-value" id="videosWithSource">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Vídeos sem Source</div>
+                        <div class="stat-card-icon warning">⏳</div>
+                    </div>
+                    <div class="stat-card-value" id="videosWithoutSource">-</div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h3 class="content-card-title">🚀 Ações Rápidas</h3>
+                </div>
+                <div class="content-card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <button class="btn btn-primary" onclick="window.location.href='/admin/scraper.html'">
+                            <span>🎬</span>
+                            <span>Scraper XXXFollow</span>
+                        </button>
+                        <button class="btn btn-success" onclick="window.location.href='/xxxfollow-models.html'">
+                            <span>👥</span>
+                            <span>Ver Modelos</span>
+                        </button>
+                        <button class="btn btn-primary" onclick="loadStats()">
+                            <span>📊</span>
+                            <span>Atualizar Stats</span>
+                        </button>
+                        <button class="btn btn-success" onclick="syncVideoCounts()" id="syncBtn">
+                            <span>🔄</span>
+                            <span>Sincronizar Video Counts</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h3 class="content-card-title">📋 Informações do Sistema</h3>
+                </div>
+                <div class="content-card-body">
+                    <p><strong>Status:</strong> <span class="badge badge-success">Online</span></p>
+                    <p><strong>Última atualização:</strong> <span id="lastUpdate">-</span></p>
+                    <p><strong>Versão:</strong> 1.0.0</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Verificar autenticação
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/verify', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    window.location.href = '/admin/login.html';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        // Carregar estatísticas
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/xxxfollow/stats', {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const stats = await response.json();
+                    
+                    document.getElementById('totalModels').textContent = stats.totalModels || 0;
+                    document.getElementById('totalVideos').textContent = stats.totalVideos || 0;
+                    document.getElementById('videosWithSource').textContent = stats.videosWithSource || 0;
+                    document.getElementById('videosWithoutSource').textContent = stats.videosWithoutSource || 0;
+                    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('pt-BR');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Sincronizar video counts
+        async function syncVideoCounts() {
+            const btn = document.getElementById('syncBtn');
+            const originalHTML = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span><span>Sincronizando...</span>';
+                
+                const response = await fetch('/api/admin/sync-video-counts', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ Sincronização concluída!\n\n` +
+                          `XXXFollow: ${data.updated.xxxfollow} modelos\n` +
+                          `Clube Adulto: ${data.updated.clubeadulto} modelos\n` +
+                          `NSFW247: ${data.updated.nsfw247} modelos\n\n` +
+                          `Total de vídeos: ${data.stats.reduce((sum, s) => sum + parseInt(s.total_videos || 0), 0)}`);
+                    
+                    // Recarregar estatísticas
+                    loadStats();
+                } else {
+                    alert('❌ Erro ao sincronizar: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Erro ao sincronizar video counts:', error);
+                alert('❌ Erro ao sincronizar video counts');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        // Inicializar
+        checkAuth();
+        loadStats();
+    </script>
+    
+    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
+    <script src="scripts/admin-layout.js"></script>
+</body>
+</html>
