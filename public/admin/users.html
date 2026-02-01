@@ -253,6 +253,70 @@
         </div>
     </div>
 
+    <!-- Modal Editar Usuário -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('edit-modal')"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Usuário</h3>
+                <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+            </div>
+            <form id="edit-form" onsubmit="updateUser(event)">
+                <input type="hidden" name="user_id" id="edit-user-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Username *</label>
+                        <input type="text" class="form-input" name="username" id="edit-username" required>
+                        <small class="form-help">3-50 caracteres, apenas letras, números e underscore</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telefone</label>
+                        <input type="tel" class="form-input" name="phone" id="edit-phone" placeholder="(00) 00000-0000">
+                        <small class="form-help">Formato: (00) 00000-0000</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nome Completo</label>
+                        <input type="text" class="form-input" name="full_name" id="edit-full-name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nova Senha (deixe em branco para não alterar)</label>
+                        <input type="password" class="form-input" name="password" id="edit-password">
+                        <small class="form-help">Mínimo 6 caracteres</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-select" name="role" id="edit-role">
+                            <option value="user">Usuário</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="is_active" id="edit-is-active">
+                            <option value="true">Ativo</option>
+                            <option value="false">Bloqueado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Plano de Assinatura</label>
+                        <select class="form-select" name="subscription_plan" id="edit-subscription-plan">
+                            <option value="">Sem assinatura</option>
+                            <option value="trial">Teste Grátis (1 dia)</option>
+                            <option value="1">Premium - 1 Mês</option>
+                            <option value="3">Premium - 3 Meses</option>
+                            <option value="6">Premium - 6 Meses</option>
+                            <option value="12">Premium - 12 Meses</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('edit-modal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- JavaScript Core -->
     <script src="/admin/assets/js/admin-core.js"></script>
     
@@ -470,13 +534,117 @@
 
         async function deleteUser(userId, username) {
             if (!confirm(`Deseja realmente deletar o usuário ${username}?`)) return;
-            // Implementar lógica de exclusão
-            adminCore.showNotification('Funcionalidade em desenvolvimento', 'info');
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    adminCore.showNotification('Usuário deletado com sucesso!', 'success');
+                    loadUsers(currentPage);
+                } else {
+                    adminCore.showNotification(result.error || 'Erro ao deletar usuário', 'error');
+                }
+            } catch (error) {
+                adminCore.showNotification('Erro ao conectar com o servidor', 'error');
+            }
         }
 
-        function editUser(userId) {
-            // Implementar lógica de edição
-            adminCore.showNotification('Funcionalidade em desenvolvimento', 'info');
+        async function editUser(userId) {
+            try {
+                // Carregar dados do usuário
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    adminCore.showNotification('Erro ao carregar dados do usuário', 'error');
+                    return;
+                }
+
+                const user = await response.json();
+
+                // Preencher formulário
+                document.getElementById('edit-user-id').value = user.id;
+                document.getElementById('edit-username').value = user.username || '';
+                document.getElementById('edit-phone').value = user.phone || '';
+                document.getElementById('edit-full-name').value = user.full_name || '';
+                document.getElementById('edit-password').value = '';
+                document.getElementById('edit-role').value = user.role || 'user';
+                document.getElementById('edit-is-active').value = user.is_active ? 'true' : 'false';
+                
+                // Determinar plano de assinatura
+                let subscriptionPlan = '';
+                if (user.subscription_valid) {
+                    if (user.is_trial) {
+                        subscriptionPlan = 'trial';
+                    } else if (user.subscription_months) {
+                        subscriptionPlan = user.subscription_months.toString();
+                    }
+                }
+                document.getElementById('edit-subscription-plan').value = subscriptionPlan;
+
+                // Aplicar máscara no telefone
+                const phoneInput = document.getElementById('edit-phone');
+                phoneInput.value = phoneMask(phoneInput.value);
+                phoneInput.addEventListener('input', (e) => {
+                    e.target.value = phoneMask(e.target.value);
+                });
+
+                // Abrir modal
+                document.getElementById('edit-modal').classList.add('active');
+            } catch (error) {
+                console.error('Erro ao carregar usuário:', error);
+                adminCore.showNotification('Erro ao carregar dados do usuário', 'error');
+            }
+        }
+
+        async function updateUser(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const userId = formData.get('user_id');
+            
+            // Preparar dados
+            const data = {
+                username: formData.get('username'),
+                phone: formData.get('phone'),
+                full_name: formData.get('full_name'),
+                role: formData.get('role'),
+                is_active: formData.get('is_active') === 'true',
+                subscription_plan: formData.get('subscription_plan')
+            };
+
+            // Adicionar senha apenas se foi preenchida
+            const password = formData.get('password');
+            if (password && password.trim() !== '') {
+                data.password = password;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    closeModal('edit-modal');
+                    adminCore.showNotification('Usuário atualizado com sucesso!', 'success');
+                    loadUsers(currentPage);
+                } else {
+                    adminCore.showNotification(result.error || 'Erro ao atualizar usuário', 'error');
+                }
+            } catch (error) {
+                adminCore.showNotification('Erro ao conectar com o servidor', 'error');
+            }
         }
 
         // Carregar usuários ao iniciar

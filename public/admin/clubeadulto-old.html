@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clube Adulto - Admin Panel</title>
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">🌟 Clube Adulto & NSFW247</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="location.reload()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <!-- Seletor de Site -->
+            <div class="content-card">
+            <div class="card-header">
+                <h3 class="card-title">🌐 Selecionar Site</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <button class="btn btn-primary" onclick="selectSite('nsfw247')" id="btn-nsfw247" style="padding: 20px;">
+                    <span style="font-size: 24px;">🔥</span>
+                    <div>
+                        <div style="font-size: 16px; font-weight: bold;">NSFW247</div>
+                        <div style="font-size: 12px; opacity: 0.8;">nsfw247.to</div>
+                    </div>
+                </button>
+                <button class="btn btn-success" onclick="selectSite('clubeadulto')" id="btn-clubeadulto" style="padding: 20px;">
+                    <span style="font-size: 24px;">🔞</span>
+                    <div>
+                        <div style="font-size: 16px; font-weight: bold;">Clube Adulto</div>
+                        <div style="font-size: 12px; opacity: 0.8;">clubeadulto.com</div>
+                    </div>
+                </button>
+            </div>
+            <div id="selected-site" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none;">
+                <strong>Site selecionado:</strong> <span id="site-name"></span>
+            </div>
+        </div>
+
+        <!-- Configuração de Páginas -->
+        <div class="content-card" id="page-config" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">📄 Configurar Intervalo de Páginas</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #667eea;">
+                        📍 Página Inicial
+                    </label>
+                    <input 
+                        type="number" 
+                        id="page-start" 
+                        value="1" 
+                        min="1" 
+                        class="form-input"
+                        placeholder="Ex: 1"
+                    />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #667eea;">
+                        🏁 Página Final
+                    </label>
+                    <input 
+                        type="number" 
+                        id="page-end" 
+                        value="5" 
+                        min="1" 
+                        class="form-input"
+                        placeholder="Ex: 5"
+                    />
+                </div>
+            </div>
+            <small style="color: #888; display: block; margin-top: 10px;">
+                💡 O scraper coletará modelos das páginas <strong id="page-range">1 até 5</strong>
+            </small>
+        </div>
+
+        <!-- Modo Automático -->
+        <div class="content-card" id="auto-mode" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">🚀 Modo Automático - Scraping Completo</h3>
+            </div>
+            <p style="color: #666; margin-bottom: 20px;">Execute todos os 3 passos sequencialmente</p>
+            <button class="btn btn-success" onclick="executeFullScraping()" id="btn-full" style="width: 100%; padding: 15px; font-size: 16px;">
+                <span>▶️</span>
+                <span>Executar Scraping Completo</span>
+            </button>
+        </div>
+
+        <!-- Controles Manuais -->
+        <div class="content-card" id="manual-controls" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">🎮 Controles Manuais</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #667eea; margin-bottom: 10px;">1️⃣ Coletar Modelos</h4>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Extrai informações básicas das modelos</p>
+                    <button class="btn btn-primary" onclick="scrapeModels()" id="btn-models" style="width: 100%;">
+                        <span>👥</span>
+                        <span>Scrape Modelos</span>
+                    </button>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #11998e; margin-bottom: 10px;">2️⃣ Coletar Vídeos</h4>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Coleta vídeos de cada modelo</p>
+                    <button class="btn btn-success" onclick="scrapeVideos()" id="btn-videos" style="width: 100%;">
+                        <span>🎬</span>
+                        <span>Scrape Vídeos</span>
+                    </button>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #f093fb; margin-bottom: 10px;">3️⃣ Extrair Detalhes</h4>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">Extrai URLs dos vídeos</p>
+                    <button class="btn btn-primary" onclick="scrapeDetails()" id="btn-details" style="width: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <span>🎥</span>
+                        <span>Scrape Detalhes</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progresso -->
+        <div class="content-card" id="progress-section" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">📊 Progresso</h3>
+            </div>
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress-fill" id="progress-fill">0%</div>
+            </div>
+            <div class="logs" id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar autenticação
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/verify', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    window.location.href = '/admin/login.html';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        checkAuth();
+
+        let isRunning = false;
+        let currentEventSource = null;
+        let selectedSite = null;
+
+        function selectSite(site) {
+            selectedSite = site;
+            
+            // Atualizar UI
+            document.getElementById('selected-site').style.display = 'block';
+            document.getElementById('site-name').textContent = site === 'nsfw247' ? 'NSFW247 (nsfw247.to)' : 'Clube Adulto (clubeadulto.com)';
+            
+            // Mostrar configurações
+            document.getElementById('page-config').style.display = 'block';
+            document.getElementById('auto-mode').style.display = 'block';
+            document.getElementById('manual-controls').style.display = 'block';
+            document.getElementById('progress-section').style.display = 'block';
+            
+            // Destacar botão selecionado
+            document.getElementById('btn-nsfw247').style.opacity = site === 'nsfw247' ? '1' : '0.5';
+            document.getElementById('btn-clubeadulto').style.opacity = site === 'clubeadulto' ? '1' : '0.5';
+            
+            addLog(`✅ Site selecionado: ${site === 'nsfw247' ? 'NSFW247' : 'Clube Adulto'}`, 'success');
+        }
+
+        function updatePageRange() {
+            const start = document.getElementById('page-start').value;
+            const end = document.getElementById('page-end').value;
+            document.getElementById('page-range').textContent = `${start} até ${end}`;
+        }
+
+        // Atualizar range ao mudar inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('page-start')?.addEventListener('input', updatePageRange);
+            document.getElementById('page-end')?.addEventListener('input', updatePageRange);
+        });
+
+        function toggleButtons(running) {
+            document.getElementById('btn-full').disabled = running;
+            document.getElementById('btn-models').disabled = running;
+            document.getElementById('btn-videos').disabled = running;
+            document.getElementById('btn-details').disabled = running;
+            document.getElementById('btn-nsfw247').disabled = running;
+            document.getElementById('btn-clubeadulto').disabled = running;
+            document.getElementById('page-start').disabled = running;
+            document.getElementById('page-end').disabled = running;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function updateProgress(percent, text) {
+            const fill = document.getElementById('progress-fill');
+            fill.style.width = `${percent}%`;
+            fill.textContent = text || `${percent}%`;
+        }
+
+        function getPageParams() {
+            const start = document.getElementById('page-start').value;
+            const end = document.getElementById('page-end').value;
+            return `start=${start}&end=${end}`;
+        }
+
+        async function executeFullScraping() {
+            if (!selectedSite) {
+                addLog('❌ Selecione um site primeiro!', 'error');
+                return;
+            }
+
+            if (isRunning) {
+                addLog('Já existe um scraping em andamento!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            toggleButtons(true);
+            clearLogs();
+            addLog(`🚀 Iniciando scraping completo do ${selectedSite === 'nsfw247' ? 'NSFW247' : 'Clube Adulto'}...`, 'info');
+            updateProgress(0, 'Iniciando...');
+
+            const pageParams = getPageParams();
+
+            try {
+                // Passo 1: Modelos
+                addLog('📋 Passo 1/3: Coletando modelos...', 'info');
+                await executeScraping(`/api/${selectedSite}/scrape-models-stream?${pageParams}`, 'modelos', 33);
+
+                // Passo 2: Vídeos
+                addLog('📋 Passo 2/3: Coletando vídeos...', 'info');
+                await executeScraping(`/api/${selectedSite}/scrape-videos-stream`, 'vídeos', 66);
+
+                // Passo 3: Detalhes
+                addLog('📋 Passo 3/3: Extraindo detalhes...', 'info');
+                await executeScraping(`/api/${selectedSite}/scrape-details-stream`, 'detalhes', 100);
+
+                updateProgress(100, 'Concluído!');
+                addLog('✅ Scraping completo finalizado!', 'success');
+            } catch (error) {
+                addLog('❌ Erro: ' + error.message, 'error');
+            } finally {
+                isRunning = false;
+                toggleButtons(false);
+            }
+        }
+
+        async function executeScraping(endpoint, type, targetProgress) {
+            return new Promise((resolve, reject) => {
+                const eventSource = new EventSource(endpoint);
+                let progress = targetProgress - 33;
+
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'log') {
+                        const message = data.message;
+
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                            progress = Math.min(progress + 1, targetProgress);
+                            updateProgress(progress, `Processando ${type}...`);
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
+                        }
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        updateProgress(targetProgress, `${type} concluído!`);
+                        addLog(`✅ Scraping de ${type} concluído!`, 'success');
+                        eventSource.close();
+                        resolve();
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    addLog('❌ Erro na conexão: ' + error, 'error');
+                    eventSource.close();
+                    reject(error);
+                };
+            });
+        }
+
+        async function scrapeModels() {
+            if (!selectedSite) {
+                addLog('❌ Selecione um site primeiro!', 'error');
+                return;
+            }
+
+            if (isRunning) {
+                addLog('Já existe um scraping em andamento!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            toggleButtons(true);
+            clearLogs();
+            addLog('🚀 Iniciando scraping de modelos...', 'info');
+            updateProgress(10, 'Conectando...');
+
+            const pageParams = getPageParams();
+
+            try {
+                await executeScraping(`/api/${selectedSite}/scrape-models-stream?${pageParams}`, 'modelos', 100);
+            } catch (error) {
+                addLog('❌ Erro: ' + error.message, 'error');
+            } finally {
+                isRunning = false;
+                toggleButtons(false);
+            }
+        }
+
+        async function scrapeVideos() {
+            if (!selectedSite) {
+                addLog('❌ Selecione um site primeiro!', 'error');
+                return;
+            }
+
+            if (isRunning) {
+                addLog('Já existe um scraping em andamento!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            toggleButtons(true);
+            clearLogs();
+            addLog('🚀 Iniciando scraping de vídeos...', 'info');
+            updateProgress(10, 'Conectando...');
+
+            try {
+                await executeScraping(`/api/${selectedSite}/scrape-videos-stream`, 'vídeos', 100);
+            } catch (error) {
+                addLog('❌ Erro: ' + error.message, 'error');
+            } finally {
+                isRunning = false;
+                toggleButtons(false);
+            }
+        }
+
+        async function scrapeDetails() {
+            if (!selectedSite) {
+                addLog('❌ Selecione um site primeiro!', 'error');
+                return;
+            }
+
+            if (isRunning) {
+                addLog('Já existe um scraping em andamento!', 'error');
+                return;
+            }
+
+            isRunning = true;
+            toggleButtons(true);
+            clearLogs();
+            addLog('🚀 Iniciando scraping de detalhes...', 'info');
+            updateProgress(10, 'Conectando...');
+
+            try {
+                await executeScraping(`/api/${selectedSite}/scrape-details-stream`, 'detalhes', 100);
+            } catch (error) {
+                addLog('❌ Erro: ' + error.message, 'error');
+            } finally {
+                isRunning = false;
+                toggleButtons(false);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/admin/login.html';
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                window.location.href = '/admin/login.html';
+            }
+        }
+    </script>
+    
+    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
+    <script src="scripts/admin-layout.js"></script>
+</body>
+</html>

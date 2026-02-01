@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraper - Admin Panel</title>
+    <link rel="stylesheet" href="styles/modern-admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar será injetada automaticamente pelo admin-layout.js -->
+    
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="page-title">🤖 XXXFollow Scraper</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="location.reload()" title="Atualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value" id="totalModels">-</div>
+                        <div class="stat-label">Total de Modelos</div>
+                    </div>
+                    <div class="stat-icon purple">👥</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value" id="totalVideos">-</div>
+                        <div class="stat-label">Total de Vídeos</div>
+                    </div>
+                    <div class="stat-icon green">🎬</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value" id="videosWithSource">-</div>
+                        <div class="stat-label">Vídeos com Source</div>
+                    </div>
+                    <div class="stat-icon orange">✅</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-value" id="videosWithoutSource">-</div>
+                        <div class="stat-label">Vídeos sem Source</div>
+                    </div>
+                    <div class="stat-icon blue">⏳</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h3 class="card-title">📄 Página de Scraping de Modelos</h3>
+            </div>
+            <select id="scrape-page" class="form-select">
+                <option value="contest-winners">🏆 Contest Winners</option>
+                <option value="newest-creators">✨ Newest Creators</option>
+                <option value="tag/teen-18/all">👧 Teen 18+</option>
+                <option value="tag/fastfap/all">⚡ FastFap</option>
+                <option value="tag/tiktok18/all">📱 TikTok 18+</option>
+                <option value="tag/gonewild/all">🔥 GoneWild</option>
+                <option value="tag/pussy/all">🌸 Pussy</option>
+                <option value="tag/nsfw/all">🔞 NSFW</option>
+                <option value="tag/latina/all">💃 Latina</option>
+                <option value="tag/realgirls/all">👩 Real Girls</option>
+                <option value="tag/masturbation/all">✊ Masturbation</option>
+                <option value="tag/cumsluts/all">💧 Cumsluts</option>
+                <option value="tag/18/all">🎂 18+</option>
+                <option value="tag/porn/all">🎬 Porn</option>
+                <option value="tag/asiansgonewild/all">🌏 Asians Gone Wild</option>
+                <option value="tag/wetpussy/all">💦 Wet Pussy</option>
+                <option value="tag/onlyfans/all">📸 OnlyFans</option>
+                <option value="tag/bustypetite/all">🍒 Busty Petite</option>
+                <option value="tag/schoolgirl/all">🎓 Schoolgirl</option>
+                <option value="tag/tiktokxxx/all">📱 TikTok XXX</option>
+                <option value="tag/couplesex/all">👫 Couple Sex</option>
+                <option value="tag/publicsex/all">🌍 Public Sex</option>
+                <option value="tag/analsex/all">🍑 Anal Sex</option>
+                <option value="tag/bisexual/all">🌈 Bisexual</option>
+                <option value="tag/hardcoresex/all">💥 Hardcore Sex</option>
+                <option value="tag/sexoenpublico/all">🌎 Sexo en Publico</option>
+                <option value="tag/lesbiansex/all">👭 Lesbian Sex</option>
+                <option value="tag/sexopublico/all">🌍 Sexo Publico</option>
+                <option value="tag/sexo/all">🔥 Sexo</option>
+                <option value="tag/sexoanal/all">🍑 Sexo Anal</option>
+                <option value="tag/brazilian/all">🇧🇷 Brazilian</option>
+                <option value="tag/bra/all">🇧🇷 BRA</option>
+                <option value="tag/brasileira/all">🇧🇷 Brasileira</option>
+                <option value="tag/argentina/all">🇦🇷 Argentina</option>
+                <option value="tag/mexicana/all">🇲🇽 Mexicana</option>
+                <option value="tag/jovencita18/all">👧 Jovencita 18+</option>
+                <option value="tag/virgin/all">💫 Virgin</option>
+                <option value="tag/ffm/all">👭👨 FFM</option>
+                <option value="tag/ebony/all">🖤 Ebony</option>
+                <option value="tag/gwcouples/all">👫 GW Couples</option>
+                <option value="tag/18years/all">🎂 18 Years</option>
+                <option value="tag/adolescente18/all">👧 Adolescente 18</option>
+                <option value="tag/18yearsold/all">🎂 18 Years Old</option>
+                <option value="tag/titok18/all">📱 TikTok 18</option>
+                <option value="tag/teeen/all">👧 Teen</option>
+                <option value="tag/18yo/all">🎂 18 YO</option>
+                <option value="tag/party/all">🎉 Party</option>
+                <option value="tag/swingers/all">👫 Swingers</option>
+                <option value="tag/venezolana/all">🇻🇪 Venezolana</option>
+                <option value="tag/indian/all">🇮🇳 Indian</option>
+                <option value="tag/videoscaseros/all">📹 Videos Caseros</option>
+                <option value="tag/flaca/all">👱 Flaca</option>
+                <option value="tag/colegiala/all">🎓 Colegiala</option>
+            </select>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h3 class="card-title">🔗 URL Customizada da API (opcional)</h3>
+            </div>
+            <input 
+                type="text" 
+                id="custom-url" 
+                placeholder="https://www.xxxfollow.com/api/v1/post/tag/18years?genders=cf&period=featured&limit=24&page=1&start_time=..."
+                class="form-input"
+            />
+            <small style="color: #888; display: block; margin-top: 10px;">
+                💡 Cole uma URL da API do XXXFollow para fazer scraping de tags específicas
+            </small>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h3 class="card-title">🎮 Controles de Scraping</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="scrapeModels()" id="btn-models">
+                    <span>👥</span>
+                    <span>Scrape Modelos</span>
+                </button>
+                <button class="btn btn-success" onclick="scrapeVideos()" id="btn-videos">
+                    <span>🎬</span>
+                    <span>Scrape Vídeos</span>
+                </button>
+                <button class="btn btn-success" onclick="scrapeVideoDetails()" id="btn-details">
+                    <span>🎥</span>
+                    <span>Scrape Detalhes</span>
+                </button>
+                <button class="btn btn-primary" onclick="scrapeTags()" id="btn-tags" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <span>🏷️</span>
+                    <span>Scrape Tags API</span>
+                </button>
+                <button class="btn btn-danger" onclick="stopScraping()" id="btn-stop" style="display:none; background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);">
+                    <span>⛔</span>
+                    <span>Parar Scraping</span>
+                </button>
+                <button class="btn btn-primary" onclick="loadStats()">
+                    <span>📊</span>
+                    <span>Atualizar Stats</span>
+                </button>
+            </div>
+
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress-fill" id="progress-fill">0%</div>
+            </div>
+
+            <div class="logs" id="logs"></div>
+        </div>
+        </div>
+    </main>
+
+    <script src="/admin/scripts/scraper.js"></script>
+    
+    <!-- Admin Layout Script (SEMPRE NO FINAL) -->
+    <script src="scripts/admin-layout.js"></script>
+</body>
+</html>
