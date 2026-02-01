@@ -155,7 +155,7 @@ class AdminLayout {
     async updateSidebarStats() {
         try {
             // Buscar usuários online
-            const onlineResponse = await fetch('https://agenciavirtual.site/api/session/online-users', {
+            const onlineResponse = await fetch('/api/session/online-users', {
                 credentials: 'include'
             });
             if (onlineResponse.ok) {
@@ -165,7 +165,7 @@ class AdminLayout {
             }
 
             // Buscar total de usuários
-            const usersResponse = await fetch('https://agenciavirtual.site/api/users', {
+            const usersResponse = await fetch('/api/users', {
                 credentials: 'include'
             });
             if (usersResponse.ok) {
@@ -175,7 +175,7 @@ class AdminLayout {
             }
 
             // Buscar sessões ativas
-            const sessionsResponse = await fetch('https://agenciavirtual.site/api/session/active-sessions', {
+            const sessionsResponse = await fetch('/api/session/active-sessions', {
                 credentials: 'include'
             });
             if (sessionsResponse.ok) {
