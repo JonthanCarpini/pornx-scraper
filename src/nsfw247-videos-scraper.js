@@ -48,11 +48,11 @@ async function scrapeVideos() {
                 
                 const videos = await page.evaluate(() => {
                     const results = [];
-                    const videoElements = document.querySelectorAll('article.post');
+                    const videoElements = document.querySelectorAll('article.thumb');
                     
                     videoElements.forEach(article => {
-                        const titleElement = article.querySelector('h2 a, .post-title a');
-                        const linkElement = article.querySelector('a');
+                        const titleElement = article.querySelector('h3 a');
+                        const linkElement = article.querySelector('.thumb-wrap a');
                         const imgElement = article.querySelector('img');
                         
                         if (!titleElement || !linkElement) return;
@@ -62,6 +62,7 @@ async function scrapeVideos() {
                         const thumbnailUrl = imgElement ? (
                             imgElement.getAttribute('src') ||
                             imgElement.getAttribute('data-src') ||
+                            imgElement.getAttribute('data-bttrlazyloading-md-src') ||
                             imgElement.getAttribute('data-lazy-src')
                         ) : null;
                         
