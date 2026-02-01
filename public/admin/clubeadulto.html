@@ -249,92 +249,52 @@
                 showProgress(0);
                 addLog('Iniciando scraping de modelos...', 'info');
 
-                if (currentSite === 'clubeadulto') {
-                    // Clube Adulto: verificar status e usar POST
-                    const statusResponse = await fetch('/api/clubeadulto/scraping/models/status', {
-                        credentials: 'include'
-                    });
+                // Ambos os sites usam SSE (Server-Sent Events) com GET
+                const endpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scrape-models-stream'
+                    : '/api/nsfw247/scrape-models-stream';
 
-                    if (statusResponse.ok) {
-                        const statusData = await statusResponse.json();
-                        if (statusData.status?.isRunning) {
-                            addLog('⚠️ Scraping de modelos já está em execução no servidor', 'info');
-                            addLog(`Progresso: ${statusData.status.progress || 0}%`, 'info');
-                            adminCore.showNotification('Scraping já está em execução. Aguarde a conclusão.', 'warning');
-                            isRunning = false;
-                            updateButtons(false);
-                            return;
-                        }
-                    }
-
-                    const response = await fetch('/api/clubeadulto/scraping/models', {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        let errorData;
-                        try {
-                            errorData = JSON.parse(errorText);
-                        } catch {
-                            throw new Error(`Erro ${response.status}: ${errorText}`);
-                        }
-                        throw new Error(errorData.error || errorData.message || 'Erro desconhecido');
-                    }
-
-                    const data = await response.json();
-                    if (data.success) {
-                        addLog(`✓ Scraping de modelos iniciado!`, 'success');
-                        adminCore.showNotification('Scraping de modelos iniciado!', 'success');
-                        startProgressPolling('models');
-                    } else {
-                        throw new Error(data.error || 'Erro desconhecido');
-                    }
-                } else {
-                    // NSFW247: usar SSE (Server-Sent Events) com GET
-                    addLog('✓ Conectando ao stream do NSFW247...', 'info');
-                    adminCore.showNotification('Scraping de modelos iniciado!', 'success');
+                addLog(`✓ Conectando ao stream do ${currentSite === 'clubeadulto' ? 'Clube Adulto' : 'NSFW247'}...`, 'info');
+                adminCore.showNotification('Scraping de modelos iniciado!', 'success');
+                
+                const eventSource = new EventSource(endpoint);
+                
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
                     
-                    const eventSource = new EventSource('/api/nsfw247/scrape-models-stream');
-                    
-                    eventSource.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.type === 'log') {
-                            const message = data.message;
-                            if (message.includes('✓') || message.includes('✅')) {
-                                addLog(message, 'success');
-                            } else if (message.includes('❌') || message.includes('Erro')) {
-                                addLog(message, 'error');
-                            } else {
-                                addLog(message, 'info');
-                            }
-                        } else if (data.type === 'error') {
-                            addLog('❌ ' + data.message, 'error');
-                        } else if (data.type === 'done') {
-                            addLog(`✅ Scraping de modelos concluído! ${data.totalModels || 0} modelos coletados.`, 'success');
-                            adminCore.showNotification('Scraping concluído!', 'success');
-                            eventSource.close();
-                            isRunning = false;
-                            updateButtons(false);
-                            hideProgress();
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
                         }
-                        
-                        // Atualizar progresso se disponível
-                        if (data.progress) {
-                            showProgress(data.progress);
-                        }
-                    };
-                    
-                    eventSource.onerror = (error) => {
-                        addLog('✗ Erro na conexão com o stream', 'error');
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        addLog(`✅ Scraping de modelos concluído! ${data.totalModels || 0} modelos coletados.`, 'success');
+                        adminCore.showNotification('Scraping concluído!', 'success');
                         eventSource.close();
                         isRunning = false;
                         updateButtons(false);
                         hideProgress();
-                    };
-                }
+                    }
+                    
+                    // Atualizar progresso se disponível
+                    if (data.progress) {
+                        showProgress(data.progress);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    addLog('✗ Erro na conexão com o stream', 'error');
+                    eventSource.close();
+                    isRunning = false;
+                    updateButtons(false);
+                    hideProgress();
+                };
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
                 adminCore.showNotification(error.message, 'error');
@@ -361,93 +321,52 @@
                 showProgress(0);
                 addLog('Iniciando scraping de vídeos...', 'info');
 
-                if (currentSite === 'clubeadulto') {
-                    // Clube Adulto: verificar status e usar POST
-                    const statusResponse = await fetch('/api/clubeadulto/scraping/videos/status', {
-                        credentials: 'include'
-                    });
+                // Ambos os sites usam SSE (Server-Sent Events) com GET
+                const endpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scrape-videos-stream'
+                    : '/api/nsfw247/scrape-videos-stream';
 
-                    if (statusResponse.ok) {
-                        const statusData = await statusResponse.json();
-                        if (statusData.status?.isRunning) {
-                            addLog('⚠️ Scraping de vídeos já está em execução no servidor', 'info');
-                            addLog(`Progresso: ${statusData.status.progress || 0}%`, 'info');
-                            adminCore.showNotification('Scraping já está em execução. Aguarde a conclusão.', 'warning');
-                            isRunning = false;
-                            updateButtons(false);
-                            return;
-                        }
-                    }
-
-                    const response = await fetch('/api/clubeadulto/scraping/videos', {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        let errorData;
-                        try {
-                            errorData = JSON.parse(errorText);
-                        } catch {
-                            throw new Error(`Erro ${response.status}: ${errorText}`);
-                        }
-                        throw new Error(errorData.error || errorData.message || 'Erro desconhecido');
-                    }
-
-                    const data = await response.json();
-                    if (data.success) {
-                        const modelsCount = data.modelsCount || 0;
-                        addLog(`✓ Scraping iniciado! Processando ${modelsCount} modelos...`, 'success');
-                        adminCore.showNotification('Scraping de vídeos iniciado!', 'success');
-                        startProgressPolling('videos');
-                    } else {
-                        throw new Error(data.error || 'Erro desconhecido');
-                    }
-                } else {
-                    // NSFW247: usar SSE (Server-Sent Events) com GET
-                    addLog('✓ Conectando ao stream do NSFW247...', 'info');
-                    adminCore.showNotification('Scraping de vídeos iniciado!', 'success');
+                addLog(`✓ Conectando ao stream do ${currentSite === 'clubeadulto' ? 'Clube Adulto' : 'NSFW247'}...`, 'info');
+                adminCore.showNotification('Scraping de vídeos iniciado!', 'success');
+                
+                const eventSource = new EventSource(endpoint);
+                
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
                     
-                    const eventSource = new EventSource('/api/nsfw247/scrape-videos-stream');
-                    
-                    eventSource.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.type === 'log') {
-                            const message = data.message;
-                            if (message.includes('✓') || message.includes('✅')) {
-                                addLog(message, 'success');
-                            } else if (message.includes('❌') || message.includes('Erro')) {
-                                addLog(message, 'error');
-                            } else {
-                                addLog(message, 'info');
-                            }
-                        } else if (data.type === 'error') {
-                            addLog('❌ ' + data.message, 'error');
-                        } else if (data.type === 'done') {
-                            addLog(`✅ Scraping de vídeos concluído! ${data.totalVideos || 0} vídeos coletados.`, 'success');
-                            adminCore.showNotification('Scraping concluído!', 'success');
-                            eventSource.close();
-                            isRunning = false;
-                            updateButtons(false);
-                            hideProgress();
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
                         }
-                        
-                        // Atualizar progresso se disponível
-                        if (data.progress) {
-                            showProgress(data.progress);
-                        }
-                    };
-                    
-                    eventSource.onerror = (error) => {
-                        addLog('✗ Erro na conexão com o stream', 'error');
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        addLog(`✅ Scraping de vídeos concluído! ${data.totalVideos || 0} vídeos coletados.`, 'success');
+                        adminCore.showNotification('Scraping concluído!', 'success');
                         eventSource.close();
                         isRunning = false;
                         updateButtons(false);
                         hideProgress();
-                    };
-                }
+                    }
+                    
+                    // Atualizar progresso se disponível
+                    if (data.progress) {
+                        showProgress(data.progress);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    addLog('✗ Erro na conexão com o stream', 'error');
+                    eventSource.close();
+                    isRunning = false;
+                    updateButtons(false);
+                    hideProgress();
+                };
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
                 adminCore.showNotification(error.message, 'error');
@@ -474,92 +393,52 @@
                 showProgress(0);
                 addLog('Iniciando scraping de detalhes dos vídeos...', 'info');
 
-                if (currentSite === 'clubeadulto') {
-                    // Clube Adulto: verificar status e usar POST
-                    const statusResponse = await fetch('/api/clubeadulto/scraping/video-details/status', {
-                        credentials: 'include'
-                    });
+                // Ambos os sites usam SSE (Server-Sent Events) com GET
+                const endpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scrape-details-stream'
+                    : '/api/nsfw247/scrape-details-stream';
 
-                    if (statusResponse.ok) {
-                        const statusData = await statusResponse.json();
-                        if (statusData.status?.isRunning) {
-                            addLog('⚠️ Scraping de detalhes já está em execução no servidor', 'info');
-                            addLog(`Progresso: ${statusData.status.progress || 0}%`, 'info');
-                            adminCore.showNotification('Scraping já está em execução. Aguarde a conclusão.', 'warning');
-                            isRunning = false;
-                            updateButtons(false);
-                            return;
-                        }
-                    }
-
-                    const response = await fetch('/api/clubeadulto/scraping/video-details', {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        let errorData;
-                        try {
-                            errorData = JSON.parse(errorText);
-                        } catch {
-                            throw new Error(`Erro ${response.status}: ${errorText}`);
-                        }
-                        throw new Error(errorData.error || errorData.message || 'Erro desconhecido');
-                    }
-
-                    const data = await response.json();
-                    if (data.success) {
-                        addLog(`✓ Scraping de detalhes iniciado!`, 'success');
-                        adminCore.showNotification('Scraping de detalhes iniciado!', 'success');
-                        startProgressPolling('video-details');
-                    } else {
-                        throw new Error(data.error || 'Erro desconhecido');
-                    }
-                } else {
-                    // NSFW247: usar SSE (Server-Sent Events) com GET
-                    addLog('✓ Conectando ao stream do NSFW247...', 'info');
-                    adminCore.showNotification('Scraping de detalhes iniciado!', 'success');
+                addLog(`✓ Conectando ao stream do ${currentSite === 'clubeadulto' ? 'Clube Adulto' : 'NSFW247'}...`, 'info');
+                adminCore.showNotification('Scraping de detalhes iniciado!', 'success');
+                
+                const eventSource = new EventSource(endpoint);
+                
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
                     
-                    const eventSource = new EventSource('/api/nsfw247/scrape-details-stream');
-                    
-                    eventSource.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.type === 'log') {
-                            const message = data.message;
-                            if (message.includes('✓') || message.includes('✅')) {
-                                addLog(message, 'success');
-                            } else if (message.includes('❌') || message.includes('Erro')) {
-                                addLog(message, 'error');
-                            } else {
-                                addLog(message, 'info');
-                            }
-                        } else if (data.type === 'error') {
-                            addLog('❌ ' + data.message, 'error');
-                        } else if (data.type === 'done') {
-                            addLog(`✅ Scraping de detalhes concluído! ${data.successCount || 0} vídeos atualizados.`, 'success');
-                            adminCore.showNotification('Scraping concluído!', 'success');
-                            eventSource.close();
-                            isRunning = false;
-                            updateButtons(false);
-                            hideProgress();
+                    if (data.type === 'log') {
+                        const message = data.message;
+                        if (message.includes('✓') || message.includes('✅')) {
+                            addLog(message, 'success');
+                        } else if (message.includes('❌') || message.includes('Erro')) {
+                            addLog(message, 'error');
+                        } else {
+                            addLog(message, 'info');
                         }
-                        
-                        // Atualizar progresso se disponível
-                        if (data.progress) {
-                            showProgress(data.progress);
-                        }
-                    };
-                    
-                    eventSource.onerror = (error) => {
-                        addLog('✗ Erro na conexão com o stream', 'error');
+                    } else if (data.type === 'error') {
+                        addLog('❌ ' + data.message, 'error');
+                    } else if (data.type === 'done') {
+                        addLog(`✅ Scraping de detalhes concluído! ${data.successCount || 0} vídeos atualizados.`, 'success');
+                        adminCore.showNotification('Scraping concluído!', 'success');
                         eventSource.close();
                         isRunning = false;
                         updateButtons(false);
                         hideProgress();
-                    };
-                }
+                    }
+                    
+                    // Atualizar progresso se disponível
+                    if (data.progress) {
+                        showProgress(data.progress);
+                    }
+                };
+                
+                eventSource.onerror = (error) => {
+                    addLog('✗ Erro na conexão com o stream', 'error');
+                    eventSource.close();
+                    isRunning = false;
+                    updateButtons(false);
+                    hideProgress();
+                };
             } catch (error) {
                 addLog(`✗ Erro: ${error.message}`, 'error');
                 adminCore.showNotification(error.message, 'error');
