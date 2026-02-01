@@ -249,7 +249,11 @@
                 showProgress(0);
                 addLog('Iniciando scraping de modelos...', 'info');
 
-                const response = await fetch(`/api/${currentSite}/scrape-models`, {
+                const endpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scraping/models'
+                    : '/api/nsfw247/scrape-models-stream';
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     credentials: 'include'
                 });
@@ -257,10 +261,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    addLog(`✓ ${data.modelsScraped} modelos coletados com sucesso!`, 'success');
+                    const count = data.modelsScraped || data.totalModels || 0;
+                    addLog(`✓ ${count} modelos coletados com sucesso!`, 'success');
                     adminCore.showNotification('Modelos coletados com sucesso!', 'success');
                 } else {
-                    addLog(`✗ Erro: ${data.error}`, 'error');
+                    addLog(`✗ Erro: ${data.error || 'Erro desconhecido'}`, 'error');
                     adminCore.showNotification('Erro ao coletar modelos', 'error');
                 }
             } catch (error) {
@@ -290,7 +295,11 @@
                 showProgress(0);
                 addLog('Iniciando scraping de vídeos...', 'info');
 
-                const response = await fetch(`/api/${currentSite}/scrape-videos`, {
+                const endpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scraping/videos'
+                    : '/api/nsfw247/scrape-videos-stream';
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     credentials: 'include'
                 });
@@ -298,10 +307,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    addLog(`✓ ${data.videosScraped} vídeos coletados com sucesso!`, 'success');
+                    const count = data.videosScraped || data.totalVideos || 0;
+                    addLog(`✓ ${count} vídeos coletados com sucesso!`, 'success');
                     adminCore.showNotification('Vídeos coletados com sucesso!', 'success');
                 } else {
-                    addLog(`✗ Erro: ${data.error}`, 'error');
+                    addLog(`✗ Erro: ${data.error || 'Erro desconhecido'}`, 'error');
                     adminCore.showNotification('Erro ao coletar vídeos', 'error');
                 }
             } catch (error) {
@@ -331,7 +341,11 @@
                 showProgress(0);
                 addLog('Iniciando scraping de detalhes dos vídeos...', 'info');
 
-                const response = await fetch(`/api/${currentSite}/scrape-video-details`, {
+                const endpoint = currentSite === 'clubeadulto' 
+                    ? '/api/clubeadulto/scraping/video-details'
+                    : '/api/nsfw247/scrape-details-stream';
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     credentials: 'include'
                 });
@@ -339,10 +353,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    addLog(`✓ ${data.videosUpdated} vídeos atualizados com sucesso!`, 'success');
+                    const count = data.videosUpdated || data.successCount || 0;
+                    addLog(`✓ ${count} vídeos atualizados com sucesso!`, 'success');
                     adminCore.showNotification('Detalhes coletados com sucesso!', 'success');
                 } else {
-                    addLog(`✗ Erro: ${data.error}`, 'error');
+                    addLog(`✗ Erro: ${data.error || 'Erro desconhecido'}`, 'error');
                     adminCore.showNotification('Erro ao coletar detalhes', 'error');
                 }
             } catch (error) {
