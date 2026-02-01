@@ -300,23 +300,32 @@
                     
                     eventSource.onmessage = (event) => {
                         const data = JSON.parse(event.data);
-                        if (data.log) {
-                            addLog(data.log, 'info');
+                        
+                        if (data.type === 'log') {
+                            const message = data.message;
+                            if (message.includes('✓') || message.includes('✅')) {
+                                addLog(message, 'success');
+                            } else if (message.includes('❌') || message.includes('Erro')) {
+                                addLog(message, 'error');
+                            } else {
+                                addLog(message, 'info');
+                            }
+                        } else if (data.type === 'error') {
+                            addLog('❌ ' + data.message, 'error');
+                        } else if (data.type === 'done') {
+                            addLog(`✅ Scraping de modelos concluído! ${data.totalModels || 0} modelos coletados.`, 'success');
+                            adminCore.showNotification('Scraping concluído!', 'success');
+                            eventSource.close();
+                            isRunning = false;
+                            updateButtons(false);
+                            hideProgress();
                         }
+                        
+                        // Atualizar progresso se disponível
                         if (data.progress) {
                             showProgress(data.progress);
                         }
                     };
-                    
-                    eventSource.addEventListener('complete', (event) => {
-                        const data = JSON.parse(event.data);
-                        addLog(`✅ Scraping concluído! ${data.totalModels || 0} modelos coletados.`, 'success');
-                        adminCore.showNotification('Scraping concluído!', 'success');
-                        eventSource.close();
-                        isRunning = false;
-                        updateButtons(false);
-                        hideProgress();
-                    });
                     
                     eventSource.onerror = (error) => {
                         addLog('✗ Erro na conexão com o stream', 'error');
@@ -404,23 +413,32 @@
                     
                     eventSource.onmessage = (event) => {
                         const data = JSON.parse(event.data);
-                        if (data.log) {
-                            addLog(data.log, 'info');
+                        
+                        if (data.type === 'log') {
+                            const message = data.message;
+                            if (message.includes('✓') || message.includes('✅')) {
+                                addLog(message, 'success');
+                            } else if (message.includes('❌') || message.includes('Erro')) {
+                                addLog(message, 'error');
+                            } else {
+                                addLog(message, 'info');
+                            }
+                        } else if (data.type === 'error') {
+                            addLog('❌ ' + data.message, 'error');
+                        } else if (data.type === 'done') {
+                            addLog(`✅ Scraping de vídeos concluído! ${data.totalVideos || 0} vídeos coletados.`, 'success');
+                            adminCore.showNotification('Scraping concluído!', 'success');
+                            eventSource.close();
+                            isRunning = false;
+                            updateButtons(false);
+                            hideProgress();
                         }
+                        
+                        // Atualizar progresso se disponível
                         if (data.progress) {
                             showProgress(data.progress);
                         }
                     };
-                    
-                    eventSource.addEventListener('complete', (event) => {
-                        const data = JSON.parse(event.data);
-                        addLog(`✅ Scraping concluído! ${data.totalVideos || 0} vídeos coletados.`, 'success');
-                        adminCore.showNotification('Scraping concluído!', 'success');
-                        eventSource.close();
-                        isRunning = false;
-                        updateButtons(false);
-                        hideProgress();
-                    });
                     
                     eventSource.onerror = (error) => {
                         addLog('✗ Erro na conexão com o stream', 'error');
@@ -507,23 +525,32 @@
                     
                     eventSource.onmessage = (event) => {
                         const data = JSON.parse(event.data);
-                        if (data.log) {
-                            addLog(data.log, 'info');
+                        
+                        if (data.type === 'log') {
+                            const message = data.message;
+                            if (message.includes('✓') || message.includes('✅')) {
+                                addLog(message, 'success');
+                            } else if (message.includes('❌') || message.includes('Erro')) {
+                                addLog(message, 'error');
+                            } else {
+                                addLog(message, 'info');
+                            }
+                        } else if (data.type === 'error') {
+                            addLog('❌ ' + data.message, 'error');
+                        } else if (data.type === 'done') {
+                            addLog(`✅ Scraping de detalhes concluído! ${data.successCount || 0} vídeos atualizados.`, 'success');
+                            adminCore.showNotification('Scraping concluído!', 'success');
+                            eventSource.close();
+                            isRunning = false;
+                            updateButtons(false);
+                            hideProgress();
                         }
+                        
+                        // Atualizar progresso se disponível
                         if (data.progress) {
                             showProgress(data.progress);
                         }
                     };
-                    
-                    eventSource.addEventListener('complete', (event) => {
-                        const data = JSON.parse(event.data);
-                        addLog(`✅ Scraping concluído! ${data.successCount || 0} vídeos atualizados.`, 'success');
-                        adminCore.showNotification('Scraping concluído!', 'success');
-                        eventSource.close();
-                        isRunning = false;
-                        updateButtons(false);
-                        hideProgress();
-                    });
                     
                     eventSource.onerror = (error) => {
                         addLog('✗ Erro na conexão com o stream', 'error');
